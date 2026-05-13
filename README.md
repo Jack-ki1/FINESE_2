@@ -4,6 +4,9 @@
 
 A powerful, modern Streamlit-based data intelligence platform for data analysis, science, ML engineering, and data engineering workflows. FINESE2 provides an intuitive interface for data exploration, cleaning, visualization, modeling, and reporting.
 
+
+
+###link to access the platform: https://huggingface.co/spaces/Jack-ki1/finese_data_2
 ## 🌟 Features
 
 - **Data Ingestion**: Support for CSV, Excel, JSON, Parquet, SQL databases, and more
