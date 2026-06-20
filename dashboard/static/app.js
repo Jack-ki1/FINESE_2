@@ -3,31 +3,230 @@
  * SPA navigation, state management, and section rendering
  */
 
-// ===== NOTIFICATION SYSTEM =====
-function showNotification(message, type = 'info', duration = 4000) {
-    const existing = document.querySelector('.notification');
-    if (existing) existing.remove();
-
-    const notif = document.createElement('div');
-    notif.className = `notification ${type}`;
-    notif.textContent = message;
-    document.body.appendChild(notif);
-
-    setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, duration);
+// ===== THEME MANAGEMENT (F1-inspired) =====
+function initTheme() {
+    const savedTheme = localStorage.getItem('finese2-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
 }
 
-function showLoading(show = true) {
-    let overlay = document.querySelector('.loading-overlay');
-    if (show) {
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.className = 'loading-overlay';
-            overlay.innerHTML = '<div class="spinner"></div>';
-            document.body.appendChild(overlay);
-        }
-    } else {
-        if (overlay) overlay.remove();
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('finese2-theme', newTheme);
+    updateThemeIcon(newTheme);
+    
+    showToast(`Switched to ${newTheme} mode`, 'info');
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.querySelector('.theme-toggle i');
+    if (icon) {
+        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', initTheme);
+
+// ===== COMMAND PALETTE (Ctrl+K) =====
+function initCommandPalette() {
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+K or Cmd+K to open command palette
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            showCommandPalette();
+        }
+        
+        // Escape to close
+        if (e.key === 'Escape') {
+            hideCommandPalette();
+        }
+    });
+}
+
+function showCommandPalette() {
+    // Create palette if it doesn't exist
+    let palette = document.getElementById('command-palette');
+    if (!palette) {
+        palette = createCommandPalette();
+    }
+    
+    palette.classList.add('active');
+    const input = palette.querySelector('.palette-input');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+function hideCommandPalette() {
+    const palette = document.getElementById('command-palette');
+    if (palette) {
+        palette.classList.remove('active');
+    }
+}
+
+function createCommandPalette() {
+    const palette = document.createElement('div');
+    palette.id = 'command-palette';
+    palette.className = 'command-palette';
+    
+    palette.innerHTML = `
+        <div class="palette-overlay" onclick="hideCommandPalette()"></div>
+        <div class="palette-container">
+            <div class="palette-header">
+                <i class="fas fa-search"></i>
+                <input type="text" class="palette-input" placeholder="Type a command..." oninput="filterCommands(this.value)">
+                <kbd>ESC</kbd>
+            </div>
+            <div class="palette-results" id="palette-results">
+                ${generateCommandItems()}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(palette);
+    return palette;
+}
+
+function generateCommandItems() {
+    const commands = [
+        { icon: '📊', label: 'Go to Dashboard', action: "navigateTo('dashboard')" },
+        { icon: '📁', label: 'Upload Dataset', action: "navigateTo('data')" },
+        { icon: '🔍', label: 'Run EDA Analysis', action: "navigateTo('eda')" },
+        { icon: '🧹', label: 'Clean Data', action: "navigateTo('cleaning')" },
+        { icon: '📈', label: 'Create Visualization', action: "navigateTo('visualization')" },
+        { icon: '📉', label: 'Statistical Analysis', action: "navigateTo('statistics')" },
+        { icon: '🤖', label: 'Train ML Model', action: "navigateTo('modeling')" },
+        { icon: '⚙️', label: 'MLOps Settings', action: "navigateTo('mlops')" },
+        { icon: '📝', label: 'Generate Report', action: "navigateTo('reports')" },
+        { icon: '💬', label: 'AI Assistant', action: "navigateTo('ai')" },
+        { icon: '🌙', label: 'Toggle Dark Mode', action: "toggleTheme()" },
+        { icon: '⚡', label: 'Load Sample Data', action: "loadSampleDataset('iris')" },
+    ];
+    
+    return commands.map((cmd, idx) => `
+        <div class="palette-item" data-action="${cmd.action}" onclick="executeCommand('${cmd.action}')">
+            <span class="palette-icon">${cmd.icon}</span>
+            <span class="palette-label">${cmd.label}</span>
+            <span class="palette-shortcut">${idx < 9 ? `<kbd>${idx + 1}</kbd>` : ''}</span>
+        </div>
+    `).join('');
+}
+
+function filterCommands(query) {
+    const items = document.querySelectorAll('.palette-item');
+    const lowerQuery = query.toLowerCase();
+    
+    items.forEach(item => {
+        const label = item.querySelector('.palette-label').textContent.toLowerCase();
+        item.style.display = label.includes(lowerQuery) ? 'flex' : 'none';
+    });
+}
+
+function executeCommand(action) {
+    hideCommandPalette();
+    eval(action);
+}
+
+// Initialize command palette
+document.addEventListener('DOMContentLoaded', initCommandPalette);
+
+// ===== LOADING OVERLAY (F1-inspired) =====
+const SIM_MSGS = [
+    'Computing statistics…',
+    'Analyzing data patterns…',
+    'Running models…',
+    'Generating insights…',
+    'Finishing up…',
+];
+
+let _simInterval = null;
+
+function showLoading(message = 'Processing...') {
+    // Clear any existing interval
+    if (_simInterval) {
+        clearInterval(_simInterval);
+        _simInterval = null;
+    }
+    
+    const overlay = document.getElementById('loadingOverlay');
+    const msgEl = document.getElementById('loadingMessage');
+    
+    if (msgEl) msgEl.textContent = message;
+    if (overlay) overlay.classList.add('active');
+    
+    // Cycle through messages for long operations
+    let idx = 0;
+    _simInterval = setInterval(() => {
+        idx++;
+        if (idx >= SIM_MSGS.length) {
+            clearInterval(_simInterval);
+            _simInterval = null;
+            return;
+        }
+        if (msgEl) msgEl.textContent = SIM_MSGS[idx];
+    }, 800);
+}
+
+function hideLoading() {
+    if (_simInterval) {
+        clearInterval(_simInterval);
+        _simInterval = null;
+    }
+    
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// ===== ENHANCED NOTIFICATION SYSTEM (from F1 Dashboard) =====
+let toastQueue = [];
+
+function showToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-msg">${message}</span>
+        <span class="toast-close" onclick="this.parentElement.remove()">×</span>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Auto-remove
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+    }, duration);
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Legacy support - redirect to new system
+function showNotification(message, type = 'info', duration = 4000) {
+    showToast(message, type, duration);
 }
 
 // ===== APPLICATION STATE =====
@@ -83,18 +282,41 @@ async function loadSectionData(sectionId) {
 async function loadDashboard() {
     const container = document.getElementById('dashboard-content');
     if (!AppState.hasData) {
+        // Enhanced empty state with hero section (from F1 Dashboard)
         container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">📊</div>
-                <h3>Welcome to FINESE2</h3>
-                <p>Your intelligent data science platform. Upload a dataset to get started.</p>
-                <button class="btn btn-primary" onclick="switchSection('data')" style="margin-top: 20px;">
-                    📁 Upload Dataset
-                </button>
-                <div style="margin-top: 16px;">
-                    <button class="btn btn-secondary btn-sm" onclick="loadSampleDataset('iris')">🌸 Iris</button>
-                    <button class="btn btn-secondary btn-sm" onclick="loadSampleDataset('titanic')">🚢 Titanic</button>
-                    <button class="btn btn-secondary btn-sm" onclick="loadSampleDataset('wine')">🍷 Wine</button>
+            <div class="hero-section">
+                <div class="hero-content">
+                    <div class="hero-eyebrow">Data Intelligence Platform</div>
+                    <h1>Welcome to <span class="accent-text">FINESE2</span></h1>
+                    <p class="hero-subtitle">Your advanced analytics and machine learning workspace</p>
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-value">∞</div>
+                            <div class="kpi-label">Datasets</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value">ML</div>
+                            <div class="kpi-label">Models</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value">AI</div>
+                            <div class="kpi-label">Assistant</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value">EDA</div>
+                            <div class="kpi-label">Analysis</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-enhanced btn-primary-enhanced" onclick="switchSection('data')">
+                        <i class="fas fa-upload"></i> Upload Dataset
+                    </button>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.8rem; justify-content: center;">
+                        <button class="btn-enhanced btn-secondary-enhanced" onclick="loadSampleDataset('iris')">🌸 Iris</button>
+                        <button class="btn-enhanced btn-secondary-enhanced" onclick="loadSampleDataset('titanic')">🚢 Titanic</button>
+                        <button class="btn-enhanced btn-secondary-enhanced" onclick="loadSampleDataset('wine')">🍷 Wine</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -104,16 +326,44 @@ async function loadDashboard() {
     try {
         const info = await api.getDataInfo();
         AppState.dataInfo = info;
+        
+        // Enhanced dashboard with hero and KPI cards (from F1 Dashboard)
         container.innerHTML = `
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-value">${info.rows?.toLocaleString() || 'N/A'}</div><div class="stat-label">Rows</div></div>
-                <div class="stat-card"><div class="stat-value">${info.columns?.length || 'N/A'}</div><div class="stat-label">Columns</div></div>
-                <div class="stat-card"><div class="stat-value">${info.numeric_columns?.length || 0}</div><div class="stat-label">Numeric Features</div></div>
-                <div class="stat-card"><div class="stat-value">${info.missing_values?.toLocaleString() || 0}</div><div class="stat-label">Missing Values</div></div>
+            <div class="hero-section-enhanced">
+                <div class="hero-header">
+                    <div class="hero-badge"><i class="fas fa-database"></i> Data Loaded</div>
+                    <h1>${info.file_name || 'Dataset'}</h1>
+                    <p class="hero-sub">${info.shape?.[0]?.toLocaleString() || 0} rows · ${info.shape?.[1] || 0} columns</p>
+                </div>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-value">${(info.rows || info.shape?.[0] || 0).toLocaleString()}</div>
+                        <div class="kpi-label">Total Rows</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">${info.columns?.length || info.shape?.[1] || 0}</div>
+                        <div class="kpi-label">Columns</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">${info.numeric_columns?.length || 0}</div>
+                        <div class="kpi-label">Numeric Features</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">${info.missing_values?.toLocaleString() || 0}</div>
+                        <div class="kpi-label">Missing Values</div>
+                    </div>
+                </div>
             </div>
+            
             <div class="grid-2">
-                <div class="card"><div class="card-header"><span class="card-title">📊 Data Types</span></div><div id="chart-dtypes"></div></div>
-                <div class="card"><div class="card-header"><span class="card-title">📈 Numeric Overview</span></div><div id="chart-overview"></div></div>
+                <div class="card-enhanced">
+                    <div class="card-header"><span class="card-title">📊 Data Types Distribution</span></div>
+                    <div id="chart-dtypes"></div>
+                </div>
+                <div class="card-enhanced">
+                    <div class="card-header"><span class="card-title">📈 Numeric Overview</span></div>
+                    <div id="chart-overview"></div>
+                </div>
             </div>
         `;
 
@@ -134,6 +384,13 @@ async function loadSampleDataset(name) {
         const result = await api.loadSampleDataset(name);
         AppState.hasData = true;
         AppState.columns = result.columns || [];
+        // Infer column types from dtypes map
+        if (result.dtypes) {
+            AppState.numericColumns = Object.entries(result.dtypes)
+                .filter(([, t]) => ['int64','float64','int32','float32'].some(nt => t.includes(nt)))
+                .map(([col]) => col);
+            AppState.categoricalColumns = AppState.columns.filter(c => !AppState.numericColumns.includes(c));
+        }
         showNotification(`Loaded ${name} dataset successfully!`, 'success');
         loadDashboard();
     } catch (error) {
@@ -149,18 +406,34 @@ async function loadDataSection() {
     container.innerHTML = `
         <div class="card">
             <div class="card-header"><span class="card-title">📁 Upload Dataset</span></div>
-            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <div class="upload-zone" id="upload-zone">
                 <div class="upload-icon">📤</div>
                 <div class="upload-text">Drop your file here or click to browse</div>
                 <div class="upload-hint">Supports CSV, Excel, JSON, Parquet</div>
             </div>
-            <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json,.parquet" style="display:none" onchange="handleFileUpload(this)">
+            <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json,.parquet" style="display:none">
         </div>
         <div id="data-preview"></div>
     `;
 
-    // Setup drag & drop
+    // Setup click handler for upload zone
     const zone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+    
+    zone.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // Setup file input change handler
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            uploadFile(e.target.files[0]);
+            // Reset input so same file can be selected again
+            e.target.value = '';
+        }
+    });
+
+    // Setup drag & drop
     zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
     zone.addEventListener('drop', (e) => {
@@ -174,16 +447,19 @@ async function loadDataSection() {
     }
 }
 
-async function handleFileUpload(input) {
-    if (input.files.length) await uploadFile(input.files[0]);
-}
-
 async function uploadFile(file) {
     showLoading(true);
     try {
         const result = await api.uploadFile(file);
         AppState.hasData = true;
         AppState.columns = result.columns || [];
+        // Infer column types from dtypes map
+        if (result.dtypes) {
+            AppState.numericColumns = Object.entries(result.dtypes)
+                .filter(([, t]) => ['int64','float64','int32','float32'].some(nt => t.includes(nt)))
+                .map(([col]) => col);
+            AppState.categoricalColumns = AppState.columns.filter(c => !AppState.numericColumns.includes(c));
+        }
         showNotification(`Uploaded ${file.name} successfully!`, 'success');
         loadDataSection();
     } catch (error) {
@@ -195,16 +471,26 @@ async function uploadFile(file) {
 
 function renderDataTable(containerId, data) {
     const container = document.getElementById(containerId);
-    if (!data || !data.columns || !data.data) {
+    if (!data) {
         container.innerHTML = '<div class="card"><p>No data available</p></div>';
         return;
     }
+    
+    // Handle both {columns, data} and {columns, preview} shapes
+    const columns = data.columns || [];
+    const rows = data.data || data.preview || [];
+    
+    if (!columns.length || !rows.length) {
+        container.innerHTML = '<div class="card"><p>No data to display</p></div>';
+        return;
+    }
+    
     let html = '<div class="card"><div class="card-header"><span class="card-title">📋 Data Preview</span></div><div style="overflow-x:auto;"><table class="data-table"><thead><tr>';
-    data.columns.forEach(col => { html += `<th>${col}</th>`; });
+    columns.forEach(col => { html += `<th>${col}</th>`; });
     html += '</tr></thead><tbody>';
-    data.data.forEach(row => {
+    rows.forEach(row => {
         html += '<tr>';
-        data.columns.forEach(col => { html += `<td>${row[col] !== null && row[col] !== undefined ? row[col] : ''}</td>`; });
+        columns.forEach(col => { html += `<td>${row[col] !== null && row[col] !== undefined ? row[col] : ''}</td>`; });
         html += '</tr>';
     });
     html += '</tbody></table></div></div>';
@@ -216,19 +502,29 @@ async function loadEDASection() {
     const container = document.getElementById('eda-content');
     container.innerHTML = `
         <div class="inner-tabs">
-            <button class="inner-tab active" onclick="loadEDATab('profile')">📊 Profile</button>
-            <button class="inner-tab" onclick="loadEDATab('distribution')">📈 Distributions</button>
-            <button class="inner-tab" onclick="loadEDATab('correlation')">🔗 Correlations</button>
-            <button class="inner-tab" onclick="loadEDATab('missing')">❓ Missing Values</button>
+            <button class="inner-tab active" onclick="loadEDATab('profile', this)">📊 Profile</button>
+            <button class="inner-tab" onclick="loadEDATab('distribution', this)">📈 Distributions</button>
+            <button class="inner-tab" onclick="loadEDATab('correlation', this)">🔗 Correlations</button>
+            <button class="inner-tab" onclick="loadEDATab('missing', this)">❓ Missing Values</button>
         </div>
         <div id="eda-tab-content"></div>
     `;
     loadEDATab('profile');
 }
 
-async function loadEDATab(tab) {
+async function loadEDATab(tab, el = null) {
     document.querySelectorAll('#eda-content .inner-tab').forEach(t => t.classList.remove('active'));
-    event?.target?.classList.add('active');
+    if (el) {
+        el.classList.add('active');
+    } else {
+        // Fallback: find and activate the button matching the tab name
+        const buttons = document.querySelectorAll('#eda-content .inner-tab');
+        buttons.forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(tab)) {
+                btn.classList.add('active');
+            }
+        });
+    }
 
     const content = document.getElementById('eda-tab-content');
     content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';
@@ -255,9 +551,9 @@ async function loadEDATab(tab) {
                 break;
             case 'correlation':
                 const corr = await api.getCorrelation();
-                if (corr && corr.matrix) {
+                if (corr) {
                     content.innerHTML = '<div class="chart-container" id="corr-chart"></div>';
-                    charts.correlationHeatmap('corr-chart', corr.matrix);
+                    charts.renderPlotlyJSON('corr-chart', corr);
                 } else {
                     content.innerHTML = '<div class="card"><p>Not enough numeric columns for correlation analysis.</p></div>';
                 }
@@ -388,18 +684,27 @@ async function loadAnalysisSection() {
     const container = document.getElementById('analysis-content');
     container.innerHTML = `
         <div class="inner-tabs">
-            <button class="inner-tab active" onclick="loadAnalysisTab('summary')">📊 Summary</button>
-            <button class="inner-tab" onclick="loadAnalysisTab('hypothesis')">🧪 Hypothesis Tests</button>
-            <button class="inner-tab" onclick="loadAnalysisTab('regression')">📈 Regression</button>
+            <button class="inner-tab active" onclick="loadAnalysisTab('summary', this)">📊 Summary</button>
+            <button class="inner-tab" onclick="loadAnalysisTab('hypothesis', this)">🧪 Hypothesis Tests</button>
+            <button class="inner-tab" onclick="loadAnalysisTab('regression', this)">📈 Regression</button>
         </div>
         <div id="analysis-tab-content"></div>
     `;
     loadAnalysisTab('summary');
 }
 
-async function loadAnalysisTab(tab) {
+async function loadAnalysisTab(tab, el = null) {
     document.querySelectorAll('#analysis-content .inner-tab').forEach(t => t.classList.remove('active'));
-    event?.target?.classList.add('active');
+    if (el) {
+        el.classList.add('active');
+    } else {
+        const buttons = document.querySelectorAll('#analysis-content .inner-tab');
+        buttons.forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(tab)) {
+                btn.classList.add('active');
+            }
+        });
+    }
     const content = document.getElementById('analysis-tab-content');
 
     try {

@@ -7,6 +7,7 @@ class AIChat {
     constructor() {
         this.messages = [];
         this.isStreaming = false;
+        this._initialized = false;
         this.config = {
             provider: 'openai',
             model: 'gpt-4o-mini',
@@ -21,6 +22,9 @@ class AIChat {
     }
 
     init(containerId, inputId) {
+        if (this._initialized) return;
+        this._initialized = true;
+        
         this.messageContainer = document.getElementById(containerId);
         this.inputElement = document.getElementById(inputId);
 

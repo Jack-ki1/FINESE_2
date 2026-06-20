@@ -1,3 +1,9 @@
+"""
+Custom Styling and Theme Utilities for FINESE2
+"""
+import streamlit as st
+
+
 def format_number(num):
     """Format numbers with appropriate units."""
     if num >= 1_000_000_000:
@@ -8,10 +14,6 @@ def format_number(num):
         return f"{num / 1_000:.1f}K"
     else:
         return str(num)
-"""
-Custom Styling and Theme Utilities for data_all1
-"""
-import streamlit as st
 
 
 def render_metric_card(title: str, value: str, description: str = "", icon: str = "📊"):

@@ -73,21 +73,6 @@ class MLModeler:
         "SGD Regressor": SGDRegressor(random_state=42),
     }
 
-    # Initialize advanced models if available
-    try:
-        from xgboost import XGBClassifier, XGBRegressor
-        CLASSIFICATION_MODELS["XGBoost"] = XGBClassifier(random_state=42, verbosity=0)
-        REGRESSION_MODELS["XGBoost"] = XGBRegressor(random_state=42, verbosity=0)
-    except ImportError:
-        pass
-
-    try:
-        from lightgbm import LGBMClassifier, LGBMRegressor
-        CLASSIFICATION_MODELS["LightGBM"] = LGBMClassifier(random_state=42)
-        REGRESSION_MODELS["LightGBM"] = LGBMRegressor(random_state=42)
-    except ImportError:
-        pass
-
     @staticmethod
     def prepare_data(df: pd.DataFrame, target_col: str, test_size: float = 0.2,
                      problem_type: Optional[str] = None) -> Tuple:
@@ -138,9 +123,17 @@ class MLModeler:
         )
 
         stratify = y if problem_type == "classification" else None
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_scaled, y, test_size=test_size, random_state=42, stratify=stratify
-        )
+        
+        try:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_scaled, y, test_size=test_size, random_state=42, stratify=stratify
+            )
+        except ValueError:
+            # Fall back to unstratified split if stratification fails (e.g., small classes)
+            logger.warning(f"Stratified split failed for {problem_type}, using unstratified split")
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_scaled, y, test_size=test_size, random_state=42
+            )
 
         return X_train, X_test, y_train, y_test, problem_type, scaler, encoder
 

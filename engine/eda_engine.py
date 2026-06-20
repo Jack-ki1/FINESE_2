@@ -131,15 +131,28 @@ class EDAEngine:
             return {"error": str(e)}
 
     @staticmethod
-    def generate_ydata_report(df: pd.DataFrame) -> Optional[str]:
-        """Generate ydata-profiling HTML report."""
+    def generate_ydata_report(df: pd.DataFrame, max_rows: int = 5000) -> Optional[str]:
+        """Generate ydata-profiling HTML report with safety limits."""
         try:
             from ydata_profiling import ProfileReport
-            profile = ProfileReport(df, title="Data Profiling Report", explorative=True)
+            
+            # Sample large datasets to prevent hangs
+            if len(df) > max_rows:
+                df = df.sample(n=max_rows, random_state=42)
+            
+            profile = ProfileReport(
+                df,
+                title="Data Profiling Report",
+                explorative=False,  # Disable expensive correlations by default
+                minimal=len(df) > 2000,  # Minimal mode for large datasets
+                correlations={"pearson": {"calculate": len(df) < 1000}},
+                missing_diagrams={"heatmap": False}
+            )
             return profile.to_html()
         except ImportError:
             return None
-        except Exception:
+        except Exception as e:
+            logger.error(f"ydata-profiling failed: {e}")
             return None
 
     @staticmethod

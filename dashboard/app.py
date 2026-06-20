@@ -8,15 +8,19 @@ import json
 import pickle
 import uuid
 import threading
+import time
 from datetime import timedelta
 from typing import Any, Optional
 from functools import lru_cache
+from threading import Timer
 
 import numpy as np
 import pandas as pd
 from flask import Flask, render_template, request, jsonify, session, send_file, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 
 # Initialize SocketIO
@@ -26,6 +30,22 @@ socketio = SocketIO()
 _dataframe_store = {}
 _session_store = {}
 _upload_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+
+
+def _cleanup_stale_sessions(max_age_hours: int = 8):
+    """Remove sessions older than max_age_hours to prevent memory leaks."""
+    cutoff = time.time() - (max_age_hours * 3600)
+    stale = [sid for sid, meta in _session_store.items() 
+             if meta.get("created_at", 0) < cutoff]
+    for sid in stale:
+        _dataframe_store.pop(sid, None)
+        _session_store.pop(sid, None)
+
+
+def _schedule_cleanup():
+    """Schedule periodic session cleanup every hour."""
+    _cleanup_stale_sessions()
+    Timer(3600, _schedule_cleanup).start()
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -61,7 +81,10 @@ class SessionManager:
         """Store DataFrame in memory."""
         sid = cls.get_session_id()
         _dataframe_store[sid] = df
-        _session_store.setdefault(sid, {})["data_source"] = source
+        session_meta = _session_store.setdefault(sid, {})
+        session_meta["data_source"] = source
+        if "created_at" not in session_meta:
+            session_meta["created_at"] = time.time()
         return sid
     
     @classmethod
@@ -155,18 +178,47 @@ def create_dashboard_app():
                 static_folder=os.path.join(os.path.dirname(__file__), "static"))
     
     # Configuration
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "finese2-dev-secret-key")
-    app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500MB
+    secret = os.environ.get("SECRET_KEY")
+    if not secret:
+        if os.environ.get("FLASK_ENV") == "production":
+            raise RuntimeError("SECRET_KEY environment variable must be set in production")
+        import secrets
+        secret = secrets.token_hex(32)  # Random each restart in dev
+    
+    app.config["SECRET_KEY"] = secret
+    app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB (reduced from 500MB)
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
     
-    # Enable CORS
-    CORS(app, supports_credentials=True)
+    # Register custom JSON provider for NumPy types
+    from flask.json.provider import DefaultJSONProvider
+    
+    class NumpyJSONProvider(DefaultJSONProvider):
+        def default(self, obj):
+            if isinstance(obj, (np.integer,)): return int(obj)
+            if isinstance(obj, (np.floating,)): return float(obj)
+            if isinstance(obj, np.ndarray): return obj.tolist()
+            if isinstance(obj, pd.Timestamp): return obj.isoformat()
+            return super().default(obj)
+    
+    app.json_provider_class = NumpyJSONProvider
+    app.json = NumpyJSONProvider(app)
+    
+    # Enable CORS with specific origins
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5000").split(",")
+    CORS(app, origins=allowed_origins, supports_credentials=True)
+    
+    # Initialize rate limiter for AI endpoints
+    limiter = Limiter(key_func=get_remote_address)
+    limiter.init_app(app)
     
     # Initialize SocketIO
     socketio.init_app(app, cors_allowed_origins="*", async_mode="threading")
     
     # Create upload folder
     os.makedirs(_upload_folder, exist_ok=True)
+    
+    # Start session cleanup scheduler
+    _schedule_cleanup()
     
     # ─── Main Route (SPA) ─────────────────────────────────────────────────
     @app.route("/")
@@ -177,16 +229,32 @@ def create_dashboard_app():
     # ─── Data Management API ──────────────────────────────────────────────
     @app.route("/api/data/upload", methods=["POST"])
     def upload_file():
-        """Upload and process a data file."""
+        """Upload and process a data file with validation."""
         if "file" not in request.files:
             return jsonify({"error": "No file provided"}), 400
         
         f = request.files["file"]
+        
+        # Validate filename
+        if not f.filename or f.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Check file extension
+        ALLOWED_EXTENSIONS = {'.csv', '.xlsx', '.xls', '.json', '.parquet'}
+        ext = os.path.splitext(secure_filename(f.filename))[1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            return jsonify({"error": f"File type '{ext}' not allowed. Use: {', '.join(ALLOWED_EXTENSIONS)}"}), 422
+        
         options = request.form
         
         sample = options.get("sample_if_large", "true").lower() == "true"
         max_rows = int(options.get("max_rows", 10000))
         file_bytes = f.read()
+        
+        # Basic magic bytes validation for security
+        if len(file_bytes) < 4:
+            return jsonify({"error": "File too small or empty"}), 422
+        
         fmt = DataManager.detect_format(f.filename)
         
         try:
@@ -242,11 +310,9 @@ def create_dashboard_app():
             "preview": df.head(10).to_dict(orient="records"),
         })
     
-    @app.route("/api/data/sample-dataset", methods=["POST"])
-    def load_sample_dataset():
+    @app.route("/api/data/sample-dataset/<name>", methods=["POST"])
+    def load_sample_dataset(name):
         """Load specific sample dataset (titanic, wine, iris, etc.)."""
-        name = request.args.get("name", "default")
-        
         # Generate different sample datasets based on name
         if name == "titanic":
             df = DataManager.get_titanic_data()
@@ -263,6 +329,7 @@ def create_dashboard_app():
             "success": True,
             "shape": list(df.shape),
             "columns": df.columns.tolist(),
+            "dtypes": {c: str(t) for c, t in df.dtypes.items()},
             "preview": df.head(10).to_dict(orient="records"),
         })
     
@@ -1029,8 +1096,9 @@ def create_dashboard_app():
         return jsonify({"success": True, "message": "AI configuration saved"})
     
     @app.route("/api/ai/chat", methods=["POST"])
+    @limiter.limit("20 per minute; 200 per hour")
     def chat_http():
-        """Non-streaming chat endpoint (fallback)."""
+        """Non-streaming chat endpoint (fallback) with rate limiting."""
         body = request.get_json()
         messages = _build_messages(body.get("history", []), body.get("include_data", True))
         assistant = _build_assistant()

@@ -45,15 +45,18 @@ class APIClient {
     }
 
     async getDataSample(n = 100) {
-        return this.request(`/api/data/sample?n=${n}`);
+        // Use /api/data/info which returns preview data
+        return this.request('/api/data/info');
     }
 
     async loadSampleDataset(name) {
-        return this.request(`/api/data/sample-dataset?name=${name}`, { method: 'POST' });
+        return this.request(`/api/data/sample-dataset/${name}`, { method: 'POST' });
     }
 
     async exportData(format = 'csv') {
-        return this.request(`/api/data/export?format=${format}`);
+        // Direct navigation for file download
+        window.location.href = `/api/data/export/${format}`;
+        return null;
     }
 
     // ===== EDA ENDPOINTS =====
@@ -108,11 +111,8 @@ class APIClient {
     }
 
     // ===== ANALYSIS ENDPOINTS =====
-    async getSummaryStats(columns) {
-        return this.request('/api/analysis/summary', {
-            method: 'POST',
-            body: JSON.stringify({ columns })
-        });
+    async getSummaryStats() {
+        return this.request('/api/analysis/summary');
     }
 
     async hypothesisTest(testType, config) {
@@ -173,9 +173,9 @@ class APIClient {
 
     // ===== REPORT ENDPOINTS =====
     async generateReport(format, title) {
-        return this.request('/api/reports/generate', {
+        return this.request(`/api/reports/generate/${format}`, {
             method: 'POST',
-            body: JSON.stringify({ format, title })
+            body: JSON.stringify({ title })
         });
     }
 
@@ -203,7 +203,7 @@ class APIClient {
 
     // ===== UTILITY =====
     async getStatus() {
-        return this.request('/api/status');
+        return this.request('/api/system/status');
     }
 }
 

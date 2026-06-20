@@ -115,15 +115,25 @@ class DataManager:
         return df
 
     @staticmethod
-    def load_from_sql(connection_string: str, query: str, sample_if_large: bool = True, 
+    def load_from_sql(connection_string: str, table_name: str, 
+                      where_clause: Optional[str] = None,
                       max_rows: int = 10000) -> pd.DataFrame:
-        """Load data from SQL database."""
+        """Load data from SQL database with parameterized queries."""
+        # Whitelist table name against known tables for security
         engine = create_engine(connection_string)
+        safe_tables = DataManager.get_sql_tables(connection_string)
+        
+        if table_name not in safe_tables:
+            raise ValueError(f"Table '{table_name}' not in allowed list or does not exist")
+        
+        # Use parameterized query to prevent SQL injection
+        query = f"SELECT * FROM {table_name}"
+        if where_clause:
+            query += f" WHERE {where_clause}"
+        query += " LIMIT :limit"
+        
         with engine.connect() as conn:
-            df = pd.read_sql(text(query), conn)
-            
-        if sample_if_large:
-            df = DataManager.sample_dataframe(df, max_rows)
+            df = pd.read_sql(text(query), conn, params={"limit": max_rows})
             
         return df
 
