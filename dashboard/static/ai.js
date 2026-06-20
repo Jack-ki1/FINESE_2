@@ -196,3 +196,72 @@ class AIChat {
 }
 
 const ai = new AIChat();
+
+// ===== AI CONFIG MODAL FUNCTIONS =====
+function openAIConfig() {
+    const overlay = document.getElementById('ai-modal-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        
+        // Load current config into form
+        const providerSelect = document.getElementById('ai-provider-select');
+        const apiKeyInput = document.getElementById('ai-api-key');
+        const modelInput = document.getElementById('ai-model-input');
+        const baseUrlInput = document.getElementById('ai-base-url');
+        const tempSlider = document.getElementById('ai-temperature');
+        
+        if (providerSelect && ai.config) {
+            providerSelect.value = ai.config.provider || 'openai';
+        }
+        if (apiKeyInput && ai.config) {
+            apiKeyInput.value = ai.config.api_key || '';
+        }
+        if (modelInput && ai.config) {
+            modelInput.value = ai.config.model || 'gpt-4o-mini';
+        }
+        if (baseUrlInput && ai.config) {
+            baseUrlInput.value = ai.config.base_url || '';
+        }
+        if (tempSlider && ai.config) {
+            tempSlider.value = ai.config.temperature || 0.7;
+            document.getElementById('ai-temp-val').textContent = parseFloat(tempSlider.value).toFixed(1);
+        }
+    }
+}
+
+function closeAIConfig() {
+    const overlay = document.getElementById('ai-modal-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
+function closeAIOnBg(event) {
+    if (event.target.id === 'ai-modal-overlay') {
+        closeAIConfig();
+    }
+}
+
+async function saveAIConfig() {
+    const providerSelect = document.getElementById('ai-provider-select');
+    const apiKeyInput = document.getElementById('ai-api-key');
+    const modelInput = document.getElementById('ai-model-input');
+    const baseUrlInput = document.getElementById('ai-base-url');
+    const tempSlider = document.getElementById('ai-temperature');
+    
+    const config = {
+        provider: providerSelect?.value || 'openai',
+        api_key: apiKeyInput?.value || '',
+        model: modelInput?.value || 'gpt-4o-mini',
+        base_url: baseUrlInput?.value || '',
+        temperature: parseFloat(tempSlider?.value || 0.7)
+    };
+    
+    try {
+        await ai.configure(config);
+        closeAIConfig();
+        showNotification('AI configuration saved successfully', 'success');
+    } catch (error) {
+        showNotification('Failed to save AI config: ' + error.message, 'error');
+    }
+}

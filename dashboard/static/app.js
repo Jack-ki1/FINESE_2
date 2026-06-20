@@ -22,120 +22,150 @@ function toggleTheme() {
 }
 
 function updateThemeIcon(theme) {
-    const icon = document.querySelector('.theme-toggle i');
+    const icon = document.querySelector('#theme-toggle i');
     if (icon) {
-        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
 }
 
 // Initialize theme on load
 document.addEventListener('DOMContentLoaded', initTheme);
 
-// ===== COMMAND PALETTE (Ctrl+K) =====
-function initCommandPalette() {
-    document.addEventListener('keydown', (e) => {
-        // Ctrl+K or Cmd+K to open command palette
-        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-            e.preventDefault();
-            showCommandPalette();
-        }
+// ===== NAVIGATION SYSTEM (Updated for new HTML structure) =====
+function navigateTo(sectionId, navButton = null) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    
+    // Remove active state from all nav items
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    
+    // Show target section
+    const section = document.getElementById(`section-${sectionId}`);
+    if (section) {
+        section.classList.add('active');
+    } else {
+        console.error(`Section not found: section-${sectionId}`);
+        return;
+    }
+    
+    // Activate nav button if provided
+    if (navButton) {
+        navButton.classList.add('active');
+    } else {
+        // Find and activate the corresponding nav button
+        const navBtn = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+        if (navBtn) navBtn.classList.add('active');
+    }
+    
+    AppState.currentSection = sectionId;
+    
+    // Load section data
+    loadSectionData(sectionId);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Legacy support - alias to navigateTo
+function switchSection(sectionId) {
+    navigateTo(sectionId);
+}
+
+// ===== COMMAND PALETTE (Updated for new HTML structure) =====
+function openCommandPalette() {
+    const overlay = document.getElementById('cmd-overlay');
+    const input = document.getElementById('cmd-input');
+    
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
         
-        // Escape to close
-        if (e.key === 'Escape') {
-            hideCommandPalette();
-        }
-    });
-}
-
-function showCommandPalette() {
-    // Create palette if it doesn't exist
-    let palette = document.getElementById('command-palette');
-    if (!palette) {
-        palette = createCommandPalette();
-    }
-    
-    palette.classList.add('active');
-    const input = palette.querySelector('.palette-input');
-    if (input) {
-        input.focus();
-        input.select();
+        // Focus input
+        setTimeout(() => {
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }, 100);
+        
+        // Populate commands
+        populateCommandPalette();
     }
 }
 
-function hideCommandPalette() {
-    const palette = document.getElementById('command-palette');
-    if (palette) {
-        palette.classList.remove('active');
+function closeCommandPalette() {
+    const overlay = document.getElementById('cmd-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
     }
 }
 
-function createCommandPalette() {
-    const palette = document.createElement('div');
-    palette.id = 'command-palette';
-    palette.className = 'command-palette';
-    
-    palette.innerHTML = `
-        <div class="palette-overlay" onclick="hideCommandPalette()"></div>
-        <div class="palette-container">
-            <div class="palette-header">
-                <i class="fas fa-search"></i>
-                <input type="text" class="palette-input" placeholder="Type a command..." oninput="filterCommands(this.value)">
-                <kbd>ESC</kbd>
-            </div>
-            <div class="palette-results" id="palette-results">
-                ${generateCommandItems()}
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(palette);
-    return palette;
+function closePaletteOnBg(event) {
+    if (event.target.id === 'cmd-overlay') {
+        closeCommandPalette();
+    }
 }
 
-function generateCommandItems() {
+function populateCommandPalette() {
+    const results = document.getElementById('cmd-results');
+    if (!results) return;
+    
     const commands = [
-        { icon: '📊', label: 'Go to Dashboard', action: "navigateTo('dashboard')" },
-        { icon: '📁', label: 'Upload Dataset', action: "navigateTo('data')" },
-        { icon: '🔍', label: 'Run EDA Analysis', action: "navigateTo('eda')" },
-        { icon: '🧹', label: 'Clean Data', action: "navigateTo('cleaning')" },
-        { icon: '📈', label: 'Create Visualization', action: "navigateTo('visualization')" },
-        { icon: '📉', label: 'Statistical Analysis', action: "navigateTo('statistics')" },
-        { icon: '🤖', label: 'Train ML Model', action: "navigateTo('modeling')" },
-        { icon: '⚙️', label: 'MLOps Settings', action: "navigateTo('mlops')" },
-        { icon: '📝', label: 'Generate Report', action: "navigateTo('reports')" },
-        { icon: '💬', label: 'AI Assistant', action: "navigateTo('ai')" },
-        { icon: '🌙', label: 'Toggle Dark Mode', action: "toggleTheme()" },
-        { icon: '⚡', label: 'Load Sample Data', action: "loadSampleDataset('iris')" },
+        { icon: 'fa-solid fa-chart-tree-map', label: 'Go to Dashboard', shortcut: '', action: "navigateTo('dashboard')" },
+        { icon: 'fa-solid fa-database', label: 'Upload Dataset', shortcut: '', action: "navigateTo('data')" },
+        { icon: 'fa-solid fa-chart-area', label: 'Run EDA Analysis', shortcut: '', action: "navigateTo('eda')" },
+        { icon: 'fa-solid fa-broom', label: 'Clean Data', shortcut: '', action: "navigateTo('cleaning')" },
+        { icon: 'fa-solid fa-chart-column', label: 'Create Visualization', shortcut: '', action: "navigateTo('visualization')" },
+        { icon: 'fa-solid fa-flask', label: 'Statistical Analysis', shortcut: '', action: "navigateTo('analysis')" },
+        { icon: 'fa-solid fa-microchip', label: 'Train ML Model', shortcut: '', action: "navigateTo('modeling')" },
+        { icon: 'fa-solid fa-gauge-high', label: 'MLOps Settings', shortcut: '', action: "navigateTo('mlops')" },
+        { icon: 'fa-solid fa-file-chart-column', label: 'Generate Report', shortcut: '', action: "navigateTo('reports')" },
+        { icon: 'fa-solid fa-robot', label: 'AI Assistant', shortcut: '', action: "navigateTo('ai')" },
+        { icon: 'fa-solid fa-circle-half-stroke', label: 'Toggle Theme', shortcut: '⌘T', action: "toggleTheme()" },
+        { icon: 'fa-solid fa-upload', label: 'Load Sample Data', shortcut: '', action: "loadSampleDataset('iris')" },
     ];
     
-    return commands.map((cmd, idx) => `
-        <div class="palette-item" data-action="${cmd.action}" onclick="executeCommand('${cmd.action}')">
-            <span class="palette-icon">${cmd.icon}</span>
-            <span class="palette-label">${cmd.label}</span>
-            <span class="palette-shortcut">${idx < 9 ? `<kbd>${idx + 1}</kbd>` : ''}</span>
-        </div>
+    results.innerHTML = commands.map((cmd, idx) => `
+        <li class="cmd-item" role="option" onclick="${cmd.action}; closeCommandPalette()">
+            <i class="${cmd.icon}" aria-hidden="true"></i>
+            <span class="cmd-label">${cmd.label}</span>
+            ${cmd.shortcut ? `<kbd>${cmd.shortcut}</kbd>` : ''}
+        </li>
     `).join('');
 }
 
 function filterCommands(query) {
-    const items = document.querySelectorAll('.palette-item');
+    const items = document.querySelectorAll('.cmd-item');
     const lowerQuery = query.toLowerCase();
     
     items.forEach(item => {
-        const label = item.querySelector('.palette-label').textContent.toLowerCase();
+        const label = item.querySelector('.cmd-label').textContent.toLowerCase();
         item.style.display = label.includes(lowerQuery) ? 'flex' : 'none';
     });
 }
 
-function executeCommand(action) {
-    hideCommandPalette();
-    eval(action);
+function cmdKeydown(event) {
+    if (event.key === 'Escape') {
+        closeCommandPalette();
+    }
 }
 
-// Initialize command palette
-document.addEventListener('DOMContentLoaded', initCommandPalette);
+// Initialize command palette keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ctrl+K or Cmd+K to open command palette
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        openCommandPalette();
+    }
+    
+    // Escape to close
+    if (e.key === 'Escape') {
+        closeCommandPalette();
+    }
+});
 
-// ===== LOADING OVERLAY (F1-inspired) =====
+// ===== LOADING OVERLAY (Updated for new HTML structure) =====
 const SIM_MSGS = [
     'Computing statistics…',
     'Analyzing data patterns…',
@@ -153,11 +183,14 @@ function showLoading(message = 'Processing...') {
         _simInterval = null;
     }
     
-    const overlay = document.getElementById('loadingOverlay');
-    const msgEl = document.getElementById('loadingMessage');
+    const overlay = document.getElementById('loading-veil');
+    const msgEl = document.getElementById('loading-msg');
     
     if (msgEl) msgEl.textContent = message;
-    if (overlay) overlay.classList.add('active');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
     
     // Cycle through messages for long operations
     let idx = 0;
@@ -178,8 +211,11 @@ function hideLoading() {
         _simInterval = null;
     }
     
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) overlay.classList.remove('active');
+    const overlay = document.getElementById('loading-veil');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
 }
 
 // ===== ENHANCED NOTIFICATION SYSTEM (from F1 Dashboard) =====
@@ -240,23 +276,6 @@ const AppState = {
 };
 
 // ===== NAVIGATION =====
-function switchSection(sectionId) {
-    // Hide all sections
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-
-    // Show target section
-    const section = document.getElementById(sectionId);
-    const tab = document.querySelector(`[data-section="${sectionId}"]`);
-    if (section) section.classList.add('active');
-    if (tab) tab.classList.add('active');
-
-    AppState.currentSection = sectionId;
-
-    // Load section data
-    loadSectionData(sectionId);
-}
-
 async function loadSectionData(sectionId) {
     if (!AppState.hasData && sectionId !== 'dashboard' && sectionId !== 'ai') {
         showNotification('Please upload a dataset first', 'warning');
@@ -281,6 +300,12 @@ async function loadSectionData(sectionId) {
 // ===== DASHBOARD SECTION =====
 async function loadDashboard() {
     const container = document.getElementById('dashboard-content');
+    if (!container) {
+        console.error('Dashboard content container not found!');
+        hideLoading();
+        return;
+    }
+    
     if (!AppState.hasData) {
         // Enhanced empty state with hero section (from F1 Dashboard)
         container.innerHTML = `
@@ -309,7 +334,7 @@ async function loadDashboard() {
                     </div>
                 </div>
                 <div class="hero-actions">
-                    <button class="btn-enhanced btn-primary-enhanced" onclick="switchSection('data')">
+                    <button class="btn-enhanced btn-primary-enhanced" onclick="navigateTo('data')">
                         <i class="fas fa-upload"></i> Upload Dataset
                     </button>
                     <div style="margin-top: 1rem; display: flex; gap: 0.8rem; justify-content: center;">
@@ -320,6 +345,7 @@ async function loadDashboard() {
                 </div>
             </div>
         `;
+        hideLoading();
         return;
     }
 
@@ -373,8 +399,13 @@ async function loadDashboard() {
             Object.values(info.dtypes).forEach(t => { dtypeCounts[t] = (dtypeCounts[t] || 0) + 1; });
             charts.pieChart('chart-dtypes', Object.keys(dtypeCounts), Object.values(dtypeCounts), 'Data Types');
         }
+        
+        // Hide loading after successful load
+        hideLoading();
     } catch (error) {
-        container.innerHTML = `<div class="card"><p style="color: var(--danger);">Error loading dashboard: ${error.message}</p></div>`;
+        console.error('Dashboard load error:', error);
+        container.innerHTML = `<div class="glass-card"><p style="color: var(--danger);">Error loading dashboard: ${error.message}</p></div>`;
+        hideLoading();
     }
 }
 
@@ -875,9 +906,16 @@ async function generateReport() {
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
-    // Setup navigation
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.addEventListener('click', () => switchSection(tab.dataset.section));
+    // Hide loading veil after DOM is ready
+    setTimeout(() => {
+        hideLoading();
+    }, 500);
+    
+    // Setup navigation for new HTML structure
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            navigateTo(item.dataset.section, item);
+        });
     });
 
     // Load initial section
