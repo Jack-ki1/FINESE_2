@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 FINESE2 - Data Intelligence Platform</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <!-- ===== TOP NAVIGATION ===== -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="FINESE2" onerror="this.style.display='none'">
+            <h1>FINESE2</h1>
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-section="dashboard">
+                <span class="tab-icon">🏠</span> Dashboard
+            </button>
+            <button class="nav-tab" data-section="data">
+                <span class="tab-icon">📁</span> Data
+            </button>
+            <button class="nav-tab" data-section="eda">
+                <span class="tab-icon">🔍</span> EDA
+            </button>
+            <button class="nav-tab" data-section="cleaning">
+                <span class="tab-icon">🧹</span> Cleaning
+            </button>
+            <button class="nav-tab" data-section="visualization">
+                <span class="tab-icon">📊</span> Visualization
+            </button>
+            <button class="nav-tab" data-section="analysis">
+                <span class="tab-icon">📈</span> Analysis
+            </button>
+            <button class="nav-tab" data-section="modeling">
+                <span class="tab-icon">🤖</span> Modeling
+            </button>
+            <button class="nav-tab" data-section="mlops">
+                <span class="tab-icon">⚙️</span> MLOps
+            </button>
+            <button class="nav-tab" data-section="reports">
+                <span class="tab-icon">📝</span> Reports
+            </button>
+            <button class="nav-tab" data-section="ai">
+                <span class="tab-icon">💬</span> AI
+            </button>
+        </div>
+    </nav>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="section active">
+            <div id="dashboard-content"></div>
+        </section>
+
+        <!-- DATA -->
+        <section id="data" class="section">
+            <div id="data-content"></div>
+        </section>
+
+        <!-- EDA -->
+        <section id="eda" class="section">
+            <div id="eda-content"></div>
+        </section>
+
+        <!-- CLEANING -->
+        <section id="cleaning" class="section">
+            <div id="cleaning-content"></div>
+        </section>
+
+        <!-- VISUALIZATION -->
+        <section id="visualization" class="section">
+            <div id="viz-content"></div>
+        </section>
+
+        <!-- ANALYSIS -->
+        <section id="analysis" class="section">
+            <div id="analysis-content"></div>
+        </section>
+
+        <!-- MODELING -->
+        <section id="modeling" class="section">
+            <div id="modeling-content"></div>
+        </section>
+
+        <!-- MLOPS -->
+        <section id="mlops" class="section">
+            <div id="mlops-content"></div>
+        </section>
+
+        <!-- REPORTS -->
+        <section id="reports" class="section">
+            <div id="reports-content"></div>
+        </section>
+
+        <!-- AI ASSISTANT -->
+        <section id="ai" class="section">
+            <div class="chat-container">
+                <div class="card" style="padding:12px 20px;margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span class="card-title">💬 FINESE2 AI Assistant</span>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="ai.clearHistory()">🗑️ Clear</button>
+                            <button class="btn btn-secondary btn-sm" onclick="showAIConfig()">⚙️ Settings</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="chat-input-area">
+                    <textarea class="chat-input" id="chat-input" placeholder="Ask me anything about data analysis, ML, or statistics..." rows="1"></textarea>
+                    <button class="btn btn-primary" onclick="ai.sendMessage()">🚀 Send</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- AI CONFIG MODAL -->
+    <div id="ai-config-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:5000;display:none;align-items:center;justify-content:center;">
+        <div class="card" style="width:500px;max-width:90vw;">
+            <div class="card-header">
+                <span class="card-title">⚙️ AI Configuration</span>
+                <button class="btn btn-secondary btn-sm" onclick="hideAIConfig()">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Provider</label>
+                <select class="form-select" id="ai-provider">
+                    <option value="openai">🟢 OpenAI</option>
+                    <option value="anthropic">🟣 Anthropic Claude</option>
+                    <option value="google">🔵 Google Gemini</option>
+                    <option value="ollama">🏠 Ollama (Local)</option>
+                    <option value="groq">⚡ Groq</option>
+                    <option value="mistral">🌫️ Mistral AI</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="form-input" id="ai-api-key" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Model</label>
+                <input type="text" class="form-input" id="ai-model" placeholder="gpt-4o-mini">
+            </div>
+            <div style="display:flex;gap:12px;margin-top:20px;">
+                <button class="btn btn-primary" onclick="saveAIConfig()">💾 Save</button>
+                <button class="btn btn-secondary" onclick="ai.validate()">🔄 Test Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="{{ url_for('static', filename='api.js') }}"></script>
+    <script src="{{ url_for('static', filename='charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='ai.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+    <script>
+        // AI Config Modal
+        function showAIConfig() {
+            document.getElementById('ai-config-modal').style.display = 'flex';
+        }
+        function hideAIConfig() {
+            document.getElementById('ai-config-modal').style.display = 'none';
+        }
+        async function saveAIConfig() {
+            const config = {
+                provider: document.getElementById('ai-provider').value,
+                api_key: document.getElementById('ai-api-key').value,
+                model: document.getElementById('ai-model').value
+            };
+            await ai.configure(config);
+            hideAIConfig();
+        }
+    </script>
+</body>
+</html>
