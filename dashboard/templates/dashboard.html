@@ -4,779 +4,1020 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FINESE2 — Data Intelligence Platform</title>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <!-- Our Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SYSTEM TOASTS
-  ═══════════════════════════════════════════════════════ -->
-  <div id="toast-container" aria-live="polite" aria-label="Notifications"></div>
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  TOAST CONTAINER                                        ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       LOADING VEIL
-  ═══════════════════════════════════════════════════════ -->
-  <div id="loading-veil" class="loading-veil" aria-hidden="true">
-    <div class="veil-inner">
-      <div class="veil-logo">F2</div>
-      <div class="veil-ring"></div>
-      <p class="veil-msg" id="loading-msg">Initializing…</p>
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  LOADING VEIL                                           ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="loading-veil" class="loading-veil" aria-hidden="true">
+  <div class="veil-inner">
+    <div class="veil-logo">F2</div>
+    <div class="veil-ring"></div>
+    <p class="veil-msg" id="loading-msg">Initializing platform…</p>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  TOPBAR                                                 ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<header class="topbar" role="banner">
+
+  <div class="topbar-brand" onclick="navigateTo('dashboard',null)" title="Go to dashboard">
+    <span class="brand-badge">F2</span>
+    <div class="brand-text">
+      <span class="brand-name">FINESE<em>2</em></span>
+      <span class="brand-tagline">Data Intelligence Platform</span>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       TOP NAVIGATION BAR
-  ═══════════════════════════════════════════════════════ -->
-  <header class="topbar" role="banner">
-    <div class="topbar-brand">
-      <span class="brand-badge">F2</span>
-      <div class="brand-text">
-        <span class="brand-name">FINESE<em>2</em></span>
-        <span class="brand-tagline">Data Intelligence Platform</span>
+  <div class="topbar-center">
+    <div class="global-search-wrap">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input
+        type="text"
+        id="global-search"
+        class="global-search"
+        placeholder="Search columns, datasets, models…"
+        autocomplete="off"
+        onclick="openCommandPalette()"
+        readonly
+      >
+      <kbd class="search-kbd">⌘K</kbd>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <!-- Data status pill -->
+    <div class="data-status" id="topbar-data-status" title="Dataset status">
+      <span class="status-dot dot-idle" id="status-dot"></span>
+      <span class="status-text" id="status-label">No data loaded</span>
+    </div>
+
+    <!-- Theme toggle -->
+    <button class="icon-btn" id="theme-toggle" title="Toggle theme (⌘T)" onclick="toggleTheme()">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+
+    <!-- Command palette -->
+    <button class="icon-btn" title="Command palette (⌘K)" onclick="openCommandPalette()">
+      <i class="fa-solid fa-terminal"></i>
+    </button>
+
+    <!-- AI settings -->
+    <button class="icon-btn" title="Configure AI provider" onclick="openAIConfig()">
+      <i class="fa-solid fa-sliders"></i>
+    </button>
+
+    <!-- User avatar -->
+    <div class="topbar-avatar" title="User session">U</div>
+  </div>
+</header>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  SIDEBAR NAV                                            ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<nav class="sidenav" id="sidenav" role="navigation" aria-label="Main navigation">
+  <div class="sidenav-inner">
+
+    <ul class="nav-list" id="nav-list" role="menubar">
+
+      <li role="none">
+        <button class="nav-item active" data-section="dashboard"
+                onclick="navigateTo('dashboard',this)" role="menuitem">
+          <i class="fa-solid fa-chart-tree-map"></i>
+          <span class="nav-label">Dashboard</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="data"
+                onclick="navigateTo('data',this)" role="menuitem">
+          <i class="fa-solid fa-database"></i>
+          <span class="nav-label">Data</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="eda"
+                onclick="navigateTo('eda',this)" role="menuitem">
+          <i class="fa-solid fa-chart-area"></i>
+          <span class="nav-label">EDA</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="cleaning"
+                onclick="navigateTo('cleaning',this)" role="menuitem">
+          <i class="fa-solid fa-broom"></i>
+          <span class="nav-label">Cleaning</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="visualization"
+                onclick="navigateTo('visualization',this)" role="menuitem">
+          <i class="fa-solid fa-chart-column"></i>
+          <span class="nav-label">Visualize</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="analysis"
+                onclick="navigateTo('analysis',this)" role="menuitem">
+          <i class="fa-solid fa-flask"></i>
+          <span class="nav-label">Analysis</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="modeling"
+                onclick="navigateTo('modeling',this)" role="menuitem">
+          <i class="fa-solid fa-microchip"></i>
+          <span class="nav-label">ML Models</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="mlops"
+                onclick="navigateTo('mlops',this)" role="menuitem">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span class="nav-label">MLOps</span>
+        </button>
+      </li>
+
+      <li role="none">
+        <button class="nav-item" data-section="reports"
+                onclick="navigateTo('reports',this)" role="menuitem">
+          <i class="fa-solid fa-file-chart-column"></i>
+          <span class="nav-label">Reports</span>
+        </button>
+      </li>
+
+      <li class="nav-divider" role="separator"></li>
+
+      <li role="none">
+        <button class="nav-item nav-ai" data-section="ai"
+                onclick="navigateTo('ai',this)" role="menuitem">
+          <i class="fa-solid fa-robot"></i>
+          <span class="nav-label">AI Chat</span>
+        </button>
+      </li>
+
+    </ul>
+
+    <!-- Animated live indicator -->
+    <div class="neural-pulse" aria-hidden="true">
+      <div class="pulse-label">Live</div>
+      <div class="pulse-track">
+        <div class="pulse-bar" style="--h:35%;--d:0s"></div>
+        <div class="pulse-bar" style="--h:72%;--d:.12s"></div>
+        <div class="pulse-bar" style="--h:48%;--d:.24s"></div>
+        <div class="pulse-bar" style="--h:90%;--d:.36s"></div>
+        <div class="pulse-bar" style="--h:58%;--d:.48s"></div>
+        <div class="pulse-bar" style="--h:30%;--d:.60s"></div>
+        <div class="pulse-bar" style="--h:82%;--d:.72s"></div>
+        <div class="pulse-bar" style="--h:52%;--d:.84s"></div>
+        <div class="pulse-bar" style="--h:65%;--d:.96s"></div>
       </div>
     </div>
 
-    <div class="topbar-center">
-      <div class="global-search-wrap">
-        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input type="text" id="global-search" class="global-search" placeholder="Search columns, datasets, models… (⌘K)">
-        <kbd class="search-kbd">⌘K</kbd>
-      </div>
-    </div>
+  </div>
+</nav>
 
-    <div class="topbar-actions">
-      <div class="data-status" id="topbar-data-status">
-        <span class="status-dot dot-idle"></span>
-        <span class="status-text" id="status-label">No data</span>
-      </div>
-      <button class="icon-btn" id="theme-toggle" title="Toggle theme" onclick="toggleTheme()">
-        <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
-      </button>
-      <button class="icon-btn" id="cmd-palette-btn" title="Command palette (⌘K)" onclick="openCommandPalette()">
-        <i class="fa-solid fa-terminal" aria-hidden="true"></i>
-      </button>
-      <button class="icon-btn" id="ai-settings-btn" title="AI Settings" onclick="openAIConfig()">
-        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-      </button>
-      <div class="topbar-avatar" title="User session">
-        <span>U</span>
-      </div>
-    </div>
-  </header>
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  MAIN CONTENT                                           ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<main class="main" id="main-content" role="main">
 
-  <!-- ═══════════════════════════════════════════════════════
-       LEFT SIDEBAR RAIL
-  ═══════════════════════════════════════════════════════ -->
-  <nav class="sidenav" role="navigation" aria-label="Main navigation">
-    <div class="sidenav-inner">
-      <ul class="nav-list" id="nav-list">
-        <li>
-          <button class="nav-item active" data-section="dashboard" onclick="navigateTo('dashboard',this)">
-            <i class="fa-solid fa-chart-tree-map" aria-hidden="true"></i>
-            <span class="nav-label">Dashboard</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="data" onclick="navigateTo('data',this)">
-            <i class="fa-solid fa-database" aria-hidden="true"></i>
-            <span class="nav-label">Data</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="eda" onclick="navigateTo('eda',this)">
-            <i class="fa-solid fa-chart-area" aria-hidden="true"></i>
-            <span class="nav-label">EDA</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="cleaning" onclick="navigateTo('cleaning',this)">
-            <i class="fa-solid fa-broom" aria-hidden="true"></i>
-            <span class="nav-label">Cleaning</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="visualization" onclick="navigateTo('visualization',this)">
-            <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
-            <span class="nav-label">Visualize</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="analysis" onclick="navigateTo('analysis',this)">
-            <i class="fa-solid fa-flask" aria-hidden="true"></i>
-            <span class="nav-label">Analysis</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="modeling" onclick="navigateTo('modeling',this)">
-            <i class="fa-solid fa-microchip" aria-hidden="true"></i>
-            <span class="nav-label">ML Models</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="mlops" onclick="navigateTo('mlops',this)">
-            <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
-            <span class="nav-label">MLOps</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-item" data-section="reports" onclick="navigateTo('reports',this)">
-            <i class="fa-solid fa-file-chart-column" aria-hidden="true"></i>
-            <span class="nav-label">Reports</span>
-          </button>
-        </li>
-        <li class="nav-divider"></li>
-        <li>
-          <button class="nav-item nav-ai" data-section="ai" onclick="navigateTo('ai',this)">
-            <i class="fa-solid fa-robot" aria-hidden="true"></i>
-            <span class="nav-label">AI Chat</span>
-          </button>
-        </li>
-      </ul>
 
-      <!-- Neural Pulse — Signature animated element -->
-      <div class="neural-pulse" aria-hidden="true" id="neural-pulse">
-        <div class="pulse-label">Live</div>
-        <div class="pulse-track">
-          <div class="pulse-bar" style="--h:35%;--d:0s"></div>
-          <div class="pulse-bar" style="--h:70%;--d:.15s"></div>
-          <div class="pulse-bar" style="--h:45%;--d:.3s"></div>
-          <div class="pulse-bar" style="--h:90%;--d:.45s"></div>
-          <div class="pulse-bar" style="--h:55%;--d:.6s"></div>
-          <div class="pulse-bar" style="--h:30%;--d:.75s"></div>
-          <div class="pulse-bar" style="--h:80%;--d:.9s"></div>
-          <div class="pulse-bar" style="--h:50%;--d:1.05s"></div>
-        </div>
-      </div>
-    </div>
-  </nav>
+  <!-- ══════════════════════════════════════════
+       SECTION: DASHBOARD
+  ══════════════════════════════════════════ -->
+  <section class="section active" id="section-dashboard" aria-label="Dashboard">
+    <div id="dashboard-content">
 
-  <!-- ═══════════════════════════════════════════════════════
-       MAIN CONTENT AREA
-  ═══════════════════════════════════════════════════════ -->
-  <main class="main" id="main-content" role="main">
+      <!-- Hero — empty state -->
+      <div class="hero-empty" id="hero-empty">
+        <div class="hero-grid-bg" aria-hidden="true"></div>
+        <div class="hero-body">
 
-    <!-- ─────────────────────────────────────────────
-         SECTION: DASHBOARD (home)
-    ───────────────────────────────────────────── -->
-    <section class="section active" id="section-dashboard" aria-label="Dashboard">
-      <div id="dashboard-content">
-
-        <!-- Hero: empty state -->
-        <div class="hero-empty" id="hero-empty">
-          <div class="hero-grid-bg" aria-hidden="true"></div>
-          <div class="hero-body">
-            <div class="hero-eyebrow">
-              <span class="pulse-dot"></span>
-              Ready to explore
-            </div>
-            <h1 class="hero-headline">Your data,<br><span class="accent-gradient">fully decoded.</span></h1>
-            <p class="hero-sub">Upload a dataset or choose a sample below to begin end-to-end analysis — EDA, cleaning, modeling, and AI-powered insights in one place.</p>
-            <div class="hero-cta-row">
-              <button class="btn btn-primary btn-lg" onclick="navigateTo('data',null)">
-                <i class="fa-solid fa-upload" aria-hidden="true"></i>
-                Upload dataset
-              </button>
-              <span class="hero-or">or try a sample</span>
-            </div>
-            <div class="sample-chips">
-              <button class="sample-chip" onclick="loadSampleDataset('iris')">
-                <span class="chip-icon">🌸</span>
-                <span>Iris</span>
-                <span class="chip-meta">150 rows</span>
-              </button>
-              <button class="sample-chip" onclick="loadSampleDataset('titanic')">
-                <span class="chip-icon">🚢</span>
-                <span>Titanic</span>
-                <span class="chip-meta">891 rows</span>
-              </button>
-              <button class="sample-chip" onclick="loadSampleDataset('wine')">
-                <span class="chip-icon">🍷</span>
-                <span>Wine</span>
-                <span class="chip-meta">1000 rows</span>
-              </button>
-              <button class="sample-chip" onclick="loadSampleDataset('default')">
-                <span class="chip-icon">🧑‍💼</span>
-                <span>Customers</span>
-                <span class="chip-meta">1000 rows</span>
-              </button>
-            </div>
-
-            <!-- Capability grid -->
-            <div class="cap-grid">
-              <div class="cap-card"><div class="cap-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="cap-label">Auto EDA</div></div>
-              <div class="cap-card"><div class="cap-icon"><i class="fa-solid fa-broom"></i></div><div class="cap-label">Smart Clean</div></div>
-              <div class="cap-card"><div class="cap-icon"><i class="fa-solid fa-chart-column"></i></div><div class="cap-label">15+ Charts</div></div>
-              <div class="cap-card"><div class="cap-icon"><i class="fa-solid fa-microchip"></i></div><div class="cap-label">AutoML</div></div>
-              <div class="cap-card"><div class="cap-icon"><i class="fa-solid fa-robot"></i></div><div class="cap-label">AI Assistant</div></div>
-              <div class="cap-card"><div class="cap-icon"><i class="fa-solid fa-file-chart-column"></i></div><div class="cap-label">Reports</div></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Loaded state KPI bar (hidden until data loaded) -->
-        <div class="dash-loaded hidden" id="dash-loaded">
-          <div class="section-header">
-            <div class="section-title-row">
-              <h2 class="section-title" id="dash-dataset-name">Dataset</h2>
-              <span class="section-badge" id="dash-badge">Loaded</span>
-            </div>
-            <div class="section-actions">
-              <button class="btn btn-sm btn-ghost" onclick="navigateTo('data',null)">
-                <i class="fa-solid fa-arrow-up-from-bracket"></i> Replace
-              </button>
-              <button class="btn btn-sm btn-ghost" onclick="clearData()">
-                <i class="fa-solid fa-trash"></i> Clear
-              </button>
-            </div>
+          <div class="hero-eyebrow">
+            <span class="pulse-dot"></span>
+            Ready to explore
           </div>
 
-          <!-- KPI strip -->
-          <div class="kpi-strip" id="kpi-strip">
-            <div class="kpi-tile">
-              <span class="kpi-value" id="kpi-rows">—</span>
-              <span class="kpi-label">Rows</span>
-            </div>
-            <div class="kpi-tile">
-              <span class="kpi-value" id="kpi-cols">—</span>
-              <span class="kpi-label">Columns</span>
-            </div>
-            <div class="kpi-tile">
-              <span class="kpi-value" id="kpi-numeric">—</span>
-              <span class="kpi-label">Numeric</span>
-            </div>
-            <div class="kpi-tile kpi-warn">
-              <span class="kpi-value" id="kpi-missing">—</span>
-              <span class="kpi-label">Missing</span>
-            </div>
-            <div class="kpi-tile">
-              <span class="kpi-value" id="kpi-dups">—</span>
-              <span class="kpi-label">Duplicates</span>
-            </div>
-            <div class="kpi-tile">
-              <span class="kpi-value" id="kpi-mem">—</span>
-              <span class="kpi-label">Memory</span>
-            </div>
+          <h1 class="hero-headline">
+            Your data,<br>
+            <span class="accent-gradient">fully decoded.</span>
+          </h1>
+
+          <p class="hero-sub">
+            Upload a dataset or pick a sample below to begin end-to-end analysis —
+            EDA, cleaning, modeling, and AI-powered insights in one place.
+          </p>
+
+          <div class="hero-cta-row">
+            <button class="btn btn-primary btn-lg" onclick="navigateTo('data',null)">
+              <i class="fa-solid fa-upload"></i> Upload dataset
+            </button>
+            <span class="hero-or">or try a sample</span>
           </div>
 
-          <!-- Chart duo -->
-          <div class="grid-2 mt-4">
-            <div class="glass-card">
-              <div class="card-head">
-                <span class="card-title">Column types</span>
-              </div>
-              <div class="chart-wrap" id="chart-dtypes" style="height:200px;"></div>
-            </div>
-            <div class="glass-card">
-              <div class="card-head">
-                <span class="card-title">Missing values</span>
-                <span class="card-meta" id="missing-card-meta"></span>
-              </div>
-              <div class="chart-wrap" id="chart-missing" style="height:200px;"></div>
-            </div>
+          <div class="sample-chips">
+            <button class="sample-chip" onclick="loadSampleDataset('iris')">
+              <span class="chip-icon">🌸</span>
+              <span>Iris</span>
+              <span class="chip-meta">150 rows</span>
+            </button>
+            <button class="sample-chip" onclick="loadSampleDataset('titanic')">
+              <span class="chip-icon">🚢</span>
+              <span>Titanic</span>
+              <span class="chip-meta">891 rows</span>
+            </button>
+            <button class="sample-chip" onclick="loadSampleDataset('wine')">
+              <span class="chip-icon">🍷</span>
+              <span>Wine</span>
+              <span class="chip-meta">1 000 rows</span>
+            </button>
+            <button class="sample-chip" onclick="loadSampleDataset('default')">
+              <span class="chip-icon">🧑‍💼</span>
+              <span>Customers</span>
+              <span class="chip-meta">1 000 rows</span>
+            </button>
           </div>
 
-          <!-- Quick actions strip -->
-          <div class="quick-actions mt-4">
-            <span class="qa-label">Quick actions</span>
-            <button class="qa-btn" onclick="navigateTo('eda',null)"><i class="fa-solid fa-chart-area"></i> Run EDA</button>
-            <button class="qa-btn" onclick="navigateTo('cleaning',null)"><i class="fa-solid fa-broom"></i> Clean data</button>
-            <button class="qa-btn" onclick="navigateTo('visualization',null)"><i class="fa-solid fa-chart-column"></i> Visualize</button>
-            <button class="qa-btn" onclick="navigateTo('modeling',null)"><i class="fa-solid fa-microchip"></i> Train model</button>
-            <button class="qa-btn qa-btn-ai" onclick="navigateTo('ai',null)"><i class="fa-solid fa-robot"></i> Ask AI</button>
-          </div>
-
-          <!-- Preview table -->
-          <div class="glass-card mt-4">
-            <div class="card-head">
-              <span class="card-title">Data preview</span>
-              <span class="card-meta" id="preview-meta">First 10 rows</span>
+          <!-- Capability showcase -->
+          <div class="cap-grid">
+            <div class="cap-card">
+              <div class="cap-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+              <div class="cap-label">Auto EDA</div>
             </div>
-            <div class="table-scroll" id="dash-preview-table"></div>
+            <div class="cap-card">
+              <div class="cap-icon"><i class="fa-solid fa-broom"></i></div>
+              <div class="cap-label">Smart Clean</div>
+            </div>
+            <div class="cap-card">
+              <div class="cap-icon"><i class="fa-solid fa-chart-column"></i></div>
+              <div class="cap-label">15+ Charts</div>
+            </div>
+            <div class="cap-card">
+              <div class="cap-icon"><i class="fa-solid fa-microchip"></i></div>
+              <div class="cap-label">AutoML</div>
+            </div>
+            <div class="cap-card">
+              <div class="cap-icon"><i class="fa-solid fa-robot"></i></div>
+              <div class="cap-label">AI Assistant</div>
+            </div>
+            <div class="cap-card">
+              <div class="cap-icon"><i class="fa-solid fa-file-chart-column"></i></div>
+              <div class="cap-label">Reports</div>
+            </div>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ─────────────────────────────────────────────
-         SECTION: DATA INGESTION
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-data" aria-label="Data ingestion">
-      <div id="data-content">
+      <!-- Loaded state -->
+      <div class="dash-loaded hidden" id="dash-loaded">
+
         <div class="section-header">
           <div class="section-title-row">
-            <h2 class="section-title">Data</h2>
-            <span class="section-badge">Ingestion</span>
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <!-- Upload card -->
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Upload file</span></div>
-            <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload data file">
-              <div class="upload-cloud"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
-              <p class="upload-primary">Drop file here or click to browse</p>
-              <p class="upload-formats">CSV · Excel · JSON · Parquet</p>
-              <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json,.parquet" style="display:none" aria-hidden="true">
-            </div>
-            <div class="upload-opts mt-3">
-              <label class="form-label">Encoding</label>
-              <select class="form-select form-select-sm" id="enc-select">
-                <option value="utf-8">UTF-8</option>
-                <option value="latin1">Latin-1</option>
-                <option value="utf-16">UTF-16</option>
-              </select>
-              <label class="form-label mt-2">Separator (CSV)</label>
-              <select class="form-select form-select-sm" id="sep-select">
-                <option value=",">Comma (,)</option>
-                <option value=";">Semicolon (;)</option>
-                <option value="\t">Tab</option>
-                <option value="|">Pipe (|)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Sample datasets card -->
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Sample datasets</span></div>
-            <div class="sample-list">
-              <div class="sample-row" onclick="loadSampleDataset('iris')">
-                <div class="sample-icon">🌸</div>
-                <div class="sample-info">
-                  <span class="sample-name">Iris flowers</span>
-                  <span class="sample-desc">Classification • 150 rows • 5 columns</span>
-                </div>
-                <button class="btn btn-sm btn-ghost"><i class="fa-solid fa-play"></i></button>
-              </div>
-              <div class="sample-row" onclick="loadSampleDataset('titanic')">
-                <div class="sample-icon">🚢</div>
-                <div class="sample-info">
-                  <span class="sample-name">Titanic passengers</span>
-                  <span class="sample-desc">Classification • 891 rows • 9 columns</span>
-                </div>
-                <button class="btn btn-sm btn-ghost"><i class="fa-solid fa-play"></i></button>
-              </div>
-              <div class="sample-row" onclick="loadSampleDataset('wine')">
-                <div class="sample-icon">🍷</div>
-                <div class="sample-info">
-                  <span class="sample-name">Wine quality</span>
-                  <span class="sample-desc">Regression • 1000 rows • 12 columns</span>
-                </div>
-                <button class="btn btn-sm btn-ghost"><i class="fa-solid fa-play"></i></button>
-              </div>
-              <div class="sample-row" onclick="loadSampleDataset('default')">
-                <div class="sample-icon">🧑‍💼</div>
-                <div class="sample-info">
-                  <span class="sample-name">Customer analytics</span>
-                  <span class="sample-desc">Mixed • 1000 rows • 10 columns</span>
-                </div>
-                <button class="btn btn-sm btn-ghost"><i class="fa-solid fa-play"></i></button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Loaded preview (shown after upload) -->
-        <div class="glass-card mt-4 hidden" id="data-preview-wrap">
-          <div class="card-head">
-            <span class="card-title" id="data-preview-title">Preview</span>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-sm btn-ghost" onclick="exportData('csv')"><i class="fa-solid fa-download"></i> CSV</button>
-              <button class="btn btn-sm btn-ghost" onclick="exportData('excel')"><i class="fa-solid fa-download"></i> Excel</button>
-              <button class="btn btn-sm btn-ghost" onclick="exportData('json')"><i class="fa-solid fa-download"></i> JSON</button>
-            </div>
-          </div>
-          <div class="table-scroll" id="data-preview-table"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────────────
-         SECTION: EDA
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-eda" aria-label="Exploratory Data Analysis">
-      <div id="eda-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">EDA</h2>
-            <span class="section-badge">Exploratory Analysis</span>
-          </div>
-        </div>
-        <div class="inner-tabs" role="tablist" aria-label="EDA tabs">
-          <button class="itab active" role="tab" onclick="loadEDATab('profile',this)">Profile</button>
-          <button class="itab" role="tab" onclick="loadEDATab('distribution',this)">Distributions</button>
-          <button class="itab" role="tab" onclick="loadEDATab('correlation',this)">Correlations</button>
-          <button class="itab" role="tab" onclick="loadEDATab('missing',this)">Missing</button>
-        </div>
-        <div id="eda-tab-content" class="mt-3"></div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────────────
-         SECTION: CLEANING
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-cleaning" aria-label="Data Cleaning">
-      <div id="cleaning-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">Cleaning</h2>
-            <span class="section-badge">Smart Preprocessing</span>
+            <h2 class="section-title" id="dash-dataset-name">Dataset</h2>
+            <span class="section-badge" id="dash-badge">Loaded</span>
           </div>
           <div class="section-actions">
-            <button class="btn btn-sm btn-primary" onclick="autoClean(false)">
-              <i class="fa-solid fa-broom"></i> Auto clean
+            <button class="btn btn-sm btn-ghost" onclick="navigateTo('data',null)">
+              <i class="fa-solid fa-arrow-up-from-bracket"></i> Replace
             </button>
-            <button class="btn btn-sm btn-ghost" onclick="autoClean(true)">
-              <i class="fa-solid fa-bolt"></i> Aggressive
-            </button>
-          </div>
-        </div>
-        <div id="cleaning-rec-wrap"></div>
-
-        <!-- Manual controls -->
-        <div class="grid-3 mt-4">
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Missing values</span></div>
-            <label class="form-label">Strategy</label>
-            <select class="form-select" id="missing-strategy">
-              <option value="median">Median imputation</option>
-              <option value="mean">Mean imputation</option>
-              <option value="mode">Mode imputation</option>
-              <option value="constant">Constant fill</option>
-              <option value="knn">KNN imputation</option>
-              <option value="forward_fill">Forward fill</option>
-              <option value="drop">Drop rows</option>
-            </select>
-            <button class="btn btn-primary mt-3 w-full" onclick="handleMissing()">Apply</button>
-          </div>
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Outliers</span></div>
-            <label class="form-label">Method</label>
-            <select class="form-select" id="outlier-method">
-              <option value="clip_iqr">Clip IQR</option>
-              <option value="clip_zscore">Clip Z-score</option>
-              <option value="remove">Remove rows</option>
-              <option value="log_transform">Log transform</option>
-            </select>
-            <button class="btn btn-primary mt-3 w-full" onclick="handleOutliers()">Apply</button>
-          </div>
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Duplicates &amp; encoding</span></div>
-            <label class="form-label">Duplicate strategy</label>
-            <select class="form-select" id="dup-strategy">
-              <option value="drop_all">Drop all duplicates</option>
-              <option value="keep_first">Keep first</option>
-              <option value="keep_last">Keep last</option>
-            </select>
-            <button class="btn btn-primary mt-3 w-full" onclick="handleDuplicates()">Remove duplicates</button>
-            <button class="btn btn-ghost mt-2 w-full" onclick="undoCleaning()">
-              <i class="fa-solid fa-rotate-left"></i> Undo last step
+            <button class="btn btn-sm btn-ghost" onclick="clearData()">
+              <i class="fa-solid fa-trash"></i> Clear
             </button>
           </div>
         </div>
-        <div class="glass-card mt-4 hidden" id="cleaning-log-wrap">
-          <div class="card-head"><span class="card-title">Cleaning log</span></div>
-          <div id="cleaning-log-list"></div>
-        </div>
-      </div>
-    </section>
 
-    <!-- ─────────────────────────────────────────────
-         SECTION: VISUALIZATION
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-visualization" aria-label="Visualization">
-      <div id="viz-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">Visualization</h2>
-            <span class="section-badge">Chart Builder</span>
+        <!-- KPI Strip -->
+        <div class="kpi-strip" id="kpi-strip">
+          <div class="kpi-tile">
+            <span class="kpi-value" id="kpi-rows">—</span>
+            <span class="kpi-label">Rows</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-value" id="kpi-cols">—</span>
+            <span class="kpi-label">Columns</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-value" id="kpi-numeric">—</span>
+            <span class="kpi-label">Numeric</span>
+          </div>
+          <div class="kpi-tile kpi-warn">
+            <span class="kpi-value" id="kpi-missing">—</span>
+            <span class="kpi-label">Missing</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-value" id="kpi-dups">—</span>
+            <span class="kpi-label">Duplicates</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-value" id="kpi-mem">—</span>
+            <span class="kpi-label">Memory</span>
           </div>
         </div>
-        <div class="grid-2">
+
+        <!-- Chart pair -->
+        <div class="grid-2 mt-4">
           <div class="glass-card">
-            <div class="card-head"><span class="card-title">Configure chart</span></div>
-            <label class="form-label">Chart type</label>
-            <div class="chart-type-grid" id="chart-type-grid">
-              <button class="chart-type-btn active" data-type="bar" onclick="selectChartType('bar',this)"><i class="fa-solid fa-chart-column"></i><span>Bar</span></button>
-              <button class="chart-type-btn" data-type="line" onclick="selectChartType('line',this)"><i class="fa-solid fa-chart-line"></i><span>Line</span></button>
-              <button class="chart-type-btn" data-type="scatter" onclick="selectChartType('scatter',this)"><i class="fa-solid fa-circle-dot"></i><span>Scatter</span></button>
-              <button class="chart-type-btn" data-type="histogram" onclick="selectChartType('histogram',this)"><i class="fa-solid fa-chart-bar"></i><span>Histogram</span></button>
-              <button class="chart-type-btn" data-type="box" onclick="selectChartType('box',this)"><i class="fa-solid fa-chart-gantt"></i><span>Box</span></button>
-              <button class="chart-type-btn" data-type="pie" onclick="selectChartType('pie',this)"><i class="fa-solid fa-chart-pie"></i><span>Pie</span></button>
+            <div class="card-head">
+              <span class="card-title">Column types</span>
+              <span class="card-meta">dtype breakdown</span>
             </div>
-            <div class="mt-3">
-              <label class="form-label">X axis</label>
-              <select class="form-select" id="viz-x"></select>
-              <label class="form-label mt-2">Y axis</label>
-              <select class="form-select" id="viz-y"></select>
-              <label class="form-label mt-2">Color by (optional)</label>
-              <select class="form-select" id="viz-color">
-                <option value="">None</option>
-              </select>
-              <input class="form-input mt-2" id="viz-title" placeholder="Chart title (optional)">
-            </div>
-            <button class="btn btn-primary mt-3 w-full" onclick="createVisualization()">
-              <i class="fa-solid fa-paintbrush"></i> Generate chart
-            </button>
+            <div class="chart-wrap" id="chart-dtypes" style="height:200px;"></div>
           </div>
-          <div class="glass-card" id="viz-chart-wrap">
-            <div class="card-head"><span class="card-title">Output</span></div>
-            <div class="chart-placeholder" id="viz-placeholder">
-              <i class="fa-solid fa-chart-column placeholder-icon" aria-hidden="true"></i>
-              <p>Configure and generate a chart</p>
-            </div>
-            <div class="chart-wrap hidden" id="viz-chart" style="height:360px;"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────────────
-         SECTION: STATISTICAL ANALYSIS
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-analysis" aria-label="Statistical Analysis">
-      <div id="analysis-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">Analysis</h2>
-            <span class="section-badge">Statistics</span>
-          </div>
-        </div>
-        <div class="inner-tabs" role="tablist">
-          <button class="itab active" onclick="loadAnalysisTab('summary',this)">Summary stats</button>
-          <button class="itab" onclick="loadAnalysisTab('hypothesis',this)">Hypothesis test</button>
-          <button class="itab" onclick="loadAnalysisTab('regression',this)">Regression</button>
-          <button class="itab" onclick="loadAnalysisTab('anova',this)">ANOVA</button>
-        </div>
-        <div id="analysis-tab-content" class="mt-3"></div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────────────
-         SECTION: ML MODELING
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-modeling" aria-label="Machine Learning">
-      <div id="modeling-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">ML Models</h2>
-            <span class="section-badge">AutoML</span>
-          </div>
-        </div>
-        <div class="grid-2">
           <div class="glass-card">
-            <div class="card-head"><span class="card-title">Training configuration</span></div>
-            <label class="form-label">Target column</label>
-            <select class="form-select" id="ml-target"></select>
-            <label class="form-label mt-2">Problem type</label>
-            <select class="form-select" id="ml-problem">
-              <option value="">Auto-detect</option>
-              <option value="classification">Classification</option>
-              <option value="regression">Regression</option>
-            </select>
-            <label class="form-label mt-2">Test split</label>
-            <div class="slider-row">
-              <input type="range" min="10" max="40" value="20" step="5" id="test-split" oninput="document.getElementById('split-val').textContent=this.value+'%'">
-              <span id="split-val" class="slider-val">20%</span>
+            <div class="card-head">
+              <span class="card-title">Missing values</span>
+              <span class="card-meta" id="missing-card-meta"></span>
             </div>
-            <button class="btn btn-primary mt-3 w-full" id="train-btn" onclick="trainModels()">
-              <i class="fa-solid fa-rocket"></i> Train all models
-            </button>
-          </div>
-
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Results</span></div>
-            <div class="model-placeholder" id="ml-placeholder">
-              <i class="fa-solid fa-microchip placeholder-icon" aria-hidden="true"></i>
-              <p>Run training to see results</p>
-            </div>
-            <div class="hidden" id="ml-results-wrap">
-              <div class="best-model-banner" id="best-model-banner"></div>
-              <div class="chart-wrap" id="ml-chart" style="height:260px;"></div>
-            </div>
+            <div class="chart-wrap" id="chart-missing" style="height:200px;"></div>
           </div>
         </div>
 
-        <!-- Clustering sub-section -->
+        <!-- Quick actions -->
+        <div class="quick-actions mt-4">
+          <span class="qa-label">Quick actions</span>
+          <button class="qa-btn" onclick="navigateTo('eda',null)">
+            <i class="fa-solid fa-chart-area"></i> Run EDA
+          </button>
+          <button class="qa-btn" onclick="navigateTo('cleaning',null)">
+            <i class="fa-solid fa-broom"></i> Clean data
+          </button>
+          <button class="qa-btn" onclick="navigateTo('visualization',null)">
+            <i class="fa-solid fa-chart-column"></i> Visualize
+          </button>
+          <button class="qa-btn" onclick="navigateTo('modeling',null)">
+            <i class="fa-solid fa-microchip"></i> Train model
+          </button>
+          <button class="qa-btn qa-btn-ai" onclick="navigateTo('ai',null)">
+            <i class="fa-solid fa-robot"></i> Ask AI
+          </button>
+        </div>
+
+        <!-- Preview table -->
         <div class="glass-card mt-4">
           <div class="card-head">
-            <span class="card-title">Clustering</span>
+            <span class="card-title">Data preview</span>
+            <span class="card-meta" id="preview-meta">First 10 rows</span>
           </div>
-          <div class="grid-3">
-            <div>
-              <label class="form-label">Features (multi-select)</label>
-              <select class="form-select" id="cluster-features" multiple style="height:96px;"></select>
+          <div class="table-scroll" id="dash-preview-table"></div>
+        </div>
+
+      </div><!-- /.dash-loaded -->
+    </div><!-- /#dashboard-content -->
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: DATA INGESTION
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-data" aria-label="Data Ingestion">
+    <div id="data-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">Data</h2>
+          <span class="section-badge">Ingestion</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Upload card -->
+        <div class="glass-card">
+          <div class="card-head">
+            <span class="card-title">Upload file</span>
+          </div>
+          <div class="upload-zone" id="upload-zone" role="button" tabindex="0"
+               aria-label="Drop file or click to upload">
+            <div class="upload-cloud">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
             </div>
-            <div>
-              <label class="form-label">Algorithm</label>
-              <select class="form-select" id="cluster-algo">
-                <option value="K-Means">K-Means</option>
-                <option value="DBSCAN">DBSCAN</option>
-                <option value="Hierarchical">Hierarchical</option>
-                <option value="Gaussian Mixture">Gaussian Mixture</option>
-              </select>
-              <label class="form-label mt-2">Clusters (k)</label>
-              <input type="number" class="form-input" id="cluster-k" value="3" min="2" max="20">
+            <p class="upload-primary">Drop file here or click to browse</p>
+            <p class="upload-formats">CSV · Excel · JSON · Parquet · max 50 MB</p>
+            <input type="file" id="file-input"
+                   accept=".csv,.xlsx,.xls,.json,.parquet"
+                   style="display:none" aria-hidden="true">
+          </div>
+          <div class="upload-opts mt-3">
+            <div class="grid-2" style="gap:12px">
+              <div>
+                <label class="form-label">Encoding</label>
+                <select class="form-select form-select-sm" id="enc-select">
+                  <option value="utf-8">UTF-8</option>
+                  <option value="latin1">Latin-1</option>
+                  <option value="utf-16">UTF-16</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">CSV separator</label>
+                <select class="form-select form-select-sm" id="sep-select">
+                  <option value=",">Comma (,)</option>
+                  <option value=";">Semicolon (;)</option>
+                  <option value="\t">Tab</option>
+                  <option value="|">Pipe (|)</option>
+                </select>
+              </div>
             </div>
-            <div style="display:flex;flex-direction:column;justify-content:flex-end;">
-              <button class="btn btn-primary w-full" onclick="performClustering()">
-                <i class="fa-solid fa-circle-nodes"></i> Cluster
+          </div>
+        </div>
+
+        <!-- Sample datasets -->
+        <div class="glass-card">
+          <div class="card-head">
+            <span class="card-title">Sample datasets</span>
+            <span class="card-meta">click to load</span>
+          </div>
+          <div class="sample-list">
+            <div class="sample-row" onclick="loadSampleDataset('iris')">
+              <div class="sample-icon">🌸</div>
+              <div class="sample-info">
+                <span class="sample-name">Iris flowers</span>
+                <span class="sample-desc">Classification · 150 rows · 5 columns</span>
+              </div>
+              <button class="btn btn-sm btn-ghost" tabindex="-1">
+                <i class="fa-solid fa-play"></i>
+              </button>
+            </div>
+            <div class="sample-row" onclick="loadSampleDataset('titanic')">
+              <div class="sample-icon">🚢</div>
+              <div class="sample-info">
+                <span class="sample-name">Titanic passengers</span>
+                <span class="sample-desc">Classification · 891 rows · 9 columns</span>
+              </div>
+              <button class="btn btn-sm btn-ghost" tabindex="-1">
+                <i class="fa-solid fa-play"></i>
+              </button>
+            </div>
+            <div class="sample-row" onclick="loadSampleDataset('wine')">
+              <div class="sample-icon">🍷</div>
+              <div class="sample-info">
+                <span class="sample-name">Wine quality</span>
+                <span class="sample-desc">Regression · 1 000 rows · 12 columns</span>
+              </div>
+              <button class="btn btn-sm btn-ghost" tabindex="-1">
+                <i class="fa-solid fa-play"></i>
+              </button>
+            </div>
+            <div class="sample-row" onclick="loadSampleDataset('default')">
+              <div class="sample-icon">🧑‍💼</div>
+              <div class="sample-info">
+                <span class="sample-name">Customer analytics</span>
+                <span class="sample-desc">Mixed · 1 000 rows · 10 columns</span>
+              </div>
+              <button class="btn btn-sm btn-ghost" tabindex="-1">
+                <i class="fa-solid fa-play"></i>
               </button>
             </div>
           </div>
-          <div class="chart-wrap hidden mt-3" id="cluster-chart" style="height:320px;"></div>
         </div>
-      </div>
-    </section>
+      </div><!-- /.grid-2 -->
 
-    <!-- ─────────────────────────────────────────────
-         SECTION: MLOPS
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-mlops" aria-label="MLOps">
-      <div id="mlops-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">MLOps</h2>
-            <span class="section-badge">Experiments</span>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-sm btn-ghost" onclick="loadMLOps()">
-              <i class="fa-solid fa-rotate"></i> Refresh
+      <!-- Preview after upload -->
+      <div class="glass-card mt-4 hidden" id="data-preview-wrap">
+        <div class="card-head">
+          <span class="card-title" id="data-preview-title">Preview</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm btn-ghost" onclick="exportData('csv')">
+              <i class="fa-solid fa-download"></i> CSV
+            </button>
+            <button class="btn btn-sm btn-ghost" onclick="exportData('excel')">
+              <i class="fa-solid fa-download"></i> Excel
+            </button>
+            <button class="btn btn-sm btn-ghost" onclick="exportData('json')">
+              <i class="fa-solid fa-download"></i> JSON
             </button>
           </div>
         </div>
-        <div id="mlops-leaderboard-wrap">
-          <div class="glass-card">
-            <div class="card-head"><span class="card-title">Model leaderboard</span></div>
-            <div class="table-scroll" id="mlops-table"></div>
+        <div class="table-scroll" id="data-preview-table"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: EDA
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-eda" aria-label="Exploratory Data Analysis">
+    <div id="eda-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">EDA</h2>
+          <span class="section-badge">Exploratory Analysis</span>
+        </div>
+      </div>
+      <div class="inner-tabs" role="tablist" aria-label="EDA tabs">
+        <button class="itab active" role="tab" onclick="loadEDATab('profile',this)">
+          <i class="fa-solid fa-table-list"></i> Profile
+        </button>
+        <button class="itab" role="tab" onclick="loadEDATab('distribution',this)">
+          <i class="fa-solid fa-chart-bar"></i> Distributions
+        </button>
+        <button class="itab" role="tab" onclick="loadEDATab('correlation',this)">
+          <i class="fa-solid fa-arrows-to-dot"></i> Correlations
+        </button>
+        <button class="itab" role="tab" onclick="loadEDATab('missing',this)">
+          <i class="fa-solid fa-circle-question"></i> Missing
+        </button>
+      </div>
+      <div id="eda-tab-content" class="mt-3"></div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: CLEANING
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-cleaning" aria-label="Data Cleaning">
+    <div id="cleaning-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">Cleaning</h2>
+          <span class="section-badge">Smart Preprocessing</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-sm btn-primary" onclick="autoClean(false)">
+            <i class="fa-solid fa-broom"></i> Auto clean
+          </button>
+          <button class="btn btn-sm btn-ghost" onclick="autoClean(true)">
+            <i class="fa-solid fa-bolt"></i> Aggressive
+          </button>
+        </div>
+      </div>
+
+      <!-- Recommendations injected here -->
+      <div id="cleaning-rec-wrap"></div>
+
+      <!-- Manual controls -->
+      <div class="grid-3 mt-4">
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Missing values</span></div>
+          <label class="form-label">Strategy</label>
+          <select class="form-select" id="missing-strategy">
+            <option value="median">Median imputation</option>
+            <option value="mean">Mean imputation</option>
+            <option value="mode">Mode imputation</option>
+            <option value="constant">Constant fill</option>
+            <option value="knn">KNN imputation</option>
+            <option value="forward_fill">Forward fill</option>
+            <option value="drop">Drop rows</option>
+          </select>
+          <button class="btn btn-primary mt-3 w-full" onclick="handleMissing()">
+            <i class="fa-solid fa-check"></i> Apply
+          </button>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Outliers</span></div>
+          <label class="form-label">Method</label>
+          <select class="form-select" id="outlier-method">
+            <option value="clip_iqr">Clip IQR</option>
+            <option value="clip_zscore">Clip Z-score</option>
+            <option value="remove">Remove rows</option>
+            <option value="log_transform">Log transform</option>
+          </select>
+          <button class="btn btn-primary mt-3 w-full" onclick="handleOutliers()">
+            <i class="fa-solid fa-check"></i> Apply
+          </button>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Duplicates</span></div>
+          <label class="form-label">Strategy</label>
+          <select class="form-select" id="dup-strategy">
+            <option value="drop_all">Drop all duplicates</option>
+            <option value="keep_first">Keep first occurrence</option>
+            <option value="keep_last">Keep last occurrence</option>
+          </select>
+          <button class="btn btn-primary mt-3 w-full" onclick="handleDuplicates()">
+            <i class="fa-solid fa-trash-can"></i> Remove duplicates
+          </button>
+          <button class="btn btn-ghost mt-2 w-full" onclick="undoCleaning()">
+            <i class="fa-solid fa-rotate-left"></i> Undo last step
+          </button>
+        </div>
+      </div>
+
+      <!-- Cleaning log -->
+      <div class="glass-card mt-4 hidden" id="cleaning-log-wrap">
+        <div class="card-head">
+          <span class="card-title">Cleaning log</span>
+          <span class="card-meta" id="cleaning-log-meta"></span>
+        </div>
+        <div id="cleaning-log-list"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: VISUALIZATION
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-visualization" aria-label="Visualization">
+    <div id="viz-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">Visualization</h2>
+          <span class="section-badge">Chart Builder</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Config panel -->
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Configure chart</span></div>
+
+          <label class="form-label">Chart type</label>
+          <div class="chart-type-grid" id="chart-type-grid">
+            <button class="chart-type-btn active" data-type="bar"
+                    onclick="selectChartType('bar',this)">
+              <i class="fa-solid fa-chart-column"></i><span>Bar</span>
+            </button>
+            <button class="chart-type-btn" data-type="line"
+                    onclick="selectChartType('line',this)">
+              <i class="fa-solid fa-chart-line"></i><span>Line</span>
+            </button>
+            <button class="chart-type-btn" data-type="scatter"
+                    onclick="selectChartType('scatter',this)">
+              <i class="fa-solid fa-circle-dot"></i><span>Scatter</span>
+            </button>
+            <button class="chart-type-btn" data-type="histogram"
+                    onclick="selectChartType('histogram',this)">
+              <i class="fa-solid fa-chart-bar"></i><span>Histogram</span>
+            </button>
+            <button class="chart-type-btn" data-type="box"
+                    onclick="selectChartType('box',this)">
+              <i class="fa-solid fa-chart-gantt"></i><span>Box</span>
+            </button>
+            <button class="chart-type-btn" data-type="pie"
+                    onclick="selectChartType('pie',this)">
+              <i class="fa-solid fa-chart-pie"></i><span>Pie</span>
+            </button>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label">X axis</label>
+            <select class="form-select" id="viz-x"></select>
+
+            <label class="form-label mt-2">Y axis</label>
+            <select class="form-select" id="viz-y"></select>
+
+            <label class="form-label mt-2">Color by (optional)</label>
+            <select class="form-select" id="viz-color">
+              <option value="">None</option>
+            </select>
+
+            <label class="form-label mt-2">Chart title (optional)</label>
+            <input class="form-input" id="viz-title" placeholder="e.g. Sales by Region">
+          </div>
+
+          <button class="btn btn-primary mt-3 w-full" onclick="createVisualization()">
+            <i class="fa-solid fa-paintbrush"></i> Generate chart
+          </button>
+        </div>
+
+        <!-- Chart output -->
+        <div class="glass-card" id="viz-chart-wrap">
+          <div class="card-head">
+            <span class="card-title">Output</span>
+          </div>
+          <div class="chart-placeholder" id="viz-placeholder">
+            <i class="fa-solid fa-chart-column placeholder-icon"></i>
+            <p>Configure options and generate a chart</p>
+          </div>
+          <div class="chart-wrap hidden" id="viz-chart" style="height:360px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: ANALYSIS
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-analysis" aria-label="Statistical Analysis">
+    <div id="analysis-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">Analysis</h2>
+          <span class="section-badge">Statistics</span>
+        </div>
+      </div>
+      <div class="inner-tabs" role="tablist">
+        <button class="itab active" onclick="loadAnalysisTab('summary',this)">Summary stats</button>
+        <button class="itab" onclick="loadAnalysisTab('hypothesis',this)">Hypothesis test</button>
+        <button class="itab" onclick="loadAnalysisTab('regression',this)">Regression</button>
+        <button class="itab" onclick="loadAnalysisTab('anova',this)">ANOVA</button>
+      </div>
+      <div id="analysis-tab-content" class="mt-3"></div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: ML MODELING
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-modeling" aria-label="Machine Learning">
+    <div id="modeling-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">ML Models</h2>
+          <span class="section-badge">AutoML</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Training config -->
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Training configuration</span></div>
+
+          <label class="form-label">Target column</label>
+          <select class="form-select" id="ml-target"></select>
+
+          <label class="form-label mt-2">Problem type</label>
+          <select class="form-select" id="ml-problem">
+            <option value="">Auto-detect</option>
+            <option value="classification">Classification</option>
+            <option value="regression">Regression</option>
+          </select>
+
+          <label class="form-label mt-2">Test split</label>
+          <div class="slider-row">
+            <input type="range" min="10" max="40" value="20" step="5" id="test-split"
+                   oninput="document.getElementById('split-val').textContent=this.value+'%'">
+            <span id="split-val" class="slider-val">20%</span>
+          </div>
+
+          <button class="btn btn-primary mt-3 w-full" id="train-btn" onclick="trainModels()">
+            <i class="fa-solid fa-rocket"></i> Train all models
+          </button>
+        </div>
+
+        <!-- Results panel -->
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Results</span></div>
+          <div class="model-placeholder" id="ml-placeholder">
+            <i class="fa-solid fa-microchip placeholder-icon"></i>
+            <p>Run training to see results here</p>
+          </div>
+          <div class="hidden" id="ml-results-wrap">
+            <div class="best-model-banner" id="best-model-banner"></div>
+            <div class="chart-wrap" id="ml-chart" style="height:260px;"></div>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ─────────────────────────────────────────────
-         SECTION: REPORTS
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-reports" aria-label="Reports">
-      <div id="reports-content">
-        <div class="section-header">
-          <div class="section-title-row">
-            <h2 class="section-title">Reports</h2>
-            <span class="section-badge">Export</span>
-          </div>
+      <!-- Clustering -->
+      <div class="glass-card mt-4">
+        <div class="card-head">
+          <span class="card-title">Clustering</span>
+          <span class="card-meta">unsupervised</span>
         </div>
         <div class="grid-3">
-          <div class="glass-card report-format-card" onclick="generateReport('html')">
-            <div class="report-icon"><i class="fa-brands fa-html5"></i></div>
-            <div class="report-name">HTML Report</div>
-            <div class="report-desc">Full interactive report with statistics, charts, and data quality summary.</div>
-            <button class="btn btn-primary mt-3 w-full">Generate &amp; Download</button>
+          <div>
+            <label class="form-label">Features (multi-select)</label>
+            <select class="form-select" id="cluster-features" multiple style="height:100px;"></select>
           </div>
-          <div class="glass-card report-format-card" onclick="generateReport('excel')">
-            <div class="report-icon"><i class="fa-solid fa-file-excel"></i></div>
-            <div class="report-name">Excel Workbook</div>
-            <div class="report-desc">Multi-sheet Excel file: data, summary stats, missing analysis.</div>
-            <button class="btn btn-primary mt-3 w-full">Generate &amp; Download</button>
+          <div>
+            <label class="form-label">Algorithm</label>
+            <select class="form-select" id="cluster-algo">
+              <option value="K-Means">K-Means</option>
+              <option value="DBSCAN">DBSCAN</option>
+              <option value="Hierarchical">Hierarchical</option>
+              <option value="Gaussian Mixture">Gaussian Mixture</option>
+            </select>
+            <label class="form-label mt-2">Clusters (k)</label>
+            <input type="number" class="form-input" id="cluster-k" value="3" min="2" max="20">
           </div>
-          <div class="glass-card report-format-card" onclick="generateReport('markdown')">
-            <div class="report-icon"><i class="fa-brands fa-markdown"></i></div>
-            <div class="report-name">Markdown Report</div>
-            <div class="report-desc">Clean Markdown document for notebooks, GitHub, or Confluence.</div>
-            <button class="btn btn-primary mt-3 w-full">Generate &amp; Download</button>
-          </div>
-        </div>
-        <div class="glass-card mt-4">
-          <div class="card-head"><span class="card-title">Report options</span></div>
-          <div class="grid-2">
-            <div>
-              <label class="form-label">Report title</label>
-              <input class="form-input" id="report-title" value="FINESE2 Data Analysis Report">
-            </div>
-            <div>
-              <label class="form-label">Include sections</label>
-              <div class="check-row"><input type="checkbox" id="r-eda" checked> <label for="r-eda">EDA summary</label></div>
-              <div class="check-row"><input type="checkbox" id="r-viz" checked> <label for="r-viz">Visualizations</label></div>
-              <div class="check-row"><input type="checkbox" id="r-ml"> <label for="r-ml">ML results</label></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────────────
-         SECTION: AI ASSISTANT
-    ───────────────────────────────────────────── -->
-    <section class="section" id="section-ai" aria-label="AI Assistant">
-      <div class="ai-layout">
-        <div class="ai-header">
-          <div class="ai-header-left">
-            <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
-            <div>
-              <div class="ai-title">FINESE2 AI</div>
-              <div class="ai-provider-badge" id="ai-provider-badge">Provider: OpenAI</div>
-            </div>
-          </div>
-          <div class="ai-header-actions">
-            <button class="btn btn-sm btn-ghost" onclick="ai.clearHistory()"><i class="fa-solid fa-trash-can"></i> Clear</button>
-            <button class="btn btn-sm btn-ghost" onclick="openAIConfig()"><i class="fa-solid fa-sliders"></i> Config</button>
-          </div>
-        </div>
-
-        <!-- Quick prompts -->
-        <div class="quick-prompts" id="quick-prompts">
-          <button class="qp-btn" onclick="ai.quickQuestion('Give me a summary of this dataset and key findings')">Summarize dataset</button>
-          <button class="qp-btn" onclick="ai.quickQuestion('What data cleaning steps do you recommend?')">Cleaning tips</button>
-          <button class="qp-btn" onclick="ai.quickQuestion('What features should I use for modeling?')">Feature advice</button>
-          <button class="qp-btn" onclick="ai.quickQuestion('Explain the correlations in this data')">Explain correlations</button>
-          <button class="qp-btn" onclick="ai.quickQuestion('What model type should I use and why?')">Model selection</button>
-        </div>
-
-        <div class="chat-messages" id="chat-messages" aria-live="polite" aria-label="Chat messages"></div>
-
-        <div class="chat-input-bar">
-          <label class="include-data-toggle">
-            <input type="checkbox" id="include-data-ctx" checked>
-            <span>Include data context</span>
-          </label>
-          <div class="chat-input-row">
-            <textarea id="chat-input" class="chat-input" rows="1" placeholder="Ask anything about your data, ML, or statistics…" aria-label="Message input"></textarea>
-            <button class="chat-send-btn" onclick="ai.sendMessage()" aria-label="Send message">
-              <i class="fa-solid fa-paper-plane"></i>
+          <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+            <button class="btn btn-primary w-full" onclick="performClustering()">
+              <i class="fa-solid fa-circle-nodes"></i> Cluster
             </button>
           </div>
         </div>
+        <div class="chart-wrap hidden mt-3" id="cluster-chart" style="height:320px;"></div>
       </div>
-    </section>
-
-  </main>
-
-  <!-- ═══════════════════════════════════════════════════════
-       COMMAND PALETTE
-  ═══════════════════════════════════════════════════════ -->
-  <div id="cmd-overlay" class="cmd-overlay hidden" role="dialog" aria-modal="true" aria-label="Command palette" onclick="closePaletteOnBg(event)">
-    <div class="cmd-palette">
-      <div class="cmd-search-bar">
-        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input type="text" id="cmd-input" class="cmd-input" placeholder="Search commands…" autocomplete="off" oninput="filterCommands(this.value)" onkeydown="cmdKeydown(event)">
-      </div>
-      <ul class="cmd-results" id="cmd-results" role="listbox"></ul>
     </div>
-  </div>
+  </section>
 
-  <!-- ═══════════════════════════════════════════════════════
-       AI CONFIG MODAL
-  ═══════════════════════════════════════════════════════ -->
-  <div id="ai-modal-overlay" class="modal-overlay hidden" onclick="closeAIOnBg(event)">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-label="AI configuration">
-      <div class="modal-head">
-        <h3 class="modal-title">AI configuration</h3>
-        <button class="icon-btn" onclick="closeAIConfig()"><i class="fa-solid fa-xmark"></i></button>
+
+  <!-- ══════════════════════════════════════════
+       SECTION: MLOPS
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-mlops" aria-label="MLOps">
+    <div id="mlops-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">MLOps</h2>
+          <span class="section-badge">Experiments</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-sm btn-ghost" onclick="loadMLOps()">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
       </div>
-      <div class="modal-body">
+      <div id="mlops-leaderboard-wrap">
+        <div class="glass-card">
+          <div class="card-head"><span class="card-title">Model leaderboard</span></div>
+          <div class="table-scroll" id="mlops-table">
+            <div class="empty-state">
+              <i class="fa-solid fa-trophy empty-icon" style="font-size:2rem;color:var(--border-default)"></i>
+              <h3>No experiments yet</h3>
+              <p>Train models to populate the leaderboard</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: REPORTS
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-reports" aria-label="Reports">
+    <div id="reports-content">
+      <div class="section-header">
+        <div class="section-title-row">
+          <h2 class="section-title">Reports</h2>
+          <span class="section-badge">Export</span>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card report-format-card" onclick="generateReport('html')">
+          <div class="report-icon"><i class="fa-brands fa-html5"></i></div>
+          <div class="report-name">HTML Report</div>
+          <div class="report-desc">Full interactive report with statistics, charts, and data quality summary.</div>
+          <button class="btn btn-primary mt-3 w-full">Generate &amp; Download</button>
+        </div>
+        <div class="glass-card report-format-card" onclick="generateReport('excel')">
+          <div class="report-icon" style="color:var(--green)"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="report-name">Excel Workbook</div>
+          <div class="report-desc">Multi-sheet Excel file: data, summary stats, and missing value analysis.</div>
+          <button class="btn btn-primary mt-3 w-full">Generate &amp; Download</button>
+        </div>
+        <div class="glass-card report-format-card" onclick="generateReport('markdown')">
+          <div class="report-icon" style="color:var(--violet)"><i class="fa-brands fa-markdown"></i></div>
+          <div class="report-name">Markdown Report</div>
+          <div class="report-desc">Clean Markdown document for notebooks, GitHub, or Confluence.</div>
+          <button class="btn btn-primary mt-3 w-full">Generate &amp; Download</button>
+        </div>
+      </div>
+
+      <div class="glass-card mt-4">
+        <div class="card-head"><span class="card-title">Report options</span></div>
+        <div class="grid-2">
+          <div>
+            <label class="form-label">Report title</label>
+            <input class="form-input" id="report-title" value="FINESE2 Data Analysis Report">
+          </div>
+          <div>
+            <label class="form-label">Include sections</label>
+            <div class="check-row">
+              <input type="checkbox" id="r-eda" checked>
+              <label for="r-eda">EDA summary</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="r-viz" checked>
+              <label for="r-viz">Visualizations</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="r-ml">
+              <label for="r-ml">ML results</label>
+            </div>
+          </div>
+        </div>
+        <div id="report-result" class="mt-3"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION: AI ASSISTANT
+  ══════════════════════════════════════════ -->
+  <section class="section" id="section-ai" aria-label="AI Assistant">
+    <div class="ai-layout">
+
+      <!-- AI header -->
+      <div class="ai-header">
+        <div class="ai-header-left">
+          <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div>
+            <div class="ai-title">FINESE2 AI</div>
+            <div class="ai-provider-badge" id="ai-provider-badge">Provider: OpenAI · gpt-4o-mini</div>
+          </div>
+        </div>
+        <div class="ai-header-actions">
+          <button class="btn btn-sm btn-ghost" onclick="ai.clearHistory()">
+            <i class="fa-solid fa-trash-can"></i> Clear
+          </button>
+          <button class="btn btn-sm btn-ghost" onclick="openAIConfig()">
+            <i class="fa-solid fa-sliders"></i> Config
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick prompts -->
+      <div class="quick-prompts" id="quick-prompts">
+        <button class="qp-btn" onclick="ai.quickQuestion('Give me a summary of this dataset and its key findings')">Summarize dataset</button>
+        <button class="qp-btn" onclick="ai.quickQuestion('What data cleaning steps do you recommend?')">Cleaning tips</button>
+        <button class="qp-btn" onclick="ai.quickQuestion('Which features are best for modeling this data?')">Feature advice</button>
+        <button class="qp-btn" onclick="ai.quickQuestion('Explain the correlations in this dataset')">Explain correlations</button>
+        <button class="qp-btn" onclick="ai.quickQuestion('What ML model type should I use and why?')">Model selection</button>
+        <button class="qp-btn" onclick="ai.quickQuestion('Are there any anomalies or outliers I should be aware of?')">Anomalies?</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chat-messages" aria-live="polite" aria-label="Chat messages"></div>
+
+      <!-- Input bar -->
+      <div class="chat-input-bar">
+        <label class="include-data-toggle">
+          <input type="checkbox" id="include-data-ctx" checked>
+          <span>Include data context</span>
+        </label>
+        <div class="chat-input-row">
+          <textarea
+            id="chat-input"
+            class="chat-input"
+            rows="1"
+            placeholder="Ask anything about your data, ML methods, or statistics…"
+            aria-label="Message input"
+          ></textarea>
+          <button class="chat-send-btn" onclick="ai.sendMessage()" aria-label="Send message">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main><!-- /#main-content -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  COMMAND PALETTE                                        ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="cmd-overlay" class="cmd-overlay hidden"
+     role="dialog" aria-modal="true" aria-label="Command palette"
+     onclick="closePaletteOnBg(event)">
+  <div class="cmd-palette">
+    <div class="cmd-search-bar">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="cmd-input" class="cmd-input"
+             placeholder="Type a command…"
+             autocomplete="off"
+             oninput="filterCommands(this.value)"
+             onkeydown="cmdKeydown(event)">
+    </div>
+    <ul class="cmd-results" id="cmd-results" role="listbox"></ul>
+  </div>
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  AI CONFIG MODAL                                        ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="ai-modal-overlay" class="modal-overlay hidden"
+     onclick="closeAIOnBg(event)">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="AI configuration">
+
+    <div class="modal-head">
+      <h3 class="modal-title">AI configuration</h3>
+      <button class="icon-btn" onclick="closeAIConfig()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
         <label class="form-label">Provider</label>
         <select class="form-select" id="ai-provider-select">
           <option value="openai">OpenAI</option>
@@ -786,31 +1027,50 @@
           <option value="groq">Groq</option>
           <option value="mistral">Mistral AI</option>
         </select>
-        <label class="form-label mt-3">API key</label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">API key</label>
         <input type="password" class="form-input" id="ai-api-key" placeholder="sk-…">
-        <label class="form-label mt-3">Model</label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Model</label>
         <input type="text" class="form-input" id="ai-model-input" placeholder="gpt-4o-mini">
-        <label class="form-label mt-3">Base URL (optional)</label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Base URL (optional)</label>
         <input type="text" class="form-input" id="ai-base-url" placeholder="https://…">
-        <label class="form-label mt-3">Temperature</label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Temperature</label>
         <div class="slider-row">
-          <input type="range" min="0" max="1" step="0.1" value="0.7" id="ai-temperature" oninput="document.getElementById('ai-temp-val').textContent=parseFloat(this.value).toFixed(1)">
+          <input type="range" min="0" max="1" step="0.1" value="0.7" id="ai-temperature"
+                 oninput="document.getElementById('ai-temp-val').textContent=parseFloat(this.value).toFixed(1)">
           <span id="ai-temp-val" class="slider-val">0.7</span>
         </div>
       </div>
-      <div class="modal-foot">
-        <button class="btn btn-ghost" onclick="closeAIConfig()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveAIConfig()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
-      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeAIConfig()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAIConfig()">
+        <i class="fa-solid fa-floppy-disk"></i> Save configuration
+      </button>
     </div>
   </div>
+</div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SCRIPTS
-  ═══════════════════════════════════════════════════════ -->
-  <script src="{{ url_for('static', filename='api.js') }}"></script>
-  <script src="{{ url_for('static', filename='charts.js') }}"></script>
-  <script src="{{ url_for('static', filename='ai.js') }}"></script>
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  SCRIPTS (order matters)                                ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<script src="{{ url_for('static', filename='api.js') }}"></script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script src="{{ url_for('static', filename='ai.js') }}"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
 </body>
 </html>

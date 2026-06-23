@@ -1,3 +1,7 @@
+# ============================================
+# FINESE2 - Git Ignore Configuration
+# ============================================
+
 # Python
 __pycache__/
 *.py[cod]
@@ -7,24 +11,17 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+*.whl
+*.egg
 *.egg-info/
 .installed.cfg
-*.egg
 MANIFEST
 
-# Virtual environments
+# Virtual Environment
 venv/
 env/
 ENV/
+.venv
 venv_backend/
 venv_frontend/
 
@@ -35,27 +32,52 @@ venv_frontend/
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Environment variables
+# Environment Variables
 .env
 !.env.example
-
-# Logs
-*.log
-logs/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
-!data_all1_mlops.db
+instance/
 
 # Uploads
 /tmp/finese2_uploads/
-uploads/
+uploads/*
+!uploads/.gitkeep
+
+# Models
+models/
+*.pkl
+*.joblib
+
+# Reports
+reports/
+*.pdf
+*.html
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
 
 # Node
 node_modules/
@@ -64,28 +86,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Frontend build
+# Frontend Build
 frontend/dist/
 frontend/build/
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# ML artifacts
-catboost_info/
-*.pkl
-*.joblib
-models/
-
-# Temporary files
-*.tmp
-temp/
+# Hugging Face Spaces
+.hf/
 
 # Docker
 docker-compose.override.yml
