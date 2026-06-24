@@ -7,6 +7,20 @@ import os
 import sys
 import atexit
 import shutil
+from pathlib import Path
+
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+        print("Loaded environment variables from .env file")
+    else:
+        print("No .env file found, using default configuration")
+except ImportError:
+    print("python-dotenv not installed, skipping .env file loading")
+
 from app import create_app
 
 

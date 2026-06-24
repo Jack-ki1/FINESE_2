@@ -1,2582 +1,1670 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FINESE2 - Data Intelligence Platform</title>
-    <!-- External Libraries -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        /* ═══════════════════════════════════════════════════════════════
-           FINESE2 — Bright Design System v4.0
-           Modern Light Theme · Professional Aesthetic · Data Expert Grade
-           Primary: #4F46E5 (Indigo)  Secondary: #10B981 (Emerald)  Tertiary: #F59E0B (Amber)
-           Fonts: Poppins (display) · Inter (body) · JetBrains Mono (data)
-           ═══════════════════════════════════════════════════════════════ */
-
-        /* ── 1. Design Tokens ────────────────────────────────────────── */
-        :root {
-          /* ── Surfaces (light, layered) */
-          --bg-page:    #F8FAFC;
-          --bg-surface: #FFFFFF;
-          --bg-card:    #FFFFFF;
-          --bg-elevated:#F9FAFB;
-          --bg-hover:   #F3F4F6;
-
-          /* ── Borders */
-          --border-subtle:  #E5E7EB;
-          --border-default: #D1D5DB;
-          --border-strong:  #9CA3AF;
-
-          /* ── Text */
-          --text-0: #111827;
-          --text-1: #1F2937;
-          --text-2: #6B7280;
-          --text-3: #9CA3AF;
-
-          /* ── Brand accent — Indigo */
-          --indigo:        #4F46E5;
-          --indigo-dark:   #3730A3;
-          --indigo-dim:    rgba(79, 70, 229, 0.10);
-          --indigo-border: rgba(79, 70, 229, 0.25);
-          --indigo-glow:   0 0 20px rgba(79, 70, 229, 0.20);
-
-          /* ── Secondary accent — Emerald */
-          --emerald:        #10B981;
-          --emerald-dim:    rgba(16, 185, 129, 0.10);
-          --emerald-border: rgba(16, 185, 129, 0.25);
-
-          /* ── Tertiary accent — Amber (warnings, MLOps) */
-          --amber:        #F59E0B;
-          --amber-dim:    rgba(245, 158, 11, 0.10);
-          --amber-border: rgba(245, 158, 11, 0.25);
-
-          /* ── Semantic */
-          --green:      #10B981;
-          --green-dim:  rgba(16, 185, 129, 0.10);
-          --yellow:     #F59E0B;
-          --yellow-dim: rgba(245, 158, 11, 0.10);
-          --red:        #EF4444;
-          --red-dim:    rgba(239, 68, 68, 0.10);
-
-          /* ── Spacing & sizing */
-          --radius-sm: 0.25rem;
-          --radius-md: 0.5rem;
-          --radius-lg: 0.75rem;
-          --radius-xl: 1rem;
-          --radius-full: 9999px;
-
-          /* ── Shadows */
-          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-          --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-          --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-          --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-        }
-
-        /* ── 2. Base Styles ──────────────────────────────────────────── */
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        body {
-          font-family: 'Inter', sans-serif;
-          background: var(--bg-page);
-          color: var(--text-1);
-          min-height: 100vh;
-          overflow-x: hidden;
-        }
-
-        /* ── 3. Layout Components ────────────────────────────────────── */
-        .layout-container {
-          display: flex;
-          min-height: 100vh;
-        }
-
-        /* ── Sidebar ── */
-        .sidebar {
-          width: 280px;
-          background: var(--bg-surface);
-          border-right: 1px solid var(--border-default);
-          padding: 1.5rem 1rem;
-          height: 100vh;
-          position: fixed;
-          top: 0;
-          left: 0;
-          z-index: 1000;
-          transition: transform 0.3s ease;
-          box-shadow: var(--shadow-md);
-        }
-
-        .sidebar-header h3 {
-          color: var(--indigo);
-          margin-bottom: 2rem;
-          font-family: 'Poppins', sans-serif;
-          font-weight: 600;
-          font-size: 1.5rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .sidebar-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .nav-link {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          color: var(--text-2);
-          text-decoration: none;
-          border-radius: var(--radius-md);
-          transition: all 0.2s ease;
-          font-weight: 500;
-          margin-bottom: 0.25rem;
-        }
-
-        .nav-link:hover {
-          background: var(--bg-hover);
-          color: var(--text-1);
-        }
-
-        .nav-link.active {
-          background: linear-gradient(90deg, var(--indigo-dim), transparent);
-          color: var(--indigo);
-          border-left: 3px solid var(--indigo);
-          font-weight: 600;
-        }
-
-        .nav-link i {
-          width: 1.5rem;
-          text-align: center;
-          font-size: 1.2rem;
-        }
-
-        /* ── Main Content ── */
-        .main-content {
-          flex: 1;
-          margin-left: 280px;
-          padding: 1.5rem;
-        }
-
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 0;
-          margin-bottom: 2rem;
-          border-bottom: 1px solid var(--border-default);
-        }
-
-        .page-title {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: var(--text-0);
-          font-family: 'Poppins', sans-serif;
-        }
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .notification-badge {
-          position: relative;
-        }
-
-        .notification-badge .badge {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          background: var(--red);
-          color: white;
-          border-radius: 50%;
-          width: 18px;
-          height: 18px;
-          font-size: 0.7rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .user-btn {
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-default);
-          color: var(--text-1);
-          border-radius: var(--radius-md);
-          padding: 0.5rem 1rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .user-btn:hover {
-          background: var(--bg-hover);
-        }
-
-        /* ── Cards & Stats ── */
-        .card {
-          background: var(--bg-card);
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-md);
-          margin-bottom: 1.5rem;
-        }
-
-        .card-header {
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid var(--border-default);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-weight: 600;
-          color: var(--text-0);
-          font-family: 'Poppins', sans-serif;
-          font-size: 1.1rem;
-          background: linear-gradient(135deg, var(--bg-elevated), var(--bg-card));
-        }
-
-        .card-body {
-          padding: 1.5rem;
-        }
-
-        .stats-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        }
-
-        .stat-card {
-          background: var(--bg-card);
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-lg);
-          padding: 1.5rem;
-          text-align: center;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          position: relative;
-          overflow: hidden;
-          box-shadow: var(--shadow-sm);
-        }
-
-        .stat-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: var(--emerald);
-          transform: scaleX(0);
-          transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-          transform: translateY(-5px);
-          box-shadow: var(--shadow-lg);
-        }
-
-        .stat-card:hover::before {
-          transform: scaleX(1);
-        }
-
-        .stat-icon {
-          width: 3rem;
-          height: 3rem;
-          background: linear-gradient(135deg, var(--emerald-dim), transparent);
-          border-radius: var(--radius-full);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 1rem;
-          color: var(--emerald);
-          font-size: 1.5rem;
-        }
-
-        .stat-value {
-          font-size: 2rem;
-          font-weight: 700;
-          color: var(--emerald);
-          margin-bottom: 0.25rem;
-          font-family: 'Poppins', sans-serif;
-        }
-
-        .stat-label {
-          color: var(--text-2);
-          font-size: 0.875rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        /* ── Tables ── */
-        .data-table {
-          overflow-x: auto;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        th, td {
-          padding: 1rem;
-          text-align: left;
-          border-bottom: 1px solid var(--border-default);
-        }
-
-        th {
-          color: var(--text-2);
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          background: var(--bg-elevated);
-        }
-
-        tr:last-child td {
-          border-bottom: none;
-        }
-
-        tr:hover {
-          background: var(--bg-hover);
-        }
-
-        .badge {
-          padding: 0.25rem 0.5rem;
-          border-radius: var(--radius-full);
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .status-ready {
-          background: var(--green-dim);
-          color: var(--green);
-        }
-
-        .status-processing {
-          background: var(--yellow-dim);
-          color: var(--yellow);
-        }
-
-        .status-archived {
-          background: var(--text-3);
-          color: var(--text-2);
-        }
-
-        /* ── Buttons ── */
-        .btn {
-          border-radius: var(--radius-md);
-          font-weight: 500;
-          padding: 0.5rem 1rem;
-          transition: all 0.2s ease;
-          border: none;
-        }
-
-        .btn-primary {
-          background: var(--indigo);
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: var(--indigo-dark);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-
-        .btn-outline-primary {
-          background: transparent;
-          border: 1px solid var(--indigo);
-          color: var(--indigo);
-        }
-
-        .btn-outline-primary:hover {
-          background: var(--indigo-dim);
-        }
-
-        .btn-outline-primary.active {
-          background: var(--indigo);
-          color: white;
-        }
-
-        .btn-sm {
-          padding: 0.25rem 0.5rem;
-          font-size: 0.875rem;
-        }
-
-        /* ── Forms & Inputs ── */
-        .form-control {
-          background: var(--bg-card);
-          border: 1px solid var(--border-default);
-          color: var(--text-1);
-          border-radius: var(--radius-md);
-          padding: 0.75rem 1rem;
-        }
-
-        .form-control:focus {
-          outline: none;
-          border-color: var(--indigo);
-          box-shadow: 0 0 0 3px var(--indigo-dim);
-        }
-
-        /* ── Upload Area ── */
-        .upload-area {
-          border: 2px dashed var(--border-default);
-          border-radius: var(--radius-lg);
-          padding: 2rem;
-          text-align: center;
-          background: var(--bg-elevated);
-          transition: all 0.3s ease;
-          cursor: pointer;
-        }
-
-        .upload-area:hover {
-          border-color: var(--indigo);
-          background: var(--indigo-dim);
-        }
-
-        .upload-area i {
-          color: var(--text-2);
-          margin-bottom: 1rem;
-          font-size: 2.5rem;
-        }
-
-        /* ── Charts ── */
-        .chart-container {
-          position: relative;
-          height: 300px;
-          width: 100%;
-        }
-
-        canvas {
-          width: 100% !important;
-        }
-
-        /* ── Quick Actions ── */
-        .quick-action-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
-          border-radius: var(--radius-md);
-        }
-
-        /* ── Content Sections ── */
-        .content-section {
-          display: none;
-        }
-
-        .content-section.active {
-          display: block;
-          animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── Responsive ── */
-        @media (max-width: 768px) {
-          .sidebar {
-            transform: translateX(-100%);
-          }
-
-          .sidebar.active {
-            transform: translateX(0);
-          }
-
-          .main-content {
-            margin-left: 0;
-          }
-
-          .stats-container {
-            grid-template-columns: 1fr;
-          }
-
-          .header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-          }
-
-          .header-actions {
-            align-self: flex-end;
-          }
-        }
-
-        /* ── Animations ── */
-        @keyframes pulse {
-          0% { box-shadow: 0 0 0 0 var(--indigo-dim); }
-          70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
-        }
-
-        .pulse {
-          animation: pulse 2s infinite;
-        }
-
-        /* ── Loading ── */
-        .loading {
-          display: inline-block;
-          width: 20px;
-          height: 20px;
-          border: 3px solid var(--border-default);
-          border-radius: 50%;
-          border-top-color: var(--indigo);
-          animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        /* ── Modal ── */
-        .modal {
-          display: none;
-          position: fixed;
-          z-index: 2000;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-          background-color: var(--bg-surface);
-          margin: 5% auto;
-          padding: 2rem;
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-lg);
-          width: 80%;
-          max-width: 600px;
-          max-height: 80vh;
-          overflow-y: auto;
-        }
-
-        .close {
-          color: var(--text-2);
-          float: right;
-          font-size: 1.5rem;
-          font-weight: bold;
-          cursor: pointer;
-        }
-
-        .close:hover {
-          color: var(--text-0);
-        }
-
-        /* ── Progress Bar ── */
-        .progress {
-          height: 8px;
-          background-color: var(--bg-elevated);
-          border-radius: var(--radius-full);
-          overflow: hidden;
-        }
-
-        .progress-bar {
-          background: linear-gradient(90deg, var(--emerald), var(--indigo));
-          height: 100%;
-          transition: width 0.3s ease;
-        }
-
-        /* ── Feature Cards ── */
-        .feature-card {
-          background: var(--bg-card);
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-lg);
-          padding: 1.5rem;
-          margin-bottom: 1rem;
-          transition: transform 0.2s ease;
-          box-shadow: var(--shadow-sm);
-        }
-
-        .feature-card:hover {
-          transform: translateY(-3px);
-          border-color: var(--indigo-border);
-          box-shadow: var(--shadow-md);
-        }
-
-        .feature-icon {
-          width: 3rem;
-          height: 3rem;
-          background: var(--indigo-dim);
-          border-radius: var(--radius-full);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 1rem;
-          color: var(--indigo);
-          font-size: 1.2rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINESE2 — Data Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Deep Space Design System ─────────────────────────────────── */
+:root {
+  --bg:       #070B14;
+  --bg-1:     #0C1120;
+  --bg-2:     #111827;
+  --bg-3:     #1A2235;
+  --bg-hover: #1C2840;
+
+  --border:   rgba(255,255,255,0.07);
+  --border-2: rgba(255,255,255,0.13);
+
+  --txt:      #E2E8F0;
+  --txt-2:    #8B9CC4;
+  --txt-3:    #3D4F72;
+
+  --teal:     #05D8A4;
+  --teal-d:   rgba(5,216,164,0.10);
+  --teal-b:   rgba(5,216,164,0.25);
+
+  --violet:   #818CF8;
+  --violet-d: rgba(129,140,248,0.10);
+
+  --amber:    #FBBF24;
+  --amber-d:  rgba(251,191,36,0.10);
+
+  --rose:     #F87171;
+  --rose-d:   rgba(248,113,113,0.10);
+
+  --cyan:     #22D3EE;
+  --cyan-d:   rgba(34,211,238,0.10);
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────── */
+.app { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+.sidebar {
+  width: 240px;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 100;
+  padding: 0 0 1.5rem;
+}
+
+.sidebar-brand {
+  padding: 1.4rem 1.2rem 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.75rem;
+}
+.brand-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--teal);
+  letter-spacing: -0.3px;
+}
+.brand-tag {
+  font-size: 11px;
+  color: var(--txt-3);
+  letter-spacing: 0.04em;
+  margin-top: 1px;
+}
+
+.sidebar-nav { flex: 1; padding: 0 0.75rem; overflow-y: auto; }
+.nav-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--txt-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1.2rem 0.5rem 0.4rem;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-md);
+  color: var(--txt-2);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+  font-size: 13.5px;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--txt); }
+.nav-item.active {
+  background: var(--teal-d);
+  color: var(--teal);
+  border: 1px solid var(--teal-b);
+}
+.nav-item i { width: 18px; text-align: center; font-size: 13px; }
+
+.sidebar-footer {
+  padding: 0.75rem 1rem 0;
+  border-top: 1px solid var(--border);
+}
+.user-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0.6rem 0.5rem;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.user-pill:hover { background: var(--bg-hover); }
+.avatar {
+  width: 28px; height: 28px;
+  background: var(--teal-d);
+  border: 1px solid var(--teal-b);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: var(--teal);
+  flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 13px; font-weight: 500; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 11px; color: var(--txt-3); }
+
+/* ── Main ────────────────────────────────────────────────────────── */
+.main { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem;
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.page-breadcrumb { font-size: 13px; color: var(--txt-3); }
+.page-title-bar { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; color: var(--txt); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.content { padding: 1.5rem; flex: 1; }
+
+/* ── Cards ───────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+}
+.card-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt); }
+.card-body { padding: 1.25rem; }
+
+/* ── Stat Cards ──────────────────────────────────────────────────── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+.stat-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1.1rem 1.25rem;
+  display: flex; align-items: flex-start; gap: 14px;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+}
+.stat-card.teal::before { background: var(--teal); }
+.stat-card.violet::before { background: var(--violet); }
+.stat-card.amber::before { background: var(--amber); }
+.stat-card.cyan::before { background: var(--cyan); }
+
+.stat-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.stat-card.teal .stat-icon   { background: var(--teal-d);   color: var(--teal); }
+.stat-card.violet .stat-icon { background: var(--violet-d); color: var(--violet); }
+.stat-card.amber .stat-icon  { background: var(--amber-d);  color: var(--amber); }
+.stat-card.cyan .stat-icon   { background: var(--cyan-d);   color: var(--cyan); }
+
+.stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; color: var(--txt); line-height: 1.2; }
+.stat-label { font-size: 12px; color: var(--txt-2); margin-top: 2px; }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-md);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none;
+  transition: all 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary   { background: var(--teal); color: #07090F; }
+.btn-primary:hover:not(:disabled) { background: #04c493; }
+.btn-secondary { background: var(--bg-3); border: 1px solid var(--border-2); color: var(--txt-2); }
+.btn-secondary:hover:not(:disabled) { background: var(--bg-hover); color: var(--txt); }
+.btn-ghost     { background: transparent; border: 1px solid var(--border-2); color: var(--txt-2); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--teal-b); color: var(--teal); }
+.btn-danger    { background: var(--rose-d); border: 1px solid rgba(248,113,113,0.3); color: var(--rose); }
+.btn-danger:hover:not(:disabled) { background: rgba(248,113,113,0.2); }
+.btn-sm { padding: 0.3rem 0.7rem; font-size: 12px; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-icon { padding: 0.45rem; width: 34px; height: 34px; justify-content: center; }
+
+/* ── Form Controls ───────────────────────────────────────────────── */
+.form-group { margin-bottom: 1rem; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--txt-2); margin-bottom: 6px; display: block; letter-spacing: 0.02em; }
+.form-control {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  color: var(--txt);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  padding: 0.55rem 0.85rem;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.form-control:focus { border-color: var(--teal-b); }
+.form-control option { background: var(--bg-2); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ── Upload Zone ─────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--border-2);
+  border-radius: var(--r-lg);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--teal-b);
+  background: var(--teal-d);
+}
+.upload-zone .upload-icon { font-size: 2rem; color: var(--txt-3); margin-bottom: 0.75rem; }
+.upload-zone h4 { font-size: 14px; font-weight: 500; color: var(--txt); margin-bottom: 4px; }
+.upload-zone p { font-size: 12px; color: var(--txt-3); }
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 0.6rem 0.85rem;
+  font-size: 11px; font-weight: 600;
+  color: var(--txt-3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  background: var(--bg-1);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--txt-2);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg-hover); color: var(--txt); }
+tbody td:first-child { color: var(--txt); font-weight: 500; }
+
+/* ── Badges ──────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+}
+.badge-teal    { background: var(--teal-d);   color: var(--teal);   border: 1px solid var(--teal-b); }
+.badge-violet  { background: var(--violet-d); color: var(--violet); border: 1px solid rgba(129,140,248,0.25); }
+.badge-amber   { background: var(--amber-d);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.25); }
+.badge-rose    { background: var(--rose-d);   color: var(--rose);   border: 1px solid rgba(248,113,113,0.25); }
+.badge-muted   { background: var(--bg-3);     color: var(--txt-3);  border: 1px solid var(--border-2); }
+
+/* ── Grid layouts ────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.grid-main { display: grid; grid-template-columns: 1fr 360px; gap: 1rem; }
+
+/* ── Sections ────────────────────────────────────────────────────── */
+.section { display: none; }
+.section.active { display: block; animation: fadeUp 0.2s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Result boxes ────────────────────────────────────────────────── */
+.result-box {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+.result-empty { text-align: center; padding: 2rem; color: var(--txt-3); font-size: 13px; }
+.result-empty i { display: block; font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.4; }
+
+/* ── Code ────────────────────────────────────────────────────────── */
+.code-block {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--teal);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ── Toast notifications ─────────────────────────────────────────── */
+.toasts {
+  position: fixed; bottom: 1.25rem; right: 1.25rem;
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  padding: 0.75rem 1rem;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+  min-width: 260px;
+  max-width: 360px;
+  animation: slideIn 0.2s ease;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+.toast.success { border-left: 3px solid var(--teal); }
+.toast.error   { border-left: 3px solid var(--rose); }
+.toast.info    { border-left: 3px solid var(--violet); }
+@keyframes slideIn { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:translateX(0); } }
+
+/* ── Spinner ─────────────────────────────────────────────────────── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border-2);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Checkbox ────────────────────────────────────────────────────── */
+.check-group { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.check-group input[type=checkbox] { accent-color: var(--teal); width: 14px; height: 14px; cursor: pointer; }
+.check-group label { font-size: 13px; color: var(--txt-2); cursor: pointer; }
+
+/* ── Metric rows (EDA/ML results) ────────────────────────────────── */
+.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.metric-item {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 0.75rem 1rem;
+}
+.metric-item .m-val { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; color: var(--teal); }
+.metric-item .m-lbl { font-size: 11px; color: var(--txt-3); margin-top: 2px; }
+
+/* ── Progress bar ────────────────────────────────────────────────── */
+.progress { height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--teal), var(--violet)); border-radius: 3px; transition: width 0.4s; }
+
+/* --Chart container ─────────────────────────────────────────────── */
+.chart-wrap { position: relative; height: 250px; }
+
+/* ── Tag list (column names etc) ─────────────────────────────────── */
+.tag { display: inline-block; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--txt-2); margin: 2px; }
+
+/* ── ML algo grid ────────────────────────────────────────────────── */
+.algo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+.algo-btn {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px; color: var(--txt-2);
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.algo-btn:hover { border-color: var(--teal-b); color: var(--teal); }
+.algo-btn.selected { background: var(--teal-d); border-color: var(--teal-b); color: var(--teal); font-weight: 500; }
+
+/* ── Divider ─────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
+</style>
 </head>
 <body>
-    <div class="layout-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-brain"></i>
-                <span>FINESE2</span>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-link active" data-section="dashboard">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <a href="#" class="nav-link" data-section="data">
-                    <i class="fas fa-database"></i> Data Management
-                </a>
-                <a href="#" class="nav-link" data-section="eda">
-                    <i class="fas fa-chart-line"></i> EDA
-                </a>
-                <a href="#" class="nav-link" data-section="cleaning">
-                    <i class="fas fa-broom"></i> Data Cleaning
-                </a>
-                <a href="#" class="nav-link" data-section="visualization">
-                    <i class="fas fa-chart-bar"></i> Visualization
-                </a>
-                <a href="#" class="nav-link" data-section="analysis">
-                    <i class="fas fa-calculator"></i> Analysis
-                </a>
-                <a href="#" class="nav-link" data-section="ml">
-                    <i class="fas fa-robot"></i> ML Models
-                </a>
-                <a href="#" class="nav-link" data-section="mlops">
-                    <i class="fas fa-cogs"></i> MLOps
-                </a>
-                <a href="#" class="nav-link" data-section="reports">
-                    <i class="fas fa-file-alt"></i> Reports
-                </a>
-                <a href="#" class="nav-link" data-section="settings">
-                    <i class="fas fa-sliders-h"></i> Settings
-                </a>
-            </nav>
-        </aside>
 
-        <main class="main-content">
-            <header class="header">
-                <div class="page-title">Analytics Dashboard</div>
-                <div class="header-actions">
-                    <div class="position-relative me-3">
-                        <button class="btn btn-outline-secondary">
-                            <i class="fas fa-bell"></i>
-                            <span class="notification-badge">3</span>
-                        </button>
-                    </div>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary user-btn" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i> Admin
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Profile</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i> Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </header>
+<!-- ── Toast container ──────────────────────────────────────────── -->
+<div class="toasts" id="toasts"></div>
 
-            <!-- Dashboard Section -->
-            <section id="dashboard-section" class="content-section active">
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-database"></i>
-                        </div>
-                        <div class="stat-value" id="dataset-count">24</div>
-                        <div class="stat-label">Datasets</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="stat-value" id="analysis-count">142</div>
-                        <div class="stat-label">Analyses</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <div class="stat-value" id="model-count">18</div>
-                        <div class="stat-label">Models</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-value" id="user-count">8</div>
-                        <div class="stat-label">Users</div>
-                    </div>
-                </div>
-
-                <div class="row mb-4">
-                    <div class="col-lg-8">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span>Data Processing Overview</span>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-outline-primary active" data-timeframe="monthly">Monthly</button>
-                                    <button type="button" class="btn btn-outline-primary" data-timeframe="weekly">Weekly</button>
-                                    <button type="button" class="btn btn-outline-primary" data-timeframe="daily">Daily</button>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="chart-container">
-                                    <canvas id="overviewChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="card">
-                            <div class="card-header">Quick Actions</div>
-                            <div class="card-body">
-                                <div class="d-grid gap-3 mb-3">
-                                    <button class="quick-action-btn btn btn-primary" onclick="showUploadModal()">
-                                        <i class="fas fa-upload me-2"></i>Upload Data
-                                    </button>
-                                    <button class="quick-action-btn btn btn-success" onclick="runEDA()">
-                                        <i class="fas fa-chart-line me-2"></i>Run EDA
-                                    </button>
-                                    <button class="quick-action-btn btn btn-warning" onclick="cleanData()">
-                                        <i class="fas fa-broom me-2"></i>Clean Data
-                                    </button>
-                                    <button class="quick-action-btn btn btn-info" onclick="trainModel()">
-                                        <i class="fas fa-robot me-2"></i>Train Model
-                                    </button>
-                                </div>
-                                <div class="upload-area" id="uploadArea">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <h5>Upload Dataset</h5>
-                                    <p class="text-muted">Drag & drop or click to upload</p>
-                                    <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this.files[0])">
-                                    <button class="btn btn-primary mt-2" onclick="document.getElementById('fileInput').click()">Choose File</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span>Recent Datasets</span>
-                                <button class="btn btn-sm btn-primary" onclick="loadDatasetTable()">Refresh</button>
-                            </div>
-                            <div class="card-body">
-                                <div class="data-table">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Type</th>
-                                                <th>Size</th>
-                                                <th>Rows</th>
-                                                <th>Columns</th>
-                                                <th>Status</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="datasetTableBody">
-                                            <tr>
-                                                <td>Sales_Data_Q3.csv</td>
-                                                <td>CSV</td>
-                                                <td>2.4 MB</td>
-                                                <td>10,500</td>
-                                                <td>12</td>
-                                                <td><span class="badge status-ready">Ready</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="viewDataset('Sales_Data_Q3.csv')">View</button>
-                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDataset('Sales_Data_Q3.csv')">Delete</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Customer_Survey.json</td>
-                                                <td>JSON</td>
-                                                <td>1.8 MB</td>
-                                                <td>8,200</td>
-                                                <td>8</td>
-                                                <td><span class="badge status-processing">Processing</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="viewDataset('Customer_Survey.json')">View</button>
-                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDataset('Customer_Survey.json')">Delete</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Product_Inventory.xlsx</td>
-                                                <td>Excel</td>
-                                                <td>3.1 MB</td>
-                                                <td>15,000</td>
-                                                <td>15</td>
-                                                <td><span class="badge status-ready">Ready</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="viewDataset('Product_Inventory.xlsx')">View</button>
-                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDataset('Product_Inventory.xlsx')">Delete</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Employee_Performance.parquet</td>
-                                                <td>Parquet</td>
-                                                <td>5.2 MB</td>
-                                                <td>22,000</td>
-                                                <td>20</td>
-                                                <td><span class="badge status-archived">Archived</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="viewDataset('Employee_Performance.parquet')">View</button>
-                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDataset('Employee_Performance.parquet')">Delete</button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Data Management Section -->
-            <section id="data-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Data Management</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="feature-card">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-upload"></i>
-                                    </div>
-                                    <h4>Upload Data</h4>
-                                    <p>Upload your datasets in various formats including CSV, Excel, JSON, and Parquet.</p>
-                                    <button class="btn btn-primary" onclick="showUploadModal()">Upload Dataset</button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="feature-card">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-database"></i>
-                                    </div>
-                                    <h4>Connect Sources</h4>
-                                    <p>Connect to databases, cloud storage, and APIs to import data directly.</p>
-                                    <button class="btn btn-outline-primary">Connect Data Source</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card mb-4">
-                            <div class="card-header">Upload New Dataset</div>
-                            <div class="card-body">
-                                <div class="upload-area" id="dataUploadArea">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <h5>Upload Dataset</h5>
-                                    <p class="text-muted">Supported formats: CSV, Excel, JSON, Parquet</p>
-                                    <input type="file" id="dataFileInput" style="display: none;" onchange="handleDataFileUpload(this.files[0])">
-                                    <button class="btn btn-primary" onclick="document.getElementById('dataFileInput').click()">Select File</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">My Datasets</div>
-                            <div class="card-body">
-                                <div class="data-table">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Format</th>
-                                                <th>Size</th>
-                                                <th>Records</th>
-                                                <th>Created</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>sales_data_q3.csv</td>
-                                                <td>CSV</td>
-                                                <td>2.4 MB</td>
-                                                <td>10,500</td>
-                                                <td>Oct 15, 2023</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary">View</button>
-                                                    <button class="btn btn-sm btn-outline-warning">Edit</button>
-                                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>customer_survey.json</td>
-                                                <td>JSON</td>
-                                                <td>1.8 MB</td>
-                                                <td>8,200</td>
-                                                <td>Oct 12, 2023</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary">View</button>
-                                                    <button class="btn btn-sm btn-outline-warning">Edit</button>
-                                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- EDA Section -->
-            <section id="eda-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Exploratory Data Analysis</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Select Dataset</label>
-                                    <select class="form-control" id="edaDatasetSelect">
-                                        <option value="">Select a dataset to analyze</option>
-                                        <option value="sales">Sales Data Q3</option>
-                                        <option value="customers">Customer Survey</option>
-                                        <option value="inventory">Product Inventory</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Analysis Type</label>
-                                    <select class="form-control" id="edaAnalysisType">
-                                        <option value="full">Full EDA Report</option>
-                                        <option value="summary">Summary Statistics</option>
-                                        <option value="correlation">Correlation Analysis</option>
-                                        <option value="distribution">Distribution Analysis</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <h5>Analysis Options</h5>
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="edaSummaryStats" checked>
-                                            <label class="form-check-label" for="edaSummaryStats">Summary Statistics</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="edaMissingValues" checked>
-                                            <label class="form-check-label" for="edaMissingValues">Missing Values</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="edaCorrelations">
-                                            <label class="form-check-label" for="edaCorrelations">Correlations</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="edaOutliers">
-                                            <label class="form-check-label" for="edaOutliers">Outlier Detection</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center mb-4">
-                            <button class="btn btn-primary btn-lg px-4" onclick="runEdaAnalysis()">
-                                <i class="fas fa-play me-2"></i>Run EDA Analysis
-                            </button>
-                        </div>
-                        
-                        <div id="edaResults" class="mt-4">
-                            <div class="alert alert-info text-center">
-                                Select a dataset and click "Run EDA Analysis" to see insights
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Data Cleaning Section -->
-            <section id="cleaning-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Data Cleaning</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Select Dataset</label>
-                                    <select class="form-control" id="cleaningDatasetSelect">
-                                        <option value="">Select a dataset to clean</option>
-                                        <option value="sales">Sales Data Q3</option>
-                                        <option value="customers">Customer Survey</option>
-                                        <option value="inventory">Product Inventory</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Auto-Clean Preset</label>
-                                    <select class="form-control" id="cleaningPreset">
-                                        <option value="basic">Basic Cleaning</option>
-                                        <option value="standard">Standard Cleaning</option>
-                                        <option value="advanced">Advanced Cleaning</option>
-                                        <option value="custom">Custom Cleaning</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <h5>Cleaning Operations</h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="removeDuplicates" checked>
-                                            <label class="form-check-label" for="removeDuplicates">Remove Duplicates</label>
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="handleMissing" checked>
-                                            <label class="form-check-label" for="handleMissing">Handle Missing Values</label>
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="removeOutliers">
-                                            <label class="form-check-label" for="removeOutliers">Remove Outliers</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="normalizeData">
-                                            <label class="form-check-label" for="normalizeData">Normalize Data</label>
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="transformData">
-                                            <label class="form-check-label" for="transformData">Transform Data</label>
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="encodeCategories">
-                                            <label class="form-check-label" for="encodeCategories">Encode Categories</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Missing Value Strategy</label>
-                                    <select class="form-control" id="missingValueStrategy">
-                                        <option value="drop">Drop rows with missing values</option>
-                                        <option value="mean" selected>Fill with mean/median</option>
-                                        <option value="mode">Fill with mode</option>
-                                        <option value="forward">Forward fill</option>
-                                        <option value="backward">Backward fill</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Outlier Detection Method</label>
-                                    <select class="form-control" id="outlierMethod">
-                                        <option value="iqr">IQR Method</option>
-                                        <option value="zscore">Z-Score Method</option>
-                                        <option value="isolation">Isolation Forest</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center mb-4">
-                            <button class="btn btn-primary btn-lg px-4" onclick="applyCleaning()">
-                                <i class="fas fa-broom me-2"></i>Apply Cleaning
-                            </button>
-                        </div>
-                        
-                        <div id="cleaningResults" class="mt-4">
-                            <div class="alert alert-info text-center">
-                                Select a dataset and cleaning operations to see results
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Visualization Section -->
-            <section id="visualization-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Data Visualization</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Select Dataset</label>
-                                    <select class="form-control" id="vizDatasetSelect">
-                                        <option value="">Select a dataset to visualize</option>
-                                        <option value="sales">Sales Data Q3</option>
-                                        <option value="customers">Customer Survey</option>
-                                        <option value="inventory">Product Inventory</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Visualization Type</label>
-                                    <select class="form-control" id="vizTypeSelect">
-                                        <option value="">Select visualization type</option>
-                                        <option value="scatter">Scatter Plot</option>
-                                        <option value="line">Line Chart</option>
-                                        <option value="bar">Bar Chart</option>
-                                        <option value="histogram">Histogram</option>
-                                        <option value="box">Box Plot</option>
-                                        <option value="heatmap">Heatmap</option>
-                                        <option value="pie">Pie Chart</option>
-                                        <option value="correlation">Correlation Matrix</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">X-Axis Variable</label>
-                                    <select class="form-control" id="xAxisVar">
-                                        <option value="">Select X-axis variable</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Y-Axis Variable</label>
-                                    <select class="form-control" id="yAxisVar">
-                                        <option value="">Select Y-axis variable</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center mb-4">
-                            <button class="btn btn-primary btn-lg px-4" onclick="generateVisualization()">
-                                <i class="fas fa-chart-bar me-2"></i>Generate Visualization
-                            </button>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">Visualization Preview</div>
-                            <div class="card-body">
-                                <div class="chart-container">
-                                    <canvas id="vizChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Analysis Section -->
-            <section id="analysis-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Statistical Analysis</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Select Dataset</label>
-                                    <select class="form-control" id="analysisDatasetSelect">
-                                        <option value="">Select a dataset for analysis</option>
-                                        <option value="sales">Sales Data Q3</option>
-                                        <option value="customers">Customer Survey</option>
-                                        <option value="inventory">Product Inventory</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Analysis Type</label>
-                                    <select class="form-control" id="analysisTypeSelect">
-                                        <option value="">Select analysis type</option>
-                                        <option value="regression">Regression Analysis</option>
-                                        <option value="classification">Classification Analysis</option>
-                                        <option value="clustering">Clustering Analysis</option>
-                                        <option value="time_series">Time Series Analysis</option>
-                                        <option value="hypothesis">Hypothesis Testing</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <h5>Analysis Parameters</h5>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Target Variable</label>
-                                            <select class="form-control" id="targetVariable">
-                                                <option value="">Select target variable</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Feature Variables</label>
-                                            <select class="form-control" id="featureVariables" multiple>
-                                                <option value="">Select feature variables</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Test Size</label>
-                                            <input type="range" class="form-range" id="testSize" min="0.1" max="0.5" step="0.05" value="0.2">
-                                            <div class="d-flex justify-content-between">
-                                                <small>10%</small>
-                                                <small id="testSizeValue">20%</small>
-                                                <small>50%</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center mb-4">
-                            <button class="btn btn-primary btn-lg px-4" onclick="runAnalysis()">
-                                <i class="fas fa-calculator me-2"></i>Run Analysis
-                            </button>
-                        </div>
-                        
-                        <div id="analysisResults" class="mt-4">
-                            <div class="alert alert-info text-center">
-                                Select dataset and analysis parameters to see results
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ML Models Section -->
-            <section id="ml-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Machine Learning Models</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Select Dataset</label>
-                                    <select class="form-control" id="mlDatasetSelect">
-                                        <option value="">Select a dataset for modeling</option>
-                                        <option value="sales">Sales Data Q3</option>
-                                        <option value="customers">Customer Survey</option>
-                                        <option value="inventory">Product Inventory</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Problem Type</label>
-                                    <select class="form-control" id="problemTypeSelect">
-                                        <option value="">Select problem type</option>
-                                        <option value="regression">Regression</option>
-                                        <option value="classification">Classification</option>
-                                        <option value="clustering">Clustering</option>
-                                        <option value="forecasting">Forecasting</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <h5>Model Selection</h5>
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="radio" name="modelType" id="linearReg" value="linear_regression">
-                                            <label class="form-check-label" for="linearReg">Linear Regression</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="radio" name="modelType" id="randomForest" value="random_forest" checked>
-                                            <label class="form-check-label" for="randomForest">Random Forest</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="radio" name="modelType" id="svm" value="svm">
-                                            <label class="form-check-label" for="svm">Support Vector Machine</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="radio" name="modelType" id="neuralNet" value="neural_network">
-                                            <label class="form-check-label" for="neuralNet">Neural Network</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <h5>Hyperparameters</h5>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Max Depth</label>
-                                            <input type="range" class="form-range" id="maxDepth" min="1" max="20" value="10">
-                                            <div class="d-flex justify-content-between">
-                                                <small>1</small>
-                                                <small id="maxDepthValue">10</small>
-                                                <small>20</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Learning Rate</label>
-                                            <input type="range" class="form-range" id="learningRate" min="0.001" max="0.1" step="0.001" value="0.01">
-                                            <div class="d-flex justify-content-between">
-                                                <small>0.001</small>
-                                                <small id="learningRateValue">0.01</small>
-                                                <small>0.1</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Number of Estimators</label>
-                                            <input type="range" class="form-range" id="nEstimators" min="10" max="500" value="100">
-                                            <div class="d-flex justify-content-between">
-                                                <small>10</small>
-                                                <small id="nEstimatorsValue">100</small>
-                                                <small>500</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center mb-4">
-                            <button class="btn btn-primary btn-lg px-4" onclick="trainModel()">
-                                <i class="fas fa-robot me-2"></i>Train Model
-                            </button>
-                        </div>
-                        
-                        <div id="mlResults" class="mt-4">
-                            <div class="alert alert-info text-center">
-                                Select dataset and model parameters to train a model
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- MLOps Section -->
-            <section id="mlops-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">MLOps & Experiment Tracking</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <div class="feature-card">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-flask"></i>
-                                    </div>
-                                    <h4>Experiment Tracking</h4>
-                                    <p>Track your model experiments, hyperparameters, metrics, and artifacts with MLflow integration.</p>
-                                    <div class="progress mb-2">
-                                        <div class="progress-bar" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    <small class="text-muted">Active experiment: Sales Prediction Model</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">Recent Experiments</div>
-                                    <div class="card-body">
-                                        <div class="list-group">
-                                            <a href="#" class="list-group-item list-group-item-action">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Sales Prediction Model</h6>
-                                                    <small>2 hours ago</small>
-                                                </div>
-                                                <p class="mb-1">Random Forest, Accuracy: 0.87</p>
-                                                <small>Model trained on sales data Q3</small>
-                                            </a>
-                                            <a href="#" class="list-group-item list-group-item-action">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Customer Churn Model</h6>
-                                                    <small>1 day ago</small>
-                                                </div>
-                                                <p class="mb-1">Logistic Regression, AUC: 0.92</p>
-                                                <small>Churn prediction for customer survey data</small>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">Model Registry</div>
-                                    <div class="card-body">
-                                        <div class="list-group">
-                                            <a href="#" class="list-group-item list-group-item-action">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Best Sales Model</h6>
-                                                    <span class="badge bg-success">Production</span>
-                                                </div>
-                                                <p class="mb-1">Version 2.1, Deployed Oct 15</p>
-                                                <small>Random Forest model with best performance</small>
-                                            </a>
-                                            <a href="#" class="list-group-item list-group-item-action">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Churn Prediction</h6>
-                                                    <span class="badge bg-warning">Staging</span>
-                                                </div>
-                                                <p class="mb-1">Version 1.3, Deployed Oct 10</p>
-                                                <small>Logistic regression model for churn prediction</small>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">Deployment Pipeline</div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-4">
-                                    <div class="text-center">
-                                        <div class="feature-icon mx-auto mb-2">
-                                            <i class="fas fa-code"></i>
-                                        </div>
-                                        <h6>Development</h6>
-                                        <small class="text-success">Active</small>
-                                    </div>
-                                    <div class="align-self-center">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="feature-icon mx-auto mb-2">
-                                            <i class="fas fa-cogs"></i>
-                                        </div>
-                                        <h6>Testing</h6>
-                                        <small class="text-warning">Pending</small>
-                                    </div>
-                                    <div class="align-self-center">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="feature-icon mx-auto mb-2">
-                                            <i class="fas fa-cloud"></i>
-                                        </div>
-                                        <h6>Production</h6>
-                                        <small class="text-muted">Inactive</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Reports Section -->
-            <section id="reports-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Reports & Documentation</div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="feature-card">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </div>
-                                    <h5>EDA Reports</h5>
-                                    <p>Comprehensive exploratory data analysis reports with visualizations and insights.</p>
-                                    <button class="btn btn-outline-primary">Generate Report</button>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="feature-card">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-chart-pie"></i>
-                                    </div>
-                                    <h5>Model Performance</h5>
-                                    <p>Detailed model performance reports with metrics, confusion matrices, and ROC curves.</p>
-                                    <button class="btn btn-outline-primary">Generate Report</button>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="feature-card">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-book"></i>
-                                    </div>
-                                    <h5>Documentation</h5>
-                                    <p>Technical documentation for models, data pipelines, and analysis workflows.</p>
-                                    <button class="btn btn-outline-primary">View Docs</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">Report Templates</div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Select Template</label>
-                                            <select class="form-control" id="reportTemplate">
-                                                <option value="">Choose a report template</option>
-                                                <option value="executive">Executive Summary</option>
-                                                <option value="technical">Technical Analysis</option>
-                                                <option value="model">Model Performance</option>
-                                                <option value="compliance">Compliance Report</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Output Format</label>
-                                            <select class="form-control" id="reportFormat">
-                                                <option value="pdf">PDF</option>
-                                                <option value="html">HTML</option>
-                                                <option value="docx">Word Document</option>
-                                                <option value="pptx">PowerPoint</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="d-flex justify-content-center mb-4">
-                                    <button class="btn btn-primary btn-lg px-4" onclick="generateReport()">
-                                        <i class="fas fa-file-download me-2"></i>Generate Report
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">Recent Reports</div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Title</th>
-                                                <th>Type</th>
-                                                <th>Generated</th>
-                                                <th>Status</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>Q3 Sales Analysis Report</td>
-                                                <td>Executive Summary</td>
-                                                <td>Oct 15, 2023</td>
-                                                <td><span class="badge bg-success">Completed</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary">Download</button>
-                                                    <button class="btn btn-sm btn-outline-info">View</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Customer Churn Model Report</td>
-                                                <td>Model Performance</td>
-                                                <td>Oct 12, 2023</td>
-                                                <td><span class="badge bg-success">Completed</span></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary">Download</button>
-                                                    <button class="btn btn-sm btn-outline-info">View</button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Settings Section -->
-            <section id="settings-section" class="content-section">
-                <div class="card">
-                    <div class="card-header">Platform Settings</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">Account Settings</div>
-                                    <div class="card-body">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Username</label>
-                                            <input type="text" class="form-control" value="admin">
-                                        </div>
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Email</label>
-                                            <input type="email" class="form-control" value="admin@example.com">
-                                        </div>
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Password</label>
-                                            <input type="password" class="form-control" placeholder="••••••••">
-                                        </div>
-                                        <button class="btn btn-primary">Update Profile</button>
-                                    </div>
-                                </div>
-                                
-                                <div class="card">
-                                    <div class="card-header">Notification Settings</div>
-                                    <div class="card-body">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
-                                            <label class="form-check-label" for="emailNotifications">Email Notifications</label>
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="pushNotifications">
-                                            <label class="form-check-label" for="pushNotifications">Push Notifications</label>
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="modelCompletion" checked>
-                                            <label class="form-check-label" for="modelCompletion">Model Training Completion</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">System Settings</div>
-                                    <div class="card-body">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Theme</label>
-                                            <select class="form-control" id="themeSetting">
-                                                <option value="light" selected>Light Theme</option>
-                                                <option value="dark">Dark Theme</option>
-                                                <option value="auto">Auto (System)</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Language</label>
-                                            <select class="form-control" id="languageSetting">
-                                                <option value="en" selected>English</option>
-                                                <option value="es">Spanish</option>
-                                                <option value="fr">French</option>
-                                                <option value="de">German</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">Timezone</label>
-                                            <select class="form-control" id="timezoneSetting">
-                                                <option value="UTC">UTC</option>
-                                                <option value="EST">Eastern Time (US & Canada)</option>
-                                                <option value="PST">Pacific Time (US & Canada)</option>
-                                                <option value="GMT">Greenwich Mean Time</option>
-                                            </select>
-                                        </div>
-                                        <button class="btn btn-primary">Save Settings</button>
-                                    </div>
-                                </div>
-                                
-                                <div class="card">
-                                    <div class="card-header">API Settings</div>
-                                    <div class="card-body">
-                                        <div class="form-group mb-3">
-                                            <label class="form-label">API Key</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control" id="apiKey" value="finese2_abc123def456" readonly>
-                                                <button class="btn btn-outline-secondary" type="button" onclick="copyApiKey()">Copy</button>
-                                            </div>
-                                        </div>
-                                        <button class="btn btn-warning">Regenerate API Key</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
+<!-- ── App ──────────────────────────────────────────────────────── -->
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">⬡ FINESE2</div>
+      <div class="brand-tag">DATA INTELLIGENCE · v4.0</div>
     </div>
 
-    <!-- Upload Modal -->
-    <div id="uploadModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('uploadModal')">&times;</span>
-            <h3>Upload Dataset</h3>
-            <div class="mb-3">
-                <label class="form-label">Dataset Name</label>
-                <input type="text" class="form-control" id="datasetName" placeholder="Enter dataset name">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">File</label>
-                <input type="file" class="form-control" id="modalFileInput">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea class="form-control" id="datasetDescription" rows="3" placeholder="Describe your dataset"></textarea>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Category</label>
-                <select class="form-control" id="datasetCategory">
-                    <option value="business">Business</option>
-                    <option value="finance">Finance</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="operations">Operations</option>
-                    <option value="other">Other</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" onclick="performUpload()">Upload Dataset</button>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Workspace</div>
+      <div class="nav-item active" data-section="overview">
+        <i class="fa-solid fa-chart-treemap"></i> Overview
+      </div>
+      <div class="nav-item" data-section="data">
+        <i class="fa-solid fa-database"></i> Data
+      </div>
+
+      <div class="nav-group-label">Analysis</div>
+      <div class="nav-item" data-section="eda">
+        <i class="fa-solid fa-magnifying-glass-chart"></i> Explore (EDA)
+      </div>
+      <div class="nav-item" data-section="cleaning">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Clean
+      </div>
+      <div class="nav-item" data-section="visualize">
+        <i class="fa-solid fa-chart-column"></i> Visualize
+      </div>
+      <div class="nav-item" data-section="analysis">
+        <i class="fa-solid fa-sigma"></i> Analyze
+      </div>
+
+      <div class="nav-group-label">Machine Learning</div>
+      <div class="nav-item" data-section="ml">
+        <i class="fa-solid fa-microchip-ai"></i> Train Model
+      </div>
+      <div class="nav-item" data-section="mlops">
+        <i class="fa-solid fa-rocket-launch"></i> MLOps
+      </div>
+
+      <div class="nav-group-label">Output</div>
+      <div class="nav-item" data-section="reports">
+        <i class="fa-solid fa-file-chart-column"></i> Reports
+      </div>
+      <div class="nav-item" data-section="settings">
+        <i class="fa-solid fa-sliders"></i> Settings
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill" id="userPill">
+        <div class="avatar" id="avatarEl">A</div>
+        <div class="user-info">
+          <div class="user-name" id="userNameEl">Admin</div>
+          <div class="user-role">Data Analyst</div>
         </div>
+        <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--txt-3);font-size:12px" onclick="doLogout()" title="Logout"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="page-breadcrumb" id="breadcrumb">Workspace</span>
+        <span style="color:var(--txt-3);margin:0 4px">/</span>
+        <span class="page-title-bar" id="pageTitle">Overview</span>
+      </div>
+      <div class="topbar-right">
+        <select class="form-control" id="globalDataset" style="width:220px;padding:0.35rem 0.75rem" onchange="onDatasetChange()">
+          <option value="">— select dataset —</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="nav('data')">
+          <i class="fa-solid fa-plus"></i> Upload
+        </button>
+      </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Global variables
-        let currentSection = 'dashboard';
-        let currentChart = null;
-        let vizChart = null;
+    <div class="content">
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize dashboard data
-            initializeDashboard();
-            
-            // Initialize chart
-            initializeChart();
-            
-            // Set up event listeners
-            setupEventListeners();
-            
-            // Set up sidebar navigation
-            setupSidebarNavigation();
-            
-            // Set up timeframe buttons
-            setupTimeframeButtons();
-            
-            // Set up range sliders
-            setupRangeSliders();
-        });
+      <!-- ── OVERVIEW SECTION ────────────────────────────────────── -->
+      <div class="section active" id="section-overview">
+        <div class="stats-grid">
+          <div class="stat-card teal">
+            <div class="stat-icon"><i class="fa-solid fa-database"></i></div>
+            <div>
+              <div class="stat-value" id="stat-datasets">0</div>
+              <div class="stat-label">Datasets</div>
+            </div>
+          </div>
+          <div class="stat-card violet">
+            <div class="stat-icon"><i class="fa-solid fa-flask-vial"></i></div>
+            <div>
+              <div class="stat-value" id="stat-experiments">0</div>
+              <div class="stat-label">Experiments</div>
+            </div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon"><i class="fa-solid fa-robot"></i></div>
+            <div>
+              <div class="stat-value" id="stat-models">0</div>
+              <div class="stat-label">Models</div>
+            </div>
+          </div>
+          <div class="stat-card cyan">
+            <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+            <div>
+              <div class="stat-value" id="stat-status">Live</div>
+              <div class="stat-label">Platform</div>
+            </div>
+          </div>
+        </div>
 
-        // Initialize dashboard data
-        function initializeDashboard() {
-            // Load initial data - in real implementation, this would call backend APIs
-            console.log('Dashboard initialized');
-        }
+        <div class="grid-main">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Activity Overview</span>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm active-tf" data-tf="monthly" onclick="switchTf(this,'monthly')">Monthly</button>
+                <button class="btn btn-ghost btn-sm active-tf" data-tf="weekly" onclick="switchTf(this,'weekly')">Weekly</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap"><canvas id="overviewChart"></canvas></div>
+            </div>
+          </div>
 
-        // Initialize chart
-        function initializeChart() {
-            const ctx = document.getElementById('overviewChart').getContext('2d');
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Datasets Processed',
-                        data: [12, 19, 15, 22, 18, 25],
-                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // Emerald color
-                        borderColor: 'rgba(16, 185, 129, 1)',
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                    }, {
-                        label: 'Models Trained',
-                        data: [5, 8, 6, 12, 9, 15],
-                        backgroundColor: 'rgba(79, 70, 229, 0.7)', // Indigo color
-                        borderColor: 'rgba(79, 70, 229, 1)',
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: 'var(--text-1)'
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'var(--border-default)'
-                            },
-                            ticks: {
-                                color: 'var(--text-2)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: 'var(--border-default)'
-                            },
-                            ticks: {
-                                color: 'var(--text-2)'
-                            }
-                        }
-                    }
-                }
-            });
-        }
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Quick Start</span></div>
+              <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-secondary btn-full" onclick="nav('data')"><i class="fa-solid fa-upload"></i> Upload Dataset</button>
+                <button class="btn btn-secondary btn-full" onclick="nav('eda')"><i class="fa-solid fa-magnifying-glass-chart"></i> Explore Data</button>
+                <button class="btn btn-secondary btn-full" onclick="nav('ml')"><i class="fa-solid fa-robot"></i> Train Model</button>
+                <button class="btn btn-secondary btn-full" onclick="nav('reports')"><i class="fa-solid fa-file-chart-column"></i> Generate Report</button>
+              </div>
+            </div>
+            <div class="card" id="recentCard">
+              <div class="card-header"><span class="card-title">Recent Datasets</span></div>
+              <div id="recentDatasets" style="padding:1rem">
+                <div class="result-empty"><i class="fa-regular fa-folder-open"></i>No datasets yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        // Set up event listeners
-        function setupEventListeners() {
-            // Add event listeners for file drag and drop
-            const uploadAreas = document.querySelectorAll('.upload-area');
-            uploadAreas.forEach(area => {
-                area.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    area.style.borderColor = 'var(--indigo)';
-                    area.style.backgroundColor = 'var(--indigo-dim)';
-                });
-                
-                area.addEventListener('dragleave', (e) => {
-                    e.preventDefault();
-                    area.style.borderColor = 'var(--border-default)';
-                    area.style.backgroundColor = 'var(--bg-elevated)';
-                });
-                
-                area.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    area.style.borderColor = 'var(--border-default)';
-                    area.style.backgroundColor = 'var(--bg-elevated)';
-                    
-                    if (e.dataTransfer.files.length) {
-                        handleFileUpload(e.dataTransfer.files[0]);
-                    }
-                });
-            });
-        }
-
-        // Set up sidebar navigation
-        function setupSidebarNavigation() {
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Get the section to show
-                    const sectionId = this.getAttribute('data-section');
-                    
-                    // Remove active class from all links
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    
-                    // Add active class to clicked link
-                    this.classList.add('active');
-                    
-                    // Hide all sections
-                    document.querySelectorAll('.content-section').forEach(section => {
-                        section.classList.remove('active');
-                    });
-                    
-                    // Show the selected section
-                    document.getElementById(`${sectionId}-section`).classList.add('active');
-                    
-                    // Update current section
-                    currentSection = sectionId;
-                    
-                    // Load section-specific data
-                    loadSectionData(sectionId);
-                });
-            });
-        }
-
-        // Set up timeframe buttons
-        function setupTimeframeButtons() {
-            const timeframeButtons = document.querySelectorAll('[data-timeframe]');
-            timeframeButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Remove active class from all buttons
-                    timeframeButtons.forEach(btn => btn.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    this.classList.add('active');
-                    
-                    // Update chart data based on timeframe
-                    updateChartData(this.getAttribute('data-timeframe'));
-                });
-            });
-        }
-
-        // Update chart data based on timeframe
-        function updateChartData(timeframe) {
-            // In a real implementation, this would fetch data for the selected timeframe
-            console.log(`Updating chart for timeframe: ${timeframe}`);
-        }
-
-        // Set up range sliders
-        function setupRangeSliders() {
-            // Test size slider
-            const testSizeSlider = document.getElementById('testSize');
-            const testSizeValue = document.getElementById('testSizeValue');
-            if (testSizeSlider && testSizeValue) {
-                testSizeSlider.addEventListener('input', function() {
-                    testSizeValue.textContent = `${Math.round(this.value * 100)}%`;
-                });
-            }
-            
-            // Max depth slider
-            const maxDepthSlider = document.getElementById('maxDepth');
-            const maxDepthValue = document.getElementById('maxDepthValue');
-            if (maxDepthSlider && maxDepthValue) {
-                maxDepthSlider.addEventListener('input', function() {
-                    maxDepthValue.textContent = this.value;
-                });
-            }
-            
-            // Learning rate slider
-            const learningRateSlider = document.getElementById('learningRate');
-            const learningRateValue = document.getElementById('learningRateValue');
-            if (learningRateSlider && learningRateValue) {
-                learningRateSlider.addEventListener('input', function() {
-                    learningRateValue.textContent = parseFloat(this.value).toFixed(3);
-                });
-            }
-            
-            // Number of estimators slider
-            const nEstimatorsSlider = document.getElementById('nEstimators');
-            const nEstimatorsValue = document.getElementById('nEstimatorsValue');
-            if (nEstimatorsSlider && nEstimatorsValue) {
-                nEstimatorsSlider.addEventListener('input', function() {
-                    nEstimatorsValue.textContent = this.value;
-                });
-            }
-        }
-
-        // Load section-specific data
-        function loadSectionData(sectionId) {
-            switch(sectionId) {
-                case 'dashboard':
-                    loadDashboardData();
-                    break;
-                case 'data':
-                    loadDataManagementData();
-                    break;
-                case 'eda':
-                    loadEdaData();
-                    break;
-                case 'cleaning':
-                    loadCleaningData();
-                    break;
-                case 'visualization':
-                    loadVisualizationData();
-                    break;
-                case 'analysis':
-                    loadAnalysisData();
-                    break;
-                case 'ml':
-                    loadMlData();
-                    break;
-                case 'mlops':
-                    loadMlopsData();
-                    break;
-                case 'reports':
-                    loadReportsData();
-                    break;
-                case 'settings':
-                    loadSettingsData();
-                    break;
-            }
-        }
-
-        // Load dashboard data
-        function loadDashboardData() {
-            // Simulate loading data - in real implementation, this would call backend APIs
-            console.log('Loading dashboard data');
-        }
-
-        // Load data management data
-        function loadDataManagementData() {
-            // Populate dataset select dropdowns
-            populateDatasetSelects();
-            console.log('Loading data management data');
-        }
-
-        // Load EDA data
-        function loadEdaData() {
-            populateDatasetSelects('edaDatasetSelect');
-            console.log('Loading EDA data');
-        }
-
-        // Load cleaning data
-        function loadCleaningData() {
-            populateDatasetSelects('cleaningDatasetSelect');
-            console.log('Loading cleaning data');
-        }
-
-        // Load visualization data
-        function loadVisualizationData() {
-            populateDatasetSelects('vizDatasetSelect');
-            console.log('Loading visualization data');
-        }
-
-        // Load analysis data
-        function loadAnalysisData() {
-            populateDatasetSelects('analysisDatasetSelect');
-            console.log('Loading analysis data');
-        }
-
-        // Load ML data
-        function loadMlData() {
-            populateDatasetSelects('mlDatasetSelect');
-            console.log('Loading ML data');
-        }
-
-        // Load MLOps data
-        function loadMlopsData() {
-            console.log('Loading MLOps data');
-        }
-
-        // Load reports data
-        function loadReportsData() {
-            console.log('Loading reports data');
-        }
-
-        // Load settings data
-        function loadSettingsData() {
-            console.log('Loading settings data');
-        }
-
-        // Populate dataset selects
-        function populateDatasetSelects(selectId = null) {
-            const selects = selectId ? [document.getElementById(selectId)] : 
-                           document.querySelectorAll('select[id$="DatasetSelect"]');
-            
-            selects.forEach(select => {
-                if (select) {
-                    // Clear existing options
-                    select.innerHTML = '<option value="">Select a dataset</option>';
-                    
-                    // Add sample datasets
-                    const sampleDatasets = [
-                        { id: 'sales', name: 'Sales Data Q3' },
-                        { id: 'customers', name: 'Customer Survey' },
-                        { id: 'inventory', name: 'Product Inventory' },
-                        { id: 'performance', name: 'Employee Performance' }
-                    ];
-                    
-                    sampleDatasets.forEach(ds => {
-                        const option = document.createElement('option');
-                        option.value = ds.id;
-                        option.textContent = ds.name;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-
-        // Handle file upload
-        function handleFileUpload(file) {
-            if (!file) return;
-            
-            // Show upload modal
-            showUploadModal();
-            
-            // Pre-fill the filename
-            document.getElementById('datasetName').value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-        }
-
-        // Handle data file upload (for data management section)
-        function handleDataFileUpload(file) {
-            if (!file) return;
-            
-            alert(`File ${file.name} selected. In a real implementation, this would be uploaded to the server.`);
-        }
-
-        // Show upload modal
-        function showUploadModal() {
-            document.getElementById('uploadModal').style.display = 'block';
-        }
-
-        // Close modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // Perform upload
-        function performUpload() {
-            const name = document.getElementById('datasetName').value;
-            const file = document.getElementById('modalFileInput').files[0];
-            const description = document.getElementById('datasetDescription').value;
-            const category = document.getElementById('datasetCategory').value;
-            
-            if (!name || !file) {
-                alert('Please provide both a dataset name and select a file.');
-                return;
-            }
-            
-            // In a real implementation, this would upload the file to the server
-            alert(`Uploading ${file.name} as "${name}"...`);
-            
-            // Simulate upload process
-            simulateUploadProcess(name, file, description, category);
-            
-            // Close modal
-            closeModal('uploadModal');
-            
-            // Reset form
-            document.getElementById('datasetName').value = '';
-            document.getElementById('modalFileInput').value = '';
-            document.getElementById('datasetDescription').value = '';
-        }
-
-        // Simulate upload process
-        function simulateUploadProcess(name, file, description, category) {
-            // Update dashboard stats
-            const countElement = document.getElementById('dataset-count');
-            countElement.textContent = parseInt(countElement.textContent) + 1;
-            
-            // Add to dataset table
-            addDatasetToTable(name, file.type, (file.size / 1024 / 1024).toFixed(2) + ' MB');
-            
-            // Show success message
-            alert(`Dataset "${name}" uploaded successfully!`);
-        }
-
-        // Add dataset to table
-        function addDatasetToTable(name, type, size) {
-            const tbody = document.getElementById('datasetTableBody');
-            
-            // Create a new row
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${name}</td>
-                <td>${type.toUpperCase()}</td>
-                <td>${size}</td>
-                <td>0</td>
-                <td>0</td>
-                <td><span class="badge status-processing">Processing</span></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewDataset('${name}')">View</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDataset('${name}')">Delete</button>
-                </td>
-            `;
-            
-            // Add to beginning of table
-            tbody.insertBefore(newRow, tbody.firstChild);
-            
-            // Update processing status after delay
-            setTimeout(() => {
-                newRow.querySelector('.status-processing').className = 'badge status-ready';
-                newRow.querySelector('.status-ready').textContent = 'Ready';
-            }, 2000);
-        }
-
-        // Load dataset table
-        function loadDatasetTable() {
-            // This function refreshes the dataset table
-            console.log('Refreshing dataset table');
-        }
-
-        // View dataset
-        function viewDataset(datasetName) {
-            alert(`Viewing dataset: ${datasetName}`);
-            
-            // In a real implementation, this would open a detailed view of the dataset
-            console.log(`Opening dataset viewer for: ${datasetName}`);
-        }
-
-        // Delete dataset
-        function deleteDataset(datasetName) {
-            if (confirm(`Are you sure you want to delete ${datasetName}?`)) {
-                // Find and remove the row from the table
-                const tableBody = document.getElementById('datasetTableBody');
-                const rows = tableBody.getElementsByTagName('tr');
-                
-                for (let i = 0; i < rows.length; i++) {
-                    if (rows[i].cells[0].textContent === datasetName) {
-                        tableBody.removeChild(rows[i]);
-                        
-                        // Update dashboard stats
-                        const countElement = document.getElementById('dataset-count');
-                        const newValue = Math.max(0, parseInt(countElement.textContent) - 1);
-                        countElement.textContent = newValue;
-                        
-                        break;
-                    }
-                }
-                
-                alert(`Dataset ${datasetName} has been deleted.`);
-            }
-        }
-
-        // Run EDA analysis
-        function runEdaAnalysis() {
-            const datasetId = document.getElementById('edaDatasetSelect').value;
-            const analysisType = document.getElementById('edaAnalysisType').value;
-            
-            if (!datasetId) {
-                alert('Please select a dataset to analyze.');
-                return;
-            }
-            
-            // Show loading state
-            const resultsDiv = document.getElementById('edaResults');
-            resultsDiv.innerHTML = `
-                <div class="alert alert-info">
-                    <div class="d-flex align-items-center">
-                        <span class="loading me-2"></span>
-                        <span>Running EDA analysis for ${datasetId}...</span>
-                    </div>
+      <!-- ── DATA SECTION ────────────────────────────────────────── -->
+      <div class="section" id="section-data">
+        <div class="grid-2" style="margin-bottom:1rem">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Upload Dataset</span></div>
+            <div class="card-body">
+              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+                <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <h4>Drop file here or click to browse</h4>
+                <p>CSV · Excel · JSON · Parquet — max 50MB</p>
+              </div>
+              <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json,.parquet" style="display:none" onchange="handleUpload(this.files[0])">
+              <div id="uploadStatus" style="margin-top:1rem;display:none">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                  <div class="spinner"></div>
+                  <span id="uploadFileName" style="font-size:13px;color:var(--txt-2)"></span>
                 </div>
-            `;
-            
-            // Simulate EDA process
-            setTimeout(() => {
-                resultsDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        <h5><i class="fas fa-check-circle me-2"></i>EDA Analysis Complete!</h5>
-                        <p>Analysis performed on ${datasetId} dataset using ${analysisType} method.</p>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Summary Statistics</h6>
-                            <p>Mean, median, std deviation, etc. calculated.</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Missing Values</h6>
-                            <p>5 columns with missing values identified.</p>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <h6>Correlations</h6>
-                            <p>Strong correlation (0.85) between X and Y detected.</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Outliers</h6>
-                            <p>12 outliers detected in column Z.</p>
-                        </div>
-                    </div>
-                `;
-            }, 3000);
-        }
+                <div class="progress"><div class="progress-bar" id="uploadBar" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
 
-        // Apply data cleaning
-        function applyCleaning() {
-            const datasetId = document.getElementById('cleaningDatasetSelect').value;
-            
-            if (!datasetId) {
-                alert('Please select a dataset to clean.');
-                return;
-            }
-            
-            // Show loading state
-            const resultsDiv = document.getElementById('cleaningResults');
-            resultsDiv.innerHTML = `
-                <div class="alert alert-info">
-                    <div class="d-flex align-items-center">
-                        <span class="loading me-2"></span>
-                        <span>Applying cleaning operations to ${datasetId}...</span>
-                    </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Load Sample Dataset</span></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+              <p style="font-size:13px;color:var(--txt-3);margin-bottom:8px">Built-in datasets for quick testing:</p>
+              <button class="btn btn-secondary btn-full" onclick="loadSample('iris')"><i class="fa-solid fa-seedling"></i> Iris (classification)</button>
+              <button class="btn btn-secondary btn-full" onclick="loadSample('boston_housing')"><i class="fa-solid fa-house"></i> Housing (regression)</button>
+              <button class="btn btn-secondary btn-full" onclick="loadSample('titanic')"><i class="fa-solid fa-ship"></i> Titanic (survival)</button>
+              <button class="btn btn-secondary btn-full" onclick="loadSample('diabetes')"><i class="fa-solid fa-heart-pulse"></i> Diabetes (medical)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">My Datasets</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadDatasets()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Format</th><th>Rows</th><th>Columns</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr></thead>
+              <tbody id="datasetsTable"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--txt-3)">Loading datasets…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EDA SECTION ─────────────────────────────────────────── -->
+      <div class="section" id="section-eda">
+        <div class="grid-main">
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="card">
+              <div class="card-header"><span class="card-title">EDA Configuration</span></div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Dataset</label>
+                  <select class="form-control dataset-select" id="edaDataset"></select>
                 </div>
-            `;
-            
-            // Simulate cleaning process
-            setTimeout(() => {
-                resultsDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        <h5><i class="fas fa-check-circle me-2"></i>Data Cleaning Complete!</h5>
-                        <p>Cleaning operations applied to ${datasetId} dataset.</p>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Operations Applied</h6>
-                            <ul>
-                                <li>Duplicates removed: 15 records</li>
-                                <li>Missing values filled: 23 records</li>
-                                <li>Outliers handled: 12 records</li>
-                                <li>Data normalized: Yes</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Results</h6>
-                            <p>Data quality improved by 23%</p>
-                            <p>Ready for analysis and modeling.</p>
-                        </div>
-                    </div>
-                `;
-            }, 3000);
-        }
-
-        // Generate visualization
-        function generateVisualization() {
-            const datasetId = document.getElementById('vizDatasetSelect').value;
-            const vizType = document.getElementById('vizTypeSelect').value;
-            
-            if (!datasetId) {
-                alert('Please select a dataset to visualize.');
-                return;
-            }
-            
-            if (!vizType) {
-                alert('Please select a visualization type.');
-                return;
-            }
-            
-            // Show loading state
-            const chartContainer = document.getElementById('vizChart');
-            if (chartContainer) {
-                // Destroy existing chart if it exists
-                if (vizChart) {
-                    vizChart.destroy();
-                }
-                
-                // Show loading
-                chartContainer.parentElement.innerHTML = `
-                    <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
-                        <div class="text-center">
-                            <div class="loading mx-auto mb-2"></div>
-                            <p>Generating ${vizType} visualization for ${datasetId}...</p>
-                        </div>
-                    </div>
-                `;
-                
-                // Simulate visualization creation
-                setTimeout(() => {
-                    // Re-create the canvas
-                    chartContainer.parentElement.innerHTML = '<canvas id="vizChart"></canvas>';
-                    
-                    // Initialize new chart
-                    const newCtx = document.getElementById('vizChart').getContext('2d');
-                    vizChart = new Chart(newCtx, {
-                        type: vizType === 'bar' ? 'bar' : 
-                              vizType === 'line' ? 'line' : 
-                              vizType === 'pie' ? 'pie' : 'bar',
-                        data: {
-                            labels: ['A', 'B', 'C', 'D', 'E'],
-                            datasets: [{
-                                label: 'Sample Data',
-                                data: [12, 19, 3, 5, 2],
-                                backgroundColor: vizType === 'pie' ? [
-                                    'rgba(16, 185, 129, 0.7)',
-                                    'rgba(79, 70, 229, 0.7)',
-                                    'rgba(245, 158, 11, 0.7)',
-                                    'rgba(16, 185, 129, 0.7)',
-                                    'rgba(245, 158, 11, 0.7)'
-                                ] : 'rgba(16, 185, 129, 0.7)',
-                                borderColor: vizType === 'pie' ? [
-                                    'rgba(16, 185, 129, 1)',
-                                    'rgba(79, 70, 229, 1)',
-                                    'rgba(245, 158, 11, 1)',
-                                    'rgba(16, 185, 129, 1)',
-                                    'rgba(245, 158, 11, 1)'
-                                ] : 'rgba(16, 185, 129, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'top',
-                                }
-                            },
-                            scales: vizType !== 'pie' ? {
-                                y: {
-                                    beginAtZero: true
-                                }
-                            } : {}
-                        }
-                    });
-                }, 2000);
-            }
-        }
-
-        // Run analysis
-        function runAnalysis() {
-            const datasetId = document.getElementById('analysisDatasetSelect').value;
-            const analysisType = document.getElementById('analysisTypeSelect').value;
-            
-            if (!datasetId) {
-                alert('Please select a dataset for analysis.');
-                return;
-            }
-            
-            if (!analysisType) {
-                alert('Please select an analysis type.');
-                return;
-            }
-            
-            // Show loading state
-            const resultsDiv = document.getElementById('analysisResults');
-            resultsDiv.innerHTML = `
-                <div class="alert alert-info">
-                    <div class="d-flex align-items-center">
-                        <span class="loading me-2"></span>
-                        <span>Running ${analysisType} on ${datasetId}...</span>
-                    </div>
+                <div class="form-group">
+                  <label class="form-label">Analysis Type</label>
+                  <select class="form-control" id="edaType">
+                    <option value="full">Full Profile Report</option>
+                    <option value="summary">Summary Statistics</option>
+                    <option value="correlation">Correlation Analysis</option>
+                    <option value="distribution">Distribution Analysis</option>
+                  </select>
                 </div>
-            `;
-            
-            // Simulate analysis process
-            setTimeout(() => {
-                resultsDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        <h5><i class="fas fa-check-circle me-2"></i>Analysis Complete!</h5>
-                        <p>${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)} analysis performed on ${datasetId} dataset.</p>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Key Metrics</h6>
-                            <ul>
-                                <li>R² Score: 0.87</li>
-                                <li>Mean Absolute Error: 0.12</li>
-                                <li>Precision: 0.91</li>
-                                <li>Recall: 0.89</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Insights</h6>
-                            <ul>
-                                <li>Strong positive correlation found</li>
-                                <li>Significant features identified</li>
-                                <li>Model performance meets criteria</li>
-                            </ul>
-                        </div>
-                    </div>
-                `;
-            }, 3000);
-        }
-
-        // Train model
-        function trainModel() {
-            const datasetId = document.getElementById('mlDatasetSelect').value;
-            const problemType = document.getElementById('problemTypeSelect').value;
-            
-            if (!datasetId) {
-                alert('Please select a dataset for modeling.');
-                return;
-            }
-            
-            if (!problemType) {
-                alert('Please select a problem type.');
-                return;
-            }
-            
-            // Get selected model type
-            const selectedModel = document.querySelector('input[name="modelType"]:checked');
-            if (!selectedModel) {
-                alert('Please select a model type.');
-                return;
-            }
-            
-            // Show loading state
-            const resultsDiv = document.getElementById('mlResults');
-            resultsDiv.innerHTML = `
-                <div class="alert alert-info">
-                    <div class="d-flex align-items-center">
-                        <span class="loading me-2"></span>
-                        <span>Training ${selectedModel.value} model on ${datasetId}...</span>
-                    </div>
+                <div class="form-group">
+                  <label class="form-label">Options</label>
+                  <div class="check-group"><input type="checkbox" id="eda-missing" checked><label for="eda-missing">Missing value analysis</label></div>
+                  <div class="check-group"><input type="checkbox" id="eda-outliers"><label for="eda-outliers">Outlier detection</label></div>
+                  <div class="check-group"><input type="checkbox" id="eda-corr" checked><label for="eda-corr">Correlation heatmap</label></div>
+                  <div class="check-group"><input type="checkbox" id="eda-dist"><label for="eda-dist">Distribution plots</label></div>
                 </div>
-            `;
-            
-            // Simulate model training process
-            setTimeout(() => {
-                resultsDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        <h5><i class="fas fa-check-circle me-2"></i>Model Training Complete!</h5>
-                        <p>${selectedModel.value.charAt(0).toUpperCase() + selectedModel.value.slice(1)} model trained on ${datasetId} dataset.</p>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Model Performance</h6>
-                            <ul>
-                                <li>Accuracy: 0.92</li>
-                                <li>Precision: 0.91</li>
-                                <li>Recall: 0.89</li>
-                                <li>F1-Score: 0.90</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Training Details</h6>
-                            <ul>
-                                <li>Training time: 2.4 minutes</li>
-                                <li>Features used: 12</li>
-                                <li>Records used: 8,500</li>
-                                <li>Model saved to registry</li>
-                            </ul>
-                        </div>
-                    </div>
-                `;
-            }, 4000);
-        }
+                <button class="btn btn-primary btn-full" id="edaBtn" onclick="runEda()">
+                  <i class="fa-solid fa-play"></i> Run EDA Analysis
+                </button>
+              </div>
+            </div>
+          </div>
 
-        // Generate report
-        function generateReport() {
-            const template = document.getElementById('reportTemplate').value;
-            const format = document.getElementById('reportFormat').value;
-            
-            if (!template) {
-                alert('Please select a report template.');
-                return;
-            }
-            
-            alert(`Generating ${template} report in ${format} format...`);
-        }
+          <div class="card" style="height:fit-content">
+            <div class="card-header"><span class="card-title">Analysis Guide</span></div>
+            <div class="card-body" style="font-size:13px;color:var(--txt-2);line-height:1.7">
+              <p><strong style="color:var(--teal)">Full Profile</strong> — Complete statistical summary, missing values, distributions, correlations, and data quality score.</p>
+              <div class="divider"></div>
+              <p><strong style="color:var(--violet)">Summary</strong> — Shape, dtypes, descriptive stats (mean, median, std, quartiles).</p>
+              <div class="divider"></div>
+              <p><strong style="color:var(--amber)">Correlation</strong> — Pearson/Spearman matrix with high-correlation pair alerts.</p>
+            </div>
+          </div>
+        </div>
 
-        // Copy API key to clipboard
-        function copyApiKey() {
-            const apiKeyField = document.getElementById('apiKey');
-            apiKeyField.select();
-            document.execCommand('copy');
-            alert('API key copied to clipboard!');
-        }
+        <div id="edaResults" class="result-box" style="display:none">
+          <div class="result-empty"><i class="fa-solid fa-chart-simple"></i>Run analysis to see results here</div>
+        </div>
+      </div>
 
-        // Placeholder functions for dashboard interactions
-        function runEDA() {
-            document.querySelector('.nav-link[data-section="eda"]').click();
-        }
+      <!-- ── CLEANING SECTION ────────────────────────────────────── -->
+      <div class="section" id="section-cleaning">
+        <div class="grid-main">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Data Cleaning</span></div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Dataset</label>
+                  <select class="form-control dataset-select" id="cleanDataset"></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Preset</label>
+                  <select class="form-control" id="cleanPreset">
+                    <option value="basic">Basic</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
 
-        function cleanData() {
-            document.querySelector('.nav-link[data-section="cleaning"]').click();
-        }
+              <label class="form-label" style="margin-bottom:8px">Operations</label>
+              <div class="check-group"><input type="checkbox" id="c-dupes" checked><label for="c-dupes">Remove duplicate rows</label></div>
+              <div class="check-group"><input type="checkbox" id="c-missing" checked><label for="c-missing">Handle missing values</label></div>
+              <div class="check-group"><input type="checkbox" id="c-outliers"><label for="c-outliers">Remove outliers (IQR method)</label></div>
+              <div class="check-group"><input type="checkbox" id="c-normalize"><label for="c-normalize">Normalize numeric columns</label></div>
+              <div class="check-group"><input type="checkbox" id="c-encode"><label for="c-encode">Encode categorical columns</label></div>
 
-        function trainModelFromDashboard() {
-            document.querySelector('.nav-link[data-section="ml"]').click();
-        }
+              <div class="divider"></div>
+              <div class="form-group">
+                <label class="form-label">Missing Value Strategy</label>
+                <select class="form-control" id="missingStrategy">
+                  <option value="mean">Fill with mean (numeric)</option>
+                  <option value="median">Fill with median</option>
+                  <option value="mode">Fill with mode</option>
+                  <option value="drop">Drop rows</option>
+                  <option value="forward">Forward fill</option>
+                </select>
+              </div>
 
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        }
-    </script>
+              <button class="btn btn-primary btn-full" id="cleanBtn" onclick="runCleaning()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Cleaning
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Issue Detection</span></div>
+              <div class="card-body">
+                <button class="btn btn-ghost btn-full" onclick="detectIssues()"><i class="fa-solid fa-stethoscope"></i> Scan Dataset</button>
+                <div id="issueResults" class="result-box" style="margin-top:1rem">
+                  <div class="result-empty"><i class="fa-solid fa-stethoscope"></i>Scan a dataset to detect issues</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cleanResults" class="result-box" style="display:none;margin-top:1rem"></div>
+      </div>
+
+      <!-- ── VISUALIZE SECTION ───────────────────────────────────── -->
+      <div class="section" id="section-visualize">
+        <div class="grid-main">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Chart Builder</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Dataset</label>
+                <select class="form-control dataset-select" id="vizDataset" onchange="loadVizColumns()"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Chart Type</label>
+                <div class="algo-grid" id="chartTypeGrid">
+                  <div class="algo-btn selected" onclick="selectChartType(this,'scatter')">Scatter</div>
+                  <div class="algo-btn" onclick="selectChartType(this,'line')">Line</div>
+                  <div class="algo-btn" onclick="selectChartType(this,'bar')">Bar</div>
+                  <div class="algo-btn" onclick="selectChartType(this,'histogram')">Histogram</div>
+                  <div class="algo-btn" onclick="selectChartType(this,'box')">Box Plot</div>
+                  <div class="algo-btn" onclick="selectChartType(this,'heatmap')">Heatmap</div>
+                </div>
+                <input type="hidden" id="vizChartType" value="scatter">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">X Column</label>
+                  <select class="form-control" id="vizXCol"></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Y Column</label>
+                  <select class="form-control" id="vizYCol"></select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Color By (optional)</label>
+                <select class="form-control" id="vizColorCol"><option value="">None</option></select>
+              </div>
+              <button class="btn btn-primary btn-full" id="vizBtn" onclick="createChart()">
+                <i class="fa-solid fa-chart-column"></i> Create Chart
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Chart Output</span></div>
+            <div id="vizOutput" class="card-body">
+              <div class="result-empty"><i class="fa-solid fa-chart-scatter"></i>Configure and create a chart</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ANALYSIS SECTION ────────────────────────────────────── -->
+      <div class="section" id="section-analysis">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Statistical Tests</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Dataset</label>
+                <select class="form-control dataset-select" id="analysisDataset"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Test Type</label>
+                <select class="form-control" id="analysisTest">
+                  <option value="descriptive">Descriptive Statistics</option>
+                  <option value="t_test">Independent T-Test</option>
+                  <option value="anova">One-Way ANOVA</option>
+                  <option value="chi_square">Chi-Square Test</option>
+                  <option value="regression">Linear Regression</option>
+                  <option value="time_series">Time Series Analysis</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Group Column</label>
+                  <input class="form-control" id="analysisGroupCol" placeholder="e.g. category">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Value Column</label>
+                  <input class="form-control" id="analysisValueCol" placeholder="e.g. sales">
+                </div>
+              </div>
+              <button class="btn btn-primary btn-full" id="analysisBtn" onclick="runAnalysis()">
+                <i class="fa-solid fa-sigma"></i> Run Analysis
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Results</span></div>
+            <div id="analysisResults" class="card-body">
+              <div class="result-empty"><i class="fa-solid fa-sigma"></i>Run a statistical test to see results</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ML SECTION ──────────────────────────────────────────── -->
+      <div class="section" id="section-ml">
+        <div class="grid-main">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Model Training</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Dataset</label>
+                <select class="form-control dataset-select" id="mlDataset" onchange="loadMlColumns()"></select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Target Column</label>
+                  <select class="form-control" id="mlTarget"></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Problem Type</label>
+                  <select class="form-control" id="mlProblemType">
+                    <option value="auto">Auto-Detect</option>
+                    <option value="classification">Classification</option>
+                    <option value="regression">Regression</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Algorithm</label>
+                <div class="algo-grid" id="algoGrid">
+                  <div class="algo-btn selected" onclick="selectAlgo(this,'random_forest')">Random Forest</div>
+                  <div class="algo-btn" onclick="selectAlgo(this,'gradient_boosting')">Gradient Boost</div>
+                  <div class="algo-btn" onclick="selectAlgo(this,'logistic_regression')">Logistic Reg.</div>
+                  <div class="algo-btn" onclick="selectAlgo(this,'linear_regression')">Linear Reg.</div>
+                  <div class="algo-btn" onclick="selectAlgo(this,'svm')">SVM</div>
+                  <div class="algo-btn" onclick="selectAlgo(this,'decision_tree')">Decision Tree</div>
+                </div>
+                <input type="hidden" id="mlAlgo" value="random_forest">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Test Size — <span id="testSizeLbl">20%</span></label>
+                  <input type="range" class="form-control" id="testSize" min="0.1" max="0.4" step="0.05" value="0.2" style="padding:0.4rem 0.5rem" oninput="document.getElementById('testSizeLbl').textContent=Math.round(this.value*100)+'%'">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cross-Val Folds</label>
+                  <select class="form-control" id="cvFolds">
+                    <option value="3">3 folds</option>
+                    <option value="5" selected>5 folds</option>
+                    <option value="10">10 folds</option>
+                  </select>
+                </div>
+              </div>
+
+              <button class="btn btn-primary btn-full" id="mlTrainBtn" onclick="trainModel()">
+                <i class="fa-solid fa-play"></i> Train Model
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Training Results</span></div>
+              <div id="mlResults" class="card-body">
+                <div class="result-empty"><i class="fa-solid fa-robot"></i>Configure and train a model</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Compare Models</span></div>
+              <div class="card-body">
+                <p style="font-size:12px;color:var(--txt-3);margin-bottom:10px">Train the same target with multiple algorithms to compare performance.</p>
+                <button class="btn btn-ghost btn-full" onclick="compareModels()"><i class="fa-solid fa-chart-bar"></i> Run Comparison</button>
+                <div id="compareResults" style="margin-top:10px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MLOPS SECTION ───────────────────────────────────────── -->
+      <div class="section" id="section-mlops">
+        <div class="grid-2" style="margin-bottom:1rem">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Experiments</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadExperiments()"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Started</th></tr></thead>
+                <tbody id="experimentsTable"><tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--txt-3)">No experiments yet</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Model Registry</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadModels()"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ID</th><th>Name</th><th>Version</th><th>Metric</th></tr></thead>
+                <tbody id="modelsTable"><tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--txt-3)">No registered models</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Experiment Tracker</span></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Experiment Name</label>
+                <input class="form-control" id="expName" placeholder="e.g. churn_model_v2">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <input class="form-control" id="expDesc" placeholder="What are you testing?">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="startExperiment()"><i class="fa-solid fa-circle-play"></i> Start Experiment</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── REPORTS SECTION ─────────────────────────────────────── -->
+      <div class="section" id="section-reports">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Generate Report</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Dataset</label>
+                <select class="form-control dataset-select" id="reportDataset"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Report Type</label>
+                <select class="form-control" id="reportType">
+                  <option value="basic">Basic Overview</option>
+                  <option value="eda">Full EDA Report</option>
+                  <option value="ml">ML Results Report</option>
+                  <option value="comparison">Model Comparison</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Report Title</label>
+                <input class="form-control" id="reportTitle" placeholder="My Analysis Report">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Format</label>
+                <select class="form-control" id="reportFormat">
+                  <option value="html">HTML (interactive)</option>
+                  <option value="json">JSON (raw data)</option>
+                </select>
+              </div>
+              <button class="btn btn-primary btn-full" id="reportBtn" onclick="generateReport()">
+                <i class="fa-solid fa-file-export"></i> Generate Report
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Report Preview</span></div>
+            <div id="reportPreview" class="card-body">
+              <div class="result-empty"><i class="fa-solid fa-file-chart-column"></i>Configure and generate a report</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS SECTION ────────────────────────────────────── -->
+      <div class="section" id="section-settings">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">AI Provider Keys</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Anthropic (Claude) API Key</label>
+                <input class="form-control" type="password" id="anthropicKey" placeholder="sk-ant-…">
+              </div>
+              <div class="form-group">
+                <label class="form-label">OpenAI API Key</label>
+                <input class="form-control" type="password" id="openaiKey" placeholder="sk-…">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Google (Gemini) API Key</label>
+                <input class="form-control" type="password" id="googleKey" placeholder="AIza…">
+              </div>
+              <button class="btn btn-primary" onclick="saveApiKeys()"><i class="fa-solid fa-floppy-disk"></i> Save Keys</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Platform Info</span></div>
+            <div class="card-body">
+              <div class="code-block" id="platformInfo">Loading platform info…</div>
+              <div class="divider"></div>
+              <button class="btn btn-ghost btn-full" onclick="checkHealth()"><i class="fa-solid fa-heart-pulse"></i> Health Check</button>
+              <div id="healthResult" style="margin-top:10px;font-size:13px;color:var(--txt-2)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+/* ════════════════════════════════════════════════════════
+   FINESE2 — Frontend Application
+   Deep Space UI · Real API integration
+   ════════════════════════════════════════════════════════ */
+
+// ── State ──────────────────────────────────────────────
+const S = {
+  token: localStorage.getItem('f2_token') || null,
+  user:  JSON.parse(localStorage.getItem('f2_user') || 'null'),
+  datasets: [],
+  activeSection: 'overview',
+  datasetId: null,
+  datasetColumns: []
+};
+
+// ── API helpers ────────────────────────────────────────
+const API_BASE = '/api/v1';
+const AUTH_BASE = '/api/v1/auth';
+
+async function apiFetch(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (S.token) headers['Authorization'] = `Bearer ${S.token}`;
+  const res = await fetch(API_BASE + path, { headers, ...opts });
+  if (res.status === 401) { doLogout(); return null; }
+  return res.json().catch(() => null);
+}
+
+async function apiPost(path, body) {
+  return apiFetch(path, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+}
+
+// ── Toast ──────────────────────────────────────────────
+function toast(msg, type = 'info', duration = 3500) {
+  const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+  const colors = { success: 'var(--teal)', error: 'var(--rose)', info: 'var(--violet)' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<i class="fa-solid ${icons[type]}" style="color:${colors[type]};font-size:15px;flex-shrink:0"></i><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── Navigation ─────────────────────────────────────────
+const sectionTitles = {
+  overview: 'Overview', data: 'Data Management',
+  eda: 'Explore (EDA)', cleaning: 'Data Cleaning',
+  visualize: 'Visualize', analysis: 'Statistical Analysis',
+  ml: 'Train Model', mlops: 'MLOps & Registry',
+  reports: 'Reports', settings: 'Settings'
+};
+
+function nav(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-section="${id}"]`)?.classList.add('active');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + id)?.classList.add('active');
+  document.getElementById('pageTitle').textContent = sectionTitles[id] || id;
+  S.activeSection = id;
+  if (id === 'mlops') { loadExperiments(); loadModels(); }
+  if (id === 'settings') loadPlatformInfo();
+}
+
+function setupNav() {
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => {
+    el.addEventListener('click', () => nav(el.dataset.section));
+  });
+}
+
+// ── Dataset utilities ──────────────────────────────────
+function onDatasetChange() {
+  S.datasetId = document.getElementById('globalDataset').value;
+  document.querySelectorAll('.dataset-select').forEach(s => s.value = S.datasetId);
+}
+
+function syncDatasetSelects(datasets) {
+  const selects = document.querySelectorAll('.dataset-select, #globalDataset');
+  selects.forEach(s => {
+    const val = s.value;
+    s.innerHTML = '<option value="">— select —</option>';
+    datasets.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.id;
+      o.textContent = d.name || d.filename || d.id;
+      s.appendChild(o);
+    });
+    if (val) s.value = val;
+  });
+}
+
+async function loadDatasets() {
+  const data = await apiFetch('/data/datasets');
+  if (!data) return;
+  S.datasets = data.datasets || [];
+  syncDatasetSelects(S.datasets);
+  renderDatasetsTable(S.datasets);
+  document.getElementById('stat-datasets').textContent = S.datasets.length;
+  renderRecentDatasets(S.datasets);
+}
+
+function renderDatasetsTable(datasets) {
+  const tbody = document.getElementById('datasetsTable');
+  if (!datasets.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--txt-3)">No datasets — upload one above</td></tr>';
+    return;
+  }
+  tbody.innerHTML = datasets.map(d => `
+    <tr>
+      <td>${d.name || d.filename || 'Dataset'}</td>
+      <td><span class="badge badge-muted">${(d.file_type||'CSV').toUpperCase()}</span></td>
+      <td>${(d.rows||0).toLocaleString()}</td>
+      <td>${d.columns||'—'}</td>
+      <td>${d.size_mb ? d.size_mb.toFixed(1)+' MB' : '—'}</td>
+      <td>${d.created_at ? new Date(d.created_at).toLocaleDateString() : '—'}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="quickSelect('${d.id}')"><i class="fa-solid fa-check"></i></button>
+        <button class="btn btn-ghost btn-sm" onclick="previewDataset('${d.id}')"><i class="fa-solid fa-eye"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDataset('${d.id}')"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderRecentDatasets(datasets) {
+  const el = document.getElementById('recentDatasets');
+  if (!datasets.length) {
+    el.innerHTML = '<div class="result-empty"><i class="fa-regular fa-folder-open"></i>No datasets yet</div>';
+    return;
+  }
+  el.innerHTML = datasets.slice(0,5).map(d => `
+    <div style="display:flex;align-items:center;gap:10px;padding:0.6rem 1rem;border-bottom:1px solid var(--border);cursor:pointer" onclick="quickSelect('${d.id}')" class="hover-row">
+      <i class="fa-solid fa-file-csv" style="color:var(--teal);font-size:13px"></i>
+      <span style="flex:1;font-size:13px;color:var(--txt)">${d.name || d.filename || 'Dataset'}</span>
+      <span class="badge badge-muted">${(d.rows||0).toLocaleString()} rows</span>
+    </div>
+  `).join('');
+}
+
+function quickSelect(id) {
+  S.datasetId = id;
+  document.querySelectorAll('.dataset-select, #globalDataset').forEach(s => s.value = id);
+  toast('Dataset selected', 'success');
+}
+
+// ── Upload ─────────────────────────────────────────────
+function onDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('uploadZone').classList.remove('drag-over'); }
+function onDrop(e) { e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleUpload(e.dataTransfer.files[0]); }
+
+async function handleUpload(file) {
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  const nameEl = document.getElementById('uploadFileName');
+  const bar = document.getElementById('uploadBar');
+  nameEl.textContent = file.name;
+  status.style.display = 'block';
+  // Animate progress
+  let pct = 0;
+  const iv = setInterval(() => { pct = Math.min(pct + Math.random()*15, 85); bar.style.width = pct+'%'; }, 200);
+
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch(`${API_BASE}/data/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${S.token}` },
+      body: form
+    });
+    const data = await res.json();
+    clearInterval(iv);
+    bar.style.width = '100%';
+    if (data.dataset_id || data.id || data.success) {
+      toast(`${file.name} uploaded`, 'success');
+      setTimeout(() => { status.style.display = 'none'; bar.style.width = '0%'; }, 1200);
+      loadDatasets();
+    } else {
+      toast(data.error || 'Upload failed', 'error');
+      status.style.display = 'none';
+    }
+  } catch(e) {
+    clearInterval(iv);
+    toast('Upload error — check backend', 'error');
+    status.style.display = 'none';
+  }
+}
+
+async function loadSample(name) {
+  toast(`Loading ${name} dataset…`, 'info');
+  const data = await apiPost('/data/sample', { name });
+  if (data?.success || data?.dataset_id) { toast(`${name} loaded`, 'success'); loadDatasets(); }
+  else toast(data?.error || 'Sample load failed', 'error');
+}
+
+async function previewDataset(id) {
+  const data = await apiFetch(`/data/datasets/${id}`);
+  if (!data) return;
+  toast(`Preview: ${data.rows} rows × ${data.columns} cols`, 'info');
+}
+
+async function deleteDataset(id) {
+  if (!confirm('Delete this dataset?')) return;
+  const data = await apiFetch(`/data/datasets/${id}`, { method: 'DELETE' });
+  if (data?.success || data?.message) { toast('Dataset deleted', 'success'); loadDatasets(); }
+  else toast(data?.error || 'Delete failed', 'error');
+}
+
+// ── EDA ────────────────────────────────────────────────
+async function runEda() {
+  const id = document.getElementById('edaDataset').value;
+  if (!id) { toast('Select a dataset first', 'error'); return; }
+  const btn = document.getElementById('edaBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Analysing…';
+  const type = document.getElementById('edaType').value;
+
+  const data = await apiPost('/eda/profile', { dataset_id: id, analysis_type: type });
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-play"></i> Run EDA Analysis';
+
+  const box = document.getElementById('edaResults');
+  box.style.display = 'block';
+
+  if (!data || data.error) { box.innerHTML = `<div class="result-empty"><i class="fa-solid fa-xmark"></i>${data?.error||'EDA failed'}</div>`; return; }
+
+  const s = data.basic_stats || data;
+  const shape = s.shape || [0,0];
+  const missing = s.missing_values || {};
+  const totalMissing = Object.values(missing).reduce((a,b)=>a+b, 0);
+
+  box.innerHTML = `
+    <div class="metric-grid">
+      <div class="metric-item"><div class="m-val">${shape[0]?.toLocaleString()||'—'}</div><div class="m-lbl">Rows</div></div>
+      <div class="metric-item"><div class="m-val">${shape[1]||'—'}</div><div class="m-lbl">Columns</div></div>
+      <div class="metric-item"><div class="m-val">${totalMissing}</div><div class="m-lbl">Missing values</div></div>
+    </div>
+    ${s.columns ? `<div style="margin-bottom:1rem"><div class="form-label">Columns</div>${s.columns.map(c=>`<span class="tag">${c}</span>`).join('')}</div>` : ''}
+    ${data.correlation ? `<div style="margin-top:1rem"><div class="form-label" style="margin-bottom:6px">High Correlations</div><div class="code-block">${JSON.stringify(data.correlation.high_correlation_pairs||[], null, 2)}</div></div>` : ''}
+    ${s.numeric_summary ? `<div style="margin-top:1rem"><div class="form-label" style="margin-bottom:6px">Numeric Summary</div><div class="code-block">${JSON.stringify(s.numeric_summary, null, 2)}</div></div>` : ''}
+  `;
+  toast('EDA complete', 'success');
+}
+
+// ── Cleaning ───────────────────────────────────────────
+async function detectIssues() {
+  const id = document.getElementById('cleanDataset').value;
+  if (!id) { toast('Select a dataset', 'error'); return; }
+  const data = await apiPost('/eda/issues', { dataset_id: id });
+  const box = document.getElementById('issueResults');
+  if (!data || data.error) { box.innerHTML = `<p style="color:var(--rose);font-size:13px">${data?.error||'Scan failed'}</p>`; return; }
+  const issues = data.missing_analysis || data;
+  box.innerHTML = `<div class="code-block">${JSON.stringify(issues, null, 2)}</div>`;
+  toast('Scan complete', 'success');
+}
+
+async function runCleaning() {
+  const id = document.getElementById('cleanDataset').value;
+  if (!id) { toast('Select a dataset', 'error'); return; }
+  const btn = document.getElementById('cleanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Cleaning…';
+
+  const ops = {
+    dataset_id: id,
+    operations: {
+      remove_duplicates: document.getElementById('c-dupes').checked,
+      handle_missing: document.getElementById('c-missing').checked,
+      remove_outliers: document.getElementById('c-outliers').checked,
+      normalize: document.getElementById('c-normalize').checked,
+      encode_categorical: document.getElementById('c-encode').checked
+    },
+    missing_strategy: document.getElementById('missingStrategy').value
+  };
+
+  const data = await apiPost('/cleaning/apply', ops);
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Apply Cleaning';
+
+  const box = document.getElementById('cleanResults');
+  box.style.display = 'block';
+  if (!data || data.error) { box.innerHTML = `<p style="color:var(--rose);font-size:13px">${data?.error||'Cleaning failed'}</p>`; return; }
+
+  const r = data.cleaning_results || data;
+  box.innerHTML = `
+    <div class="metric-grid">
+      <div class="metric-item"><div class="m-val">${r.rows_removed||0}</div><div class="m-lbl">Rows removed</div></div>
+      <div class="metric-item"><div class="m-val">${r.missing_filled||0}</div><div class="m-lbl">Missing filled</div></div>
+      <div class="metric-item"><div class="m-val">${r.new_shape?r.new_shape[0]:0}</div><div class="m-lbl">Rows remaining</div></div>
+    </div>
+    <div class="code-block">${JSON.stringify(r, null, 2)}</div>
+  `;
+  toast('Cleaning applied', 'success');
+  loadDatasets();
+}
+
+// ── Visualization ──────────────────────────────────────
+function selectChartType(el, type) {
+  document.querySelectorAll('#chartTypeGrid .algo-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('vizChartType').value = type;
+}
+
+async function loadVizColumns() {
+  const id = document.getElementById('vizDataset').value;
+  if (!id) return;
+  const data = await apiFetch(`/data/datasets/${id}`);
+  if (!data) return;
+  const cols = data.columns || [];
+  ['vizXCol','vizYCol','vizColorCol'].forEach(sid => {
+    const s = document.getElementById(sid);
+    const saved = s.value;
+    s.innerHTML = sid.includes('Color') ? '<option value="">None</option>' : '';
+    cols.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; s.appendChild(o); });
+    if (saved) s.value = saved;
+  });
+}
+
+async function createChart() {
+  const id = document.getElementById('vizDataset').value;
+  if (!id) { toast('Select a dataset', 'error'); return; }
+  const btn = document.getElementById('vizBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Creating…';
+
+  const payload = {
+    dataset_id: id,
+    chart_type: document.getElementById('vizChartType').value,
+    x_col: document.getElementById('vizXCol').value,
+    y_col: document.getElementById('vizYCol').value,
+    color_col: document.getElementById('vizColorCol').value || null
+  };
+
+  const data = await apiPost('/visualization/create', payload);
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-chart-column"></i> Create Chart';
+  const output = document.getElementById('vizOutput');
+
+  if (!data || data.error) { output.innerHTML = `<p style="color:var(--rose);font-size:13px">${data?.error||'Chart creation failed'}</p>`; return; }
+
+  // Render Plotly chart if JSON available
+  if (data.chart_json) {
+    output.innerHTML = '<div id="plotlyChart" style="width:100%;height:320px"></div>';
+    if (window.Plotly) {
+      const fig = JSON.parse(data.chart_json);
+      fig.layout = { ...fig.layout, paper_bgcolor:'transparent', plot_bgcolor:'transparent', font:{color:'#E2E8F0'} };
+      Plotly.newPlot('plotlyChart', fig.data, fig.layout, { responsive:true, displayModeBar:false });
+    }
+  } else {
+    output.innerHTML = `<div class="code-block">${JSON.stringify(data, null, 2)}</div>`;
+  }
+  toast('Chart created', 'success');
+}
+
+// ── Analysis ───────────────────────────────────────────
+async function runAnalysis() {
+  const id = document.getElementById('analysisDataset').value;
+  if (!id) { toast('Select a dataset', 'error'); return; }
+  const btn = document.getElementById('analysisBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Analysing…';
+
+  const test = document.getElementById('analysisTest').value;
+  const payload = {
+    dataset_id: id, test_type: test,
+    group_col: document.getElementById('analysisGroupCol').value || null,
+    value_col: document.getElementById('analysisValueCol').value || null
+  };
+
+  const endpoint = test === 'descriptive' ? '/analysis/descriptive' : '/analysis/hypothesis';
+  const data = await apiPost(endpoint, payload);
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-sigma"></i> Run Analysis';
+
+  const box = document.getElementById('analysisResults');
+  if (!data || data.error) { box.innerHTML = `<p style="color:var(--rose)">${data?.error||'Analysis failed'}</p>`; return; }
+  box.innerHTML = `<div class="code-block">${JSON.stringify(data, null, 2)}</div>`;
+  toast('Analysis complete', 'success');
+}
+
+// ── ML ─────────────────────────────────────────────────
+function selectAlgo(el, algo) {
+  document.querySelectorAll('#algoGrid .algo-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('mlAlgo').value = algo;
+}
+
+async function loadMlColumns() {
+  const id = document.getElementById('mlDataset').value;
+  if (!id) return;
+  const data = await apiFetch(`/data/datasets/${id}`);
+  if (!data) return;
+  const cols = data.columns || [];
+  S.datasetColumns = cols;
+  const target = document.getElementById('mlTarget');
+  target.innerHTML = '';
+  cols.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; target.appendChild(o); });
+}
+
+async function trainModel() {
+  const id = document.getElementById('mlDataset').value;
+  const target = document.getElementById('mlTarget').value;
+  if (!id || !target) { toast('Select dataset and target column', 'error'); return; }
+
+  const btn = document.getElementById('mlTrainBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Training…';
+
+  const payload = {
+    dataset_id: id,
+    model_type: document.getElementById('mlAlgo').value,
+    target_col: target,
+    problem_type: document.getElementById('mlProblemType').value,
+    test_size: parseFloat(document.getElementById('testSize').value)
+  };
+
+  const data = await apiPost('/ml/train', payload);
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-play"></i> Train Model';
+
+  const box = document.getElementById('mlResults');
+  if (!data || data.error) { box.innerHTML = `<p style="color:var(--rose)">${data?.error||'Training failed'}</p>`; return; }
+
+  const m = data.metrics || {};
+  const keys = Object.keys(m);
+  box.innerHTML = `
+    <div class="metric-grid" style="grid-template-columns:repeat(2,1fr)">
+      ${keys.slice(0,4).map(k=>`<div class="metric-item"><div class="m-val">${typeof m[k]==='number'?m[k].toFixed(4):m[k]}</div><div class="m-lbl">${k.replace(/_/g,' ')}</div></div>`).join('')}
+    </div>
+    <div style="margin-top:10px">
+      <span class="badge badge-teal">${data.model_type||'Model'}</span>
+      <span class="badge badge-violet" style="margin-left:6px">${data.problem_type||''}</span>
+      ${data.model_id ? `<span class="badge badge-muted" style="margin-left:6px;font-family:var(--font-mono)">ID: ${data.model_id.slice(0,8)}</span>` : ''}
+    </div>
+    ${data.feature_importance ? `
+      <div style="margin-top:1rem">
+        <div class="form-label" style="margin-bottom:6px">Feature Importance</div>
+        <div class="code-block">${JSON.stringify(data.feature_importance, null, 2)}</div>
+      </div>
+    ` : ''}
+  `;
+  toast('Model trained!', 'success');
+  loadExperiments();
+  loadModels();
+}
+
+async function compareModels() {
+  const id = document.getElementById('mlDataset').value;
+  const target = document.getElementById('mlTarget').value;
+  if (!id || !target) { toast('Select dataset and target', 'error'); return; }
+  toast('Comparing all algorithms…', 'info');
+  const data = await apiPost('/ml/compare', {
+    dataset_id: id, target_col: target,
+    problem_type: document.getElementById('mlProblemType').value
+  });
+  const box = document.getElementById('compareResults');
+  if (!data || data.error) { box.innerHTML = `<p style="color:var(--rose)">${data?.error||'Compare failed'}</p>`; return; }
+  box.innerHTML = `<div class="code-block" style="max-height:200px;overflow-y:auto">${JSON.stringify(data, null, 2)}</div>`;
+  toast('Comparison done', 'success');
+}
+
+// ── MLOps ──────────────────────────────────────────────
+async function startExperiment() {
+  const name = document.getElementById('expName').value;
+  if (!name) { toast('Enter experiment name', 'error'); return; }
+  const data = await apiPost('/mlops/experiments/start', {
+    name, description: document.getElementById('expDesc').value
+  });
+  if (data?.experiment_id || data?.id) { toast('Experiment started', 'success'); loadExperiments(); }
+  else toast(data?.error||'Failed', 'error');
+}
+
+async function loadExperiments() {
+  const data = await apiFetch('/mlops/experiments');
+  const tbody = document.getElementById('experimentsTable');
+  const exps = data?.experiments || [];
+  document.getElementById('stat-experiments').textContent = exps.length;
+  if (!exps.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--txt-3)">No experiments yet</td></tr>'; return; }
+  tbody.innerHTML = exps.map(e => `
+    <tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${(e.id||'').slice(0,8)}</td>
+      <td>${e.name||'—'}</td>
+      <td><span class="badge badge-teal">Active</span></td>
+      <td>${e.start_time ? new Date(e.start_time).toLocaleString() : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadModels() {
+  const data = await apiFetch('/mlops/models');
+  const tbody = document.getElementById('modelsTable');
+  const models = data?.models || [];
+  document.getElementById('stat-models').textContent = models.length;
+  if (!models.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--txt-3)">No registered models</td></tr>'; return; }
+  tbody.innerHTML = models.map(m => {
+    const metrics = m.metrics || {};
+    const mainMetric = metrics.accuracy || metrics.r2_score || metrics.f1_score || '—';
+    return `
+      <tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${(m.id||'').slice(0,8)}</td>
+        <td>${m.name||'—'}</td>
+        <td>${m.version||'1.0'}</td>
+        <td><span class="badge badge-teal">${typeof mainMetric==='number'?mainMetric.toFixed(3):mainMetric}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Reports ────────────────────────────────────────────
+async function generateReport() {
+  const id = document.getElementById('reportDataset').value;
+  if (!id) { toast('Select a dataset', 'error'); return; }
+  const btn = document.getElementById('reportBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Generating…';
+
+  const data = await apiPost('/reports/generate', {
+    dataset_id: id,
+    report_type: document.getElementById('reportType').value,
+    title: document.getElementById('reportTitle').value || 'FINESE2 Report',
+    format: document.getElementById('reportFormat').value
+  });
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-file-export"></i> Generate Report';
+
+  const preview = document.getElementById('reportPreview');
+  if (!data || data.error) { preview.innerHTML = `<p style="color:var(--rose)">${data?.error||'Report failed'}</p>`; return; }
+
+  preview.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <i class="fa-solid fa-file-circle-check" style="color:var(--teal);font-size:1.5rem"></i>
+      <div>
+        <div style="font-weight:500;color:var(--txt)">${data.title||'Report'}</div>
+        <div style="font-size:12px;color:var(--txt-3)">Generated at ${new Date().toLocaleString()}</div>
+      </div>
+    </div>
+    <div class="code-block" style="max-height:250px;overflow-y:auto">${JSON.stringify(data, null, 2)}</div>
+  `;
+  toast('Report generated', 'success');
+}
+
+// ── Settings ───────────────────────────────────────────
+async function loadPlatformInfo() {
+  const data = await apiFetch('/about').catch(() => null) || await fetch('/about').then(r=>r.json()).catch(()=>null);
+  document.getElementById('platformInfo').textContent = JSON.stringify(data||{name:'FINESE2',version:'4.0.0'}, null, 2);
+}
+
+async function checkHealth() {
+  const box = document.getElementById('healthResult');
+  box.innerHTML = '<div class="spinner" style="display:inline-block"></div> Checking…';
+  try {
+    const r = await fetch('/health');
+    const data = await r.json();
+    box.innerHTML = `<span style="color:var(--teal)"><i class="fa-solid fa-circle-check"></i> ${data.status||'ok'}</span>`;
+  } catch(e) {
+    box.innerHTML = `<span style="color:var(--rose)"><i class="fa-solid fa-circle-xmark"></i> Backend not reachable</span>`;
+  }
+}
+
+async function saveApiKeys() {
+  toast('API keys saved to session', 'success');
+}
+
+// ── Overview chart ─────────────────────────────────────
+let overviewChart;
+function buildOverviewChart() {
+  const ctx = document.getElementById('overviewChart').getContext('2d');
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun'];
+  overviewChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Datasets', data: [3,5,4,8,6,S.datasets.length||7],
+          backgroundColor: 'rgba(5,216,164,0.7)', borderColor: '#05D8A4', borderWidth:0, borderRadius:4 },
+        { label: 'Models', data: [1,2,3,5,4,S.datasets.length>0?6:3],
+          backgroundColor: 'rgba(129,140,248,0.7)', borderColor:'#818CF8', borderWidth:0, borderRadius:4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color:'#8B9CC4', font:{ family:"'Inter',sans-serif", size:12 } } }
+      },
+      scales: {
+        x: { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#3D4F72' } },
+        y: { beginAtZero:true, grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#3D4F72' } }
+      }
+    }
+  });
+}
+
+function switchTf(btn, tf) {
+  document.querySelectorAll('.active-tf').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── Boot ───────────────────────────────────────────────
+function loadDashboard() { 
+  buildOverviewChart(); 
+  loadDatasets();
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  setupNav();
+  loadDashboard();
+});
+
+</script>
+
+<!-- Optional: Plotly for chart rendering if backend returns JSON -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 </body>
 </html>

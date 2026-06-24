@@ -12,27 +12,57 @@ def register_blueprints(app: Flask) -> None:
     Args:
         app: Flask application instance
     """
-    # Core API routes
-    from app.routes.api.data import data_bp
-    from app.routes.api.eda import eda_bp
-    from app.routes.api.cleaning import cleaning_bp
-    from app.routes.api.visualization import visualization_bp
-    from app.routes.api.analysis import analysis_bp
-    from app.routes.api.ml import ml_bp
-    from app.routes.api.mlops import mlops_bp
-    from app.routes.api.reports import reports_bp
-    from app.routes.api.dashboard import dashboard_bp
+    # Consolidated API routes
+    from app.routes.api.data_ops import data_ops_bp
+    from app.routes.api.ml_ops import ml_ops_bp
+    from app.routes.api.dashboard_ops import dashboard_ops_bp
+    from app.routes.api.eda_ops import eda_ops_bp  # Added EDA operations
+
+    # Optional modules introduced in A–G implementation
+    try:
+        from app.routes.api.jobs_ops import jobs_ops_bp  # type: ignore
+    except Exception:
+        jobs_ops_bp = None
+
+    try:
+        from app.routes.api.ai_ops import ai_ops_bp  # type: ignore
+    except Exception:
+        ai_ops_bp = None
     
     # Register API routes under /api/v1 prefix
-    app.register_blueprint(data_bp, url_prefix='/api/v1/data')
-    app.register_blueprint(eda_bp, url_prefix='/api/v1/eda')
-    app.register_blueprint(cleaning_bp, url_prefix='/api/v1/cleaning')
-    app.register_blueprint(visualization_bp, url_prefix='/api/v1/visualization')
-    app.register_blueprint(analysis_bp, url_prefix='/api/v1/analysis')
-    app.register_blueprint(ml_bp, url_prefix='/api/v1/ml')
-    app.register_blueprint(mlops_bp, url_prefix='/api/v1/mlops')
-    app.register_blueprint(reports_bp, url_prefix='/api/v1/reports')
-    app.register_blueprint(dashboard_bp, url_prefix='/api/v1/dashboard')
+    app.register_blueprint(data_ops_bp, url_prefix='/api/v1/data')
+    app.register_blueprint(ml_ops_bp, url_prefix='/api/v1/ml')
+    app.register_blueprint(dashboard_ops_bp, url_prefix='/api/v1/dashboard')
+    app.register_blueprint(eda_ops_bp, url_prefix='/api/v1/eda')  # Added EDA endpoint
+    
+    # Also register ml_ops under /api/v1/mlops for frontend compatibility
+    try:
+        from app.routes.api.ml_ops import ml_ops_bp as mlops_bp
+        app.register_blueprint(mlops_bp, url_prefix='/api/v1/mlops')
+    except Exception:
+        pass
+    
+    # Also register dashboard_ops under /api/v1/reports for frontend compatibility
+    try:
+        from app.routes.api.dashboard_ops import dashboard_ops_bp as reports_bp
+        app.register_blueprint(reports_bp, url_prefix='/api/v1/reports')
+    except Exception:
+        pass
+
+    # A–G: async jobs + AI tool execution
+    if jobs_ops_bp is not None:
+        app.register_blueprint(jobs_ops_bp, url_prefix='/api/v1/jobs')
+
+    if ai_ops_bp is not None:
+        app.register_blueprint(ai_ops_bp, url_prefix='/api/v1/ai')
+
+    # Tokenized tool execution alias expected by some docs/clients
+    # (keep backwards compatible)
+    if ai_ops_bp is not None:
+        try:
+            app.register_blueprint(ai_ops_bp, url_prefix='/api/v1/tools')
+        except Exception:
+            pass
 
     # Main routes (no prefix)
     from app.routes.main import main_bp

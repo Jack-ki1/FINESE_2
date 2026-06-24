@@ -1,8 +1,8 @@
 """
-FINESE2 - Main Dashboard Routes
-Serves the main dashboard interface and basic routes.
+FINESE2 - Main Routes
+Handles main application pages and entry points.
 """
-from flask import Blueprint, render_template, jsonify, send_from_directory
+from flask import Blueprint, render_template, current_app, send_from_directory, jsonify, request
 import os
 
 main_bp = Blueprint('main', __name__)
@@ -10,77 +10,77 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    """
-    Serve the main dashboard page.
-    
-    Returns:
-        Rendered HTML template
-    """
+    """Main dashboard page - serves the comprehensive dashboard.html."""
     return render_template('dashboard.html')
 
 
 @main_bp.route('/dashboard')
 def dashboard():
-    """
-    Serve the dashboard page (alias for index).
-    
-    Returns:
-        Rendered HTML template
-    """
+    """Dashboard page - same as index for consistency."""
     return render_template('dashboard.html')
 
 
-@main_bp.route('/uploads/<path:filename>')
-def uploaded_file(filename):
-    """
-    Serve uploaded files securely.
-    
-    Args:
-        filename: Name of the file to serve
-        
-    Returns:
-        File response or 404
-    """
-    upload_folder = os.path.join(
-        os.path.dirname(__file__),
-        '..',
-        '..',
-        'dashboard',
-        'uploads'
-    )
-    
-    # Security: Ensure file exists and is within upload folder
-    safe_path = os.path.join(upload_folder, filename)
-    if not os.path.exists(safe_path):
-        return jsonify({'error': 'File not found'}), 404
-    
-    return send_from_directory(upload_folder, filename)
+@main_bp.route('/analytics')
+def analytics():
+    """Analytics dashboard view."""
+    return render_template('dashboard.html')
 
 
-@main_bp.route('/about')
-def about():
-    """
-    Serve the about page with platform information.
-    
-    Returns:
-        JSON with platform info
-    """
+@main_bp.route('/ml-monitoring')
+def ml_monitoring():
+    """ML monitoring dashboard view."""
+    return render_template('dashboard.html')
+
+
+@main_bp.route('/api-docs')
+def api_docs():
+    """API documentation page."""
+    # For now, redirect to a simple API info endpoint
     return jsonify({
-        'name': 'FINESE2',
-        'version': '4.0.0',
-        'description': 'Professional Data Intelligence Platform',
-        'features': [
-            'Data Upload & Management',
-            'Automated EDA & Profiling',
-            'Interactive Visualizations',
-            'Machine Learning AutoML',
-            'MLOps Experiment Tracking',
-            'Consolidated Architecture'
-        ]
+        'api_version': 'v1',
+        'documentation': 'See README.md for API documentation',
+        'endpoints': {
+            'data': '/api/v1/data/*',
+            'ml': '/api/v1/ml/*',
+            'dashboard': '/api/v1/dashboard/*',
+            'jobs': '/api/v1/jobs/*',
+            'ai': '/api/v1/ai/*'
+        }
     })
 
 
-@main_bp.errorhandler(404)
-def page_not_found(e):
-    """Handle 404 errors for undefined routes."""
-    return jsonify({'error': 'Page not found'}), 404
+@main_bp.route('/favicon.ico')
+def favicon():
+    """Serve favicon."""
+    try:
+        return send_from_directory(
+            os.path.join(current_app.root_path, 'static'),
+            'favicon.ico',
+            mimetype='image/vnd.microsoft.icon'
+        )
+    except Exception:
+        # Return empty response if favicon doesn't exist
+        return '', 204
+
+
+@main_bp.app_errorhandler(404)
+def not_found(error):
+    """Handle 404 errors."""
+    # For SPA (Single Page Application), return dashboard.html for all non-API routes
+    if not request.path.startswith('/api/'):
+        return render_template('dashboard.html'), 404
+    
+    return jsonify({
+        'error': 'Not found',
+        'message': 'The requested resource was not found',
+        'path': request.path
+    }), 404
+
+
+@main_bp.app_errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors."""
+    return jsonify({
+        'error': 'Internal server error',
+        'message': 'An internal server error occurred'
+    }), 500

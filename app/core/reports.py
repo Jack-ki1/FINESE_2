@@ -32,6 +32,29 @@ class ReportGenerator:
             'comparison': self._comparison_report_template
         }
     
+    def generate_report(self, df: pd.DataFrame, report_type: str = 'basic', title: str = "Report") -> Dict[str, Any]:
+        """Generate a report based on the specified type."""
+        report_methods = {
+            'basic': self.generate_basic_report,
+            'eda': self.generate_eda_report,
+            'ml': lambda df, t: self.generate_ml_report({'name': 'N/A'}, {}, df),
+            'comparison': lambda df, t: {'error': 'Comparison requires multiple models'}
+        }
+        
+        if report_type not in report_methods:
+            raise ValueError(f"Unsupported report type: {report_type}. Supported types: {list(report_methods.keys())}")
+        
+        # Call the appropriate report method
+        method = report_methods[report_type]
+        report_content = method(df, title)
+        
+        return {
+            'title': title,
+            'type': report_type,
+            'content': report_content,
+            'generated_at': pd.Timestamp.now().isoformat()
+        }
+    
     def _basic_report_template(self, data: Dict[str, Any]) -> str:
         """Generate a basic report template."""
         template = """

@@ -1,52 +1,28 @@
 """
-FINESE2 - Flask Application Factory
-Professional data intelligence platform with authentication and MLOps
+FINESE2 - Application Factory
+Creates and configures the Flask application instance.
 """
 import os
 import logging
 from flask import Flask, jsonify
-from app.config import Config
-from app.extensions import init_extensions
-from app.routes import register_blueprints
+from app.config import get_config
+from app.extensions import init_extensions, db
 
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Initialize logger
 logger = logging.getLogger(__name__)
 
-
-def create_app(config_class=None):
-    # Ensure SQLite instance folder exists so sqlite:///instance/*.db can be created
-    try:
-        instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'instance')
-        os.makedirs(instance_path, exist_ok=True)
-    except Exception:
-        pass
-
+def create_app(config_name=None):
     """
-    Application factory pattern for FINESE2.
+    Application factory function.
     
     Args:
-        config_class: Configuration class to use (defaults to environment-based)
-    
+        config_name: Configuration environment name
+        
     Returns:
         Configured Flask application instance
     """
-    # Determine configuration based on environment
-    if config_class is None:
-        env = os.environ.get('FLASK_ENV', 'development')
-        if env == 'production':
-            from app.config import ProductionConfig
-            config_class = ProductionConfig
-        elif env == 'testing':
-            from app.config import TestingConfig
-            config_class = TestingConfig
-        else:
-            from app.config import DevelopmentConfig
-            config_class = DevelopmentConfig
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development')
     
     # Create Flask app with template and static folders from dashboard
     app = Flask(
@@ -56,68 +32,64 @@ def create_app(config_class=None):
     )
     
     # Load configuration
+    config_class = get_config(config_name)
     app.config.from_object(config_class)
     
-    # Initialize extensions (database, JWT, Redis, etc.)
+    # Set environment variable for use in other parts of the application
+    app.config['ENVIRONMENT'] = config_name
+    
+    # Initialize extensions (database, Redis, etc.)
     init_extensions(app)
     
-    # Register blueprints (routes)
+    # Register blueprints/routes
+    from app.routes import register_blueprints
     register_blueprints(app)
     
-    # Register error handlers
-    register_error_handlers(app)
+    # Import models to ensure they are registered with SQLAlchemy
+    # This must happen before db.create_all()
+    try:
+        from app.models import User, Dataset, Experiment, ModelVersion, Job, AuditLog
+    except ImportError as e:
+        logger.warning(f"Could not import models: {e}")
+    
+    # Create database tables
+    # IMPORTANT: do not prevent app startup if DB initialization fails.
+    # Many environments (tests/dev) should still allow routes like /health.
+    with app.app_context():
+        try:
+            # Ensure instance directory exists
+            instance_path = app.config.get('INSTANCE_PATH')
+            if instance_path:
+                os.makedirs(instance_path, exist_ok=True)
+                logger.info(f"Instance directory created/verified at {instance_path}")
+            
+            db.create_all()
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.exception(
+                "Database initialization failed; continuing startup. "
+                "URI=%s cwd=%s Error=%s",
+                app.config.get('SQLALCHEMY_DATABASE_URI'),
+                os.getcwd(),
+                e,
+            )
+            app.config['DB_INIT_FAILED'] = True
+            app.config['DB_INIT_ERROR'] = str(e)
     
     # Register health check endpoint
     register_health_check(app)
     
     # Keep-alive for Hugging Face Spaces (prevents sleep)
     if os.environ.get('SPACE_ID'):
-        logger.info("Detected Hugging Face Spaces environment - starting keep-alive")
+        print("Detected Hugging Face Spaces environment - starting keep-alive")
         import threading
         from app.utils.keep_alive import start_keep_alive
         thread = threading.Thread(target=start_keep_alive, daemon=True)
         thread.start()
-    
-    logger.info(f"FINESE2 application created successfully in {env} mode")
+
+    print(f"FINESE2 application created successfully in {config_name} mode")
     
     return app
-
-
-def register_error_handlers(app):
-    """Register global error handlers for consistent API responses."""
-    
-    @app.errorhandler(400)
-    def bad_request(error):
-        return jsonify({'error': 'Bad request', 'message': str(error)}), 400
-    
-    @app.errorhandler(401)
-    def unauthorized(error):
-        return jsonify({'error': 'Unauthorized', 'message': 'Authentication required'}), 401
-    
-    @app.errorhandler(403)
-    def forbidden(error):
-        return jsonify({'error': 'Forbidden', 'message': 'Access denied'}), 403
-    
-    @app.errorhandler(404)
-    def not_found(error):
-        return jsonify({'error': 'Not found', 'message': 'Resource not found'}), 404
-    
-    @app.errorhandler(405)
-    def method_not_allowed(error):
-        return jsonify({'error': 'Method not allowed', 'message': 'HTTP method not supported'}), 405
-    
-    @app.errorhandler(429)
-    def rate_limit_exceeded(error):
-        return jsonify({'error': 'Rate limit exceeded', 'message': 'Too many requests'}), 429
-    
-    @app.errorhandler(500)
-    def internal_error(error):
-        logger.error(f"Internal server error: {error}")
-        return jsonify({'error': 'Internal server error', 'message': 'An unexpected error occurred'}), 500
-    
-    @app.errorhandler(503)
-    def service_unavailable(error):
-        return jsonify({'error': 'Service unavailable', 'message': 'Service temporarily unavailable'}), 503
 
 
 def register_health_check(app):
@@ -135,7 +107,7 @@ def register_health_check(app):
             
             return jsonify({
                 'status': 'healthy',
-                'version': '3.0.0',
+                'version': '4.0.0',
                 'python_version': sys.version.split()[0],
                 'database': 'connected',
                 'environment': os.environ.get('FLASK_ENV', 'development')

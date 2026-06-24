@@ -1,4 +1,87 @@
 """
+Helper functions for the FINESE2 application.
+"""
+from functools import wraps
+from flask import current_app, request
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from flask_jwt_extended.exceptions import NoAuthorizationError
+
+
+def jwt_optional_dev(f):
+    """
+    Decorator that makes JWT optional in development mode but required in production.
+    In development, if no JWT is present, it sets a default user ID.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if we're in development mode
+        is_development = current_app.config.get('ENVIRONMENT', 'development') == 'development' or \
+                        current_app.config.get('DEBUG', False)
+        
+        try:
+            # Try to verify JWT normally
+            verify_jwt_in_request()
+            # If successful, get the identity and proceed normally
+            user_id = get_jwt_identity()
+            request.current_user_id = user_id
+        except NoAuthorizationError:
+            # If no authorization header is present
+            if is_development:
+                # In development mode, allow the request to proceed with a default user
+                request.current_user_id = 'dev_user'
+            else:
+                # In production, raise the exception
+                raise
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
+def get_current_user_id():
+    """
+    Get the current user ID from JWT token if available.
+    In development mode, returns the actual user ID if a valid token is provided,
+    otherwise returns 'dev_user'. In production mode, requires a valid token.
+    """
+    # Check if we're in development mode
+    app_env = current_app.config.get('ENVIRONMENT', 'development')
+    is_debug = current_app.config.get('DEBUG', False)
+    
+    if app_env == 'development' or is_debug:
+        # In development mode, check if a token is present in the request
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            # There's a token, try to decode it
+            try:
+                user_id = get_jwt_identity()
+                return user_id
+            except NoAuthorizationError:
+                # If token is invalid, return default user for development
+                return 'dev_user'
+        else:
+            # No token provided in development, return default
+            return 'dev_user'
+    else:
+        # In production mode, require JWT token
+        try:
+            user_id = get_jwt_identity()
+            return user_id
+        except NoAuthorizationError:
+            # Re-raise the exception in production
+            raise
+
+
+def is_development_mode():
+    """
+    Check if the application is running in development mode.
+    """
+    app_env = current_app.config.get('ENVIRONMENT', 'development')
+    is_debug = current_app.config.get('DEBUG', False)
+    return app_env == 'development' or is_debug
+
+
+"""
 Helper Utilities for data_all1
 """
 import base64

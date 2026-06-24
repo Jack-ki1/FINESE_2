@@ -17,11 +17,16 @@ class CleaningManager:
     """
     Unified data cleaning class combining all cleaning operations
     """
-    
+
     def __init__(self):
         self.cleaning_operations = []
         self.scalers = {}
         self.encoders = {}
+        self._last_cleaning_summary: Dict[str, Any] = {
+            'operations_applied': [],
+            'input_shape': None,
+            'output_shape': None
+        }
     
     def detect_issues(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Detect various data quality issues"""
@@ -105,7 +110,14 @@ class CleaningManager:
     def clean_dataset(self, df: pd.DataFrame, operations: List[Dict]) -> pd.DataFrame:
         """Apply cleaning operations to dataset"""
         cleaned_df = df.copy()
-        
+
+        # Reset summary for this run
+        self._last_cleaning_summary = {
+            'operations_applied': [],
+            'input_shape': tuple(df.shape),
+            'output_shape': None
+        }
+
         for op in operations:
             op_type = op.get('operation')
             column = op.get('column')
@@ -182,10 +194,32 @@ class CleaningManager:
                     elif method == 'boxcox':
                         from scipy import stats
                         cleaned_df[column], _ = stats.boxcox(cleaned_df[column] - cleaned_df[column].min() + 1)
-        
+
+            # Record applied operation (best effort)
+            self._last_cleaning_summary['operations_applied'].append(op)
+
+        self._last_cleaning_summary['output_shape'] = tuple(cleaned_df.shape)
         return cleaned_df
     
-    def impute_missing_values(self, df: pd.DataFrame, strategy: str = 'mean', 
+    def apply_cleaning_operations(self, df: pd.DataFrame, operations: List[Dict]) -> pd.DataFrame:
+        """
+        Compatibility wrapper expected by app/routes/api/data_ops.py
+
+        Route passes `operations` as cleaning_operations.
+        We map directly onto clean_dataset operations.
+        """
+        if operations is None:
+            operations = []
+        if not isinstance(operations, list):
+            raise ValueError('operations must be a list')
+
+        return self.clean_dataset(df, operations)
+
+    def get_cleaning_summary(self) -> Dict[str, Any]:
+        """Return the summary from the most recent cleaning run."""
+        return self._last_cleaning_summary
+
+    def impute_missing_values(self, df: pd.DataFrame, strategy: str = 'mean',
                             columns: Optional[List[str]] = None) -> pd.DataFrame:
         """Impute missing values using various strategies"""
         df_imputed = df.copy()

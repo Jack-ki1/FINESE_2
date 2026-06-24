@@ -391,3 +391,6 @@ class AnalysisEngine:
 
 # Global instance
 analysis_engine = AnalysisEngine()
+
+# Backwards-compatible export expected by app/routes/api/ml_ops.py
+statistical_analyzer = analysis_engine

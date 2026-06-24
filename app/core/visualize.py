@@ -23,6 +23,41 @@ class Visualizer:
         self.color_palette = px.colors.qualitative.Set3
         self.continuous_colorscale = px.colors.sequential.Viridis
     
+    def create_chart(self, df: pd.DataFrame, chart_type: str, x_col: str = None, 
+                     y_col: str = None, color_col: str = None, **kwargs) -> go.Figure:
+        """Create a chart based on the specified type."""
+        chart_methods = {
+            'scatter': self.create_scatter_plot,
+            'line': self.create_line_plot,
+            'bar': self.create_bar_plot,
+            'histogram': self.create_histogram,
+            'box': self.create_box_plot,
+            'heatmap': self.create_heatmap,
+            'pie': self.create_pie_chart,
+            'violin': self.create_violin_plot,
+        }
+        
+        if chart_type not in chart_methods:
+            raise ValueError(f"Unsupported chart type: {chart_type}. Supported types: {list(chart_methods.keys())}")
+        
+        # Call the appropriate chart method with provided parameters
+        method = chart_methods[chart_type]
+        
+        # Build kwargs based on chart type requirements
+        chart_kwargs = {'df': df, 'title': f"{chart_type.title()} Chart"}
+        
+        if x_col:
+            chart_kwargs['x_col'] = x_col
+        if y_col:
+            chart_kwargs['y_col'] = y_col
+        if color_col:
+            chart_kwargs['color_col'] = color_col
+        
+        # Add any additional kwargs
+        chart_kwargs.update(kwargs)
+        
+        return method(**chart_kwargs)
+    
     def create_scatter_plot(self, df: pd.DataFrame, x_col: str, y_col: str, 
                            color_col: str = None, size_col: str = None, 
                            title: str = "Scatter Plot", **kwargs) -> go.Figure:

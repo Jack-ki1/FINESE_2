@@ -22,53 +22,53 @@ class DataManager:
     """
     Unified data management class combining all data operations
     """
-    
+
     def __init__(self):
-        self.datasets = {}  # Cache for loaded datasets
-        self.upload_folder = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            'dashboard',
-            'uploads'
-        )
+        # Cache for loaded datasets (runtime)
+        # dataset_id -> { df, user_id, upload_time, metadata, version, lineage }
+        self.datasets: Dict[str, Dict[str, Any]] = {}
+
+        base_dir = Path(os.path.dirname(os.path.dirname(__file__)))  # app/
+        self.upload_folder = str(base_dir / 'dashboard' / 'uploads')
+        self.storage_folder = str(base_dir / 'instance' / 'datasets')
+
         os.makedirs(self.upload_folder, exist_ok=True)
+        os.makedirs(self.storage_folder, exist_ok=True)
     
-    def upload_dataset(self, file_path: str, user_id: int) -> Dict[str, Any]:
-        """Upload and store a dataset"""
+    def upload_dataset(self, file_path: str, user_id: int = 0) -> Dict[str, Any]:
+        """Upload and store a dataset (legacy API)."""
         try:
-            # Generate unique ID for dataset
-            dataset_id = hashlib.md5(f"{file_path}_{user_id}_{datetime.now()}".encode()).hexdigest()
-            
-            # Determine file type and load appropriately
+            dataset_id = hashlib.md5(f"{file_path}_{user_id}_{datetime.now().isoformat()}".encode()).hexdigest()[:16]
+
             file_ext = Path(file_path).suffix.lower()
-            if file_ext in ['.csv']:
+            if file_ext == '.csv':
                 df = pd.read_csv(file_path)
             elif file_ext in ['.xlsx', '.xls']:
                 df = pd.read_excel(file_path)
-            elif file_ext in ['.json']:
+            elif file_ext == '.json':
                 df = pd.read_json(file_path)
-            elif file_ext in ['.parquet']:
+            elif file_ext == '.parquet':
                 df = pd.read_parquet(file_path)
             else:
                 raise ValueError(f"Unsupported file format: {file_ext}")
-            
-            # Store in cache
-            self.datasets[dataset_id] = {
-                'df': df,
-                'user_id': user_id,
-                'upload_time': datetime.now(),
-                'file_path': file_path,
-                'metadata': self._generate_metadata(df)
-            }
-            
+
+            self._set_dataset(
+                dataset_id=dataset_id,
+                df=df,
+                user_id=user_id,
+                metadata=self._generate_metadata(df),
+                lineage={'source': {'type': 'upload', 'file_path': file_path}, 'transformations': []},
+                version=1
+            )
+
             return {
                 'dataset_id': dataset_id,
-                'rows': len(df),
-                'columns': len(df.columns),
+                'rows': int(df.shape[0]),
+                'columns': int(df.shape[1]),
                 'columns_list': df.columns.tolist(),
                 'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
-                'size_mb': round(os.path.getsize(file_path) / (1024 * 1024), 2)
+                'size_mb': round(os.path.getsize(file_path) / (1024 * 1024), 2) if os.path.exists(file_path) else None
             }
-            
         except Exception as e:
             logger.error(f"Error uploading dataset: {e}")
             raise
@@ -108,14 +108,187 @@ class DataManager:
         
         return samples[dataset_name]
     
+    def _dataset_path(self, dataset_id: str, fmt: str = 'parquet') -> str:
+        # Persist snapshots as parquet for speed/consistency
+        suffix = 'parquet' if fmt == 'parquet' else 'csv'
+        ext = '.parquet' if fmt == 'parquet' else '.csv'
+        return str(Path(self.storage_folder) / f"{dataset_id}.{suffix}{ext}")
+
+    def _set_dataset(
+        self,
+        dataset_id: str,
+        df: pd.DataFrame,
+        user_id: int,
+        metadata: Dict[str, Any],
+        lineage: Dict[str, Any],
+        version: int
+    ) -> None:
+        # cache
+        self.datasets[dataset_id] = {
+            'df': df,
+            'user_id': user_id,
+            'upload_time': datetime.now(),
+            'metadata': metadata,
+            'lineage': lineage,
+            'version': version
+        }
+        # persist snapshot (parquet best-effort)
+        snap_path = str(Path(self.storage_folder) / f"{dataset_id}.parquet")
+        try:
+            df.to_parquet(snap_path, index=False)
+        except Exception:
+            # fallback to csv
+            df.to_csv(str(Path(self.storage_folder) / f"{dataset_id}.csv"), index=False)
+
+    # --- Route-expected API (B) ---
+
+    def load_dataset_from_file(self, filepath: str, filename: str, user_id: int = 0) -> str:
+        """Route wrapper for /upload."""
+        result = self.upload_dataset(filepath, user_id=user_id)
+        # dataset_id must be returned to caller
+        return result['dataset_id']
+
+    def load_dataset_from_source(self, source_type: str, source_config: Dict[str, Any], user_id: int = 0) -> str:
+        """
+        Minimal loader for route /load.
+        source_config supports:
+          - {"path": "..."} for local files
+          - {"format": "csv|parquet|json|excel", "path": "..."} optional
+        """
+        if source_type not in ['file', 'local']:
+            raise ValueError('Unsupported source_type (expected file/local)')
+
+        path = source_config.get('path')
+        if not path:
+            raise ValueError('source_config.path is required')
+
+        file_path = str(path)
+        return self.load_dataset_from_file(file_path, os.path.basename(file_path), user_id=user_id)
+
+    def list_datasets(self) -> List[Dict[str, Any]]:
+        """List datasets visible to the runtime."""
+        out = []
+        for dataset_id, rec in self.datasets.items():
+            out.append({
+                'dataset_id': dataset_id,
+                'rows': int(rec['df'].shape[0]),
+                'columns': int(rec['df'].shape[1]),
+                'version': rec.get('version', 1),
+                'upload_time': rec.get('upload_time').isoformat() if hasattr(rec.get('upload_time'), 'isoformat') else None
+            })
+        return out
+
+    def preview_dataset(self, dataset_id: str, n: int = 50) -> Optional[Dict[str, Any]]:
+        df = self.get_dataset(dataset_id)
+        if df is None:
+            return None
+        head = df.head(n)
+        return {
+            'columns': head.columns.tolist(),
+            'rows': len(head),
+            'data': head.where(pd.notnull(head), None).values.tolist()
+        }
+
+    def update_dataset(self, dataset_id: str, df: pd.DataFrame, lineage_event: Optional[Dict[str, Any]] = None) -> None:
+        if dataset_id not in self.datasets:
+            raise ValueError('Dataset not found')
+
+        current = self.datasets[dataset_id]
+        new_version = int(current.get('version', 1)) + 1
+
+        lineage = current.get('lineage', {'source': {}, 'transformations': []})
+        transformations = lineage.get('transformations', [])
+        if lineage_event:
+            transformations.append(lineage_event)
+        lineage['transformations'] = transformations
+
+        self._set_dataset(
+            dataset_id=dataset_id,
+            df=df,
+            user_id=int(current.get('user_id', 0)),
+            metadata=self._generate_metadata(df),
+            lineage=lineage,
+            version=new_version
+        )
+
+    def apply_transformations(self, df: pd.DataFrame, transformations: List[Dict[str, Any]]) -> pd.DataFrame:
+        """
+        Minimal transform engine for route /transform.
+        Supports list of operations with operation field:
+          - remove_columns: {operation, columns:[...]}
+          - rename_columns: {operation, mapping:{old:new}}
+          - filter_rows: {operation, query:"col > 0"}  (pandas.query)
+          - cast: {operation, dtypes:{col: "int"/"float"/"str"}}
+        """
+        out = df.copy()
+        for t in transformations or []:
+            op = t.get('operation')
+            if not op:
+                continue
+
+            if op == 'remove_columns':
+                cols = t.get('columns', [])
+                out = out.drop(columns=[c for c in cols if c in out.columns], errors='ignore')
+
+            elif op == 'rename_columns':
+                mapping = t.get('mapping', {})
+                out = out.rename(columns=mapping)
+
+            elif op == 'filter_rows':
+                query = t.get('query')
+                if query:
+                    out = out.query(query)
+
+            elif op == 'cast':
+                dtypes = t.get('dtypes', {})
+                for col, dtype in dtypes.items():
+                    if col in out.columns:
+                        out[col] = out[col].astype(dtype, errors='ignore')
+
+            else:
+                raise ValueError(f"Unknown transformation operation: {op}")
+
+        return out
+
     def get_dataset(self, dataset_id: str) -> Optional[pd.DataFrame]:
-        """Retrieve a cached dataset"""
+        """Retrieve a cached dataset."""
         if dataset_id in self.datasets:
             return self.datasets[dataset_id]['df']
+        # attempt reload from persisted snapshot
+        snap_parquet = str(Path(self.storage_folder) / f"{dataset_id}.parquet")
+        snap_csv = str(Path(self.storage_folder) / f"{dataset_id}.csv")
+        if os.path.exists(snap_parquet):
+            try:
+                df = pd.read_parquet(snap_parquet)
+                self._set_dataset(
+                    dataset_id=dataset_id,
+                    df=df,
+                    user_id=0,
+                    metadata=self._generate_metadata(df),
+                    lineage={'source': {'type': 'snapshot', 'path': snap_parquet}, 'transformations': []},
+                    version=1
+                )
+                return df
+            except Exception:
+                pass
+        if os.path.exists(snap_csv):
+            try:
+                df = pd.read_csv(snap_csv)
+                self._set_dataset(
+                    dataset_id=dataset_id,
+                    df=df,
+                    user_id=0,
+                    metadata=self._generate_metadata(df),
+                    lineage={'source': {'type': 'snapshot', 'path': snap_csv}, 'transformations': []},
+                    version=1
+                )
+                return df
+            except Exception:
+                pass
         return None
-    
+
     def get_dataset_info(self, dataset_id: str) -> Optional[Dict[str, Any]]:
-        """Get metadata about a dataset"""
+        """Get metadata about a dataset."""
         if dataset_id in self.datasets:
             return self.datasets[dataset_id]['metadata']
         return None

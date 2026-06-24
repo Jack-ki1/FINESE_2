@@ -5,7 +5,6 @@ Environment-specific configurations for development, testing, and production.
 import os
 from datetime import timedelta
 
-
 class Config:
     """Base configuration with common settings."""
     
@@ -13,7 +12,10 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///instance/finese2.db'
+    # Use absolute path for database file
+    INSTANCE_PATH = os.path.join(os.getcwd(), 'instance')
+    os.makedirs(INSTANCE_PATH, exist_ok=True)
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(INSTANCE_PATH, "finese2.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,  # Test connections before using
@@ -25,7 +27,8 @@ class Config:
     # Redis configuration for caching and sessions
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
     
-    # JWT configuration
+    # JWT configuration - set to false by default to disable authentication
+    ENABLE_JWT = False  # Disabled by default
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
@@ -84,7 +87,6 @@ class Config:
         'reports'
     )
 
-
 class DevelopmentConfig(Config):
     """Development configuration with debug features enabled."""
     DEBUG = True
@@ -97,16 +99,29 @@ class DevelopmentConfig(Config):
     RATELIMIT_DEFAULT = '1000 per hour'
     
     # SQLite is fine for development
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/finese2_dev.db'
+    INSTANCE_PATH = os.path.join(os.getcwd(), 'instance')
+    os.makedirs(INSTANCE_PATH, exist_ok=True)
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(INSTANCE_PATH, "finese2_dev.db")}'
     
     # Enable SQLAlchemy echo for debugging queries
     SQLALCHEMY_ECHO = True
-
+    
+    # Development environment
+    ENVIRONMENT = 'development'
+    
+    # Don't require Redis in development
+    REDIS_AVAILABLE = False
+    
+    # Disable JWT by default in development
+    ENABLE_JWT = False
 
 class ProductionConfig(Config):
     """Production configuration with security and performance optimizations."""
     DEBUG = False
     TESTING = False
+    
+    # JWT can be enabled by setting ENABLE_JWT=true environment variable
+    ENABLE_JWT = os.environ.get('ENABLE_JWT', 'False').lower() == 'true'
     
     # Enforce secure settings in production (validated at runtime in __init__)
     def __init__(self):
@@ -135,7 +150,12 @@ class ProductionConfig(Config):
     
     # Disable SQLAlchemy echo in production
     SQLALCHEMY_ECHO = False
-
+    
+    # Production environment
+    ENVIRONMENT = 'production'
+    
+    # Ensure Redis is required in production
+    REDIS_AVAILABLE = True
 
 class TestingConfig(Config):
     """Testing configuration with in-memory database and disabled features."""
@@ -158,7 +178,12 @@ class TestingConfig(Config):
     # Fast token expiration for tests
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=1)
-
+    
+    # Testing environment
+    ENVIRONMENT = 'testing'
+    
+    # Redis availability for testing
+    REDIS_AVAILABLE = False
 
 # Configuration mapping for easy selection
 config_map = {
@@ -167,7 +192,6 @@ config_map = {
     'testing': TestingConfig,
     'default': DevelopmentConfig,
 }
-
 
 def get_config(env=None):
     """
