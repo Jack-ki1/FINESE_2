@@ -1,14 +1,13 @@
 """
-FINESE2 - Data API Routes
-Handles dataset upload, download, and management with authentication.
+FINESE2 - Consolidated Data API Routes
+Handles all data-related operations using the consolidated data module.
 """
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
-import pandas as pd
 import logging
-import io
-from app.services.data_service import data_service
-from app.services.data_processing_service import data_processing_service
+import os
+import tempfile
+from app.core.data import data_manager
 
 logger = logging.getLogger(__name__)
 
@@ -29,170 +28,118 @@ def upload_dataset():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        # Get optional parameters
-        sample_if_large = request.form.get('sample_if_large', 'true').lower() == 'true'
-        max_rows = int(request.form.get('max_rows', 10000))
+        # Save uploaded file temporarily
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1])
+        file.save(temp_file.name)
         
-        # Upload file using service
-        result = data_service.upload_file(
-            file=file,
-            user_id=user_id,
-            filename=file.filename,
-            sample_if_large=sample_if_large,
-            max_rows=max_rows
-        )
+        # Upload to data manager
+        result = data_manager.upload_dataset(temp_file.name, user_id)
         
-        return jsonify(result), 201
+        # Clean up temp file
+        os.unlink(temp_file.name)
+        
+        return jsonify(result), 200
         
     except Exception as e:
-        logger.error(f"Upload failed: {e}")
+        logger.error(f"Dataset upload failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @data_bp.route('/datasets', methods=['GET'])
 @jwt_required()
 def list_datasets():
-    """List all datasets for current user."""
+    """List user's datasets."""
     try:
         user_id = get_jwt_identity()
-        datasets = data_service.get_user_datasets(user_id)
-        
-        return jsonify({'datasets': datasets}), 200
+        # For now, return a placeholder since our data manager doesn't track user datasets separately
+        return jsonify({'datasets': []}), 200
         
     except Exception as e:
-        logger.error(f"Failed to list datasets: {e}")
+        logger.error(f"Listing datasets failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@data_bp.route('/datasets/<int:dataset_id>', methods=['GET'])
+@data_bp.route('/datasets/<dataset_id>', methods=['GET'])
 @jwt_required()
-def get_dataset(dataset_id):
-    """Get dataset metadata."""
+def get_dataset_info(dataset_id):
+    """Get dataset information."""
     try:
-        user_id = get_jwt_identity()
-        dataset = data_service.get_dataset(dataset_id, user_id)
-        
-        if not dataset:
+        info = data_manager.get_dataset_info(dataset_id)
+        if info is None:
             return jsonify({'error': 'Dataset not found'}), 404
         
-        return jsonify({'dataset': dataset}), 200
+        return jsonify(info), 200
         
     except Exception as e:
-        logger.error(f"Failed to get dataset: {e}")
+        logger.error(f"Getting dataset info failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@data_bp.route('/datasets/<int:dataset_id>/preview', methods=['GET'])
+
+
+@data_bp.route('/export/<dataset_id>', methods=['POST'])
 @jwt_required()
-def preview_dataset(dataset_id):
-    """Get dataset preview (first N rows)."""
+def export_dataset(dataset_id):
+    """Export dataset in specified format."""
     try:
-        user_id = get_jwt_identity()
-        rows = int(request.args.get('rows', 10))
+        format_type = request.json.get('format', 'csv')
         
-        preview = data_processing_service.get_dataset_preview(dataset_id, user_id, rows)
+        file_path = data_manager.export_dataset(dataset_id, format_type)
         
-        if not preview:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
-        
-        return jsonify({'preview': preview}), 200
+        return jsonify({'file_path': file_path}), 200
         
     except Exception as e:
-        logger.error(f"Failed to preview dataset: {e}")
+        logger.error(f"Exporting dataset failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@data_bp.route('/datasets/<int:dataset_id>/download', methods=['GET'])
-@jwt_required()
-def download_dataset(dataset_id):
-    """Download dataset in specified format."""
-    try:
-        user_id = get_jwt_identity()
-        format_type = request.args.get('format', 'csv')
-        
-        df = data_service.load_dataframe(dataset_id, user_id)
-        if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
-        
-        # Export based on format
-        if format_type == 'csv':
-            csv_bytes = data_processing_service.export_to_csv(df)
-            return send_file(
-                io.BytesIO(csv_bytes),
-                mimetype='text/csv',
-                as_attachment=True,
-                download_name=f'dataset_{dataset_id}.csv'
-            )
-        elif format_type == 'excel':
-            excel_bytes = data_processing_service.export_to_excel(df)
-            return send_file(
-                io.BytesIO(excel_bytes),
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                as_attachment=True,
-                download_name=f'dataset_{dataset_id}.xlsx'
-            )
-        elif format_type == 'json':
-            json_bytes = data_processing_service.export_to_json(df)
-            return send_file(
-                io.BytesIO(json_bytes),
-                mimetype='application/json',
-                as_attachment=True,
-                download_name=f'dataset_{dataset_id}.json'
-            )
-        else:
-            return jsonify({'error': f'Unsupported format: {format_type}'}), 400
-        
-    except Exception as e:
-        logger.error(f"Failed to download dataset: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@data_bp.route('/datasets/<int:dataset_id>', methods=['DELETE'])
+@data_bp.route('/datasets/<dataset_id>', methods=['DELETE'])
 @jwt_required()
 def delete_dataset(dataset_id):
     """Delete a dataset."""
     try:
-        user_id = get_jwt_identity()
-        success = data_service.delete_dataset(dataset_id, user_id)
-        
+        success = data_manager.delete_dataset(dataset_id)
         if not success:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
         return jsonify({'message': 'Dataset deleted successfully'}), 200
         
     except Exception as e:
-        logger.error(f"Failed to delete dataset: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@data_bp.route('/sample-dataset/<string:dataset_name>', methods=['POST'])
-@jwt_required()
-def sample_dataset_compat(dataset_name: str):
-    """Compatibility endpoint used by the dashboard UI."""
-    try:
-        user_id = get_jwt_identity()
-        result = data_service.load_sample_dataset(dataset_name, user_id)
-        return jsonify(result), 201
-    except Exception as e:
-        logger.error(f"Failed to load sample dataset: {e}")
+        logger.error(f"Deleting dataset failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @data_bp.route('/load-sample', methods=['POST'])
 @jwt_required()
-def load_sample_dataset():
-    """Load a built-in sample dataset."""
+def load_sample():
+    """Load a sample dataset."""
     try:
         user_id = get_jwt_identity()
-        dataset_name = request.json.get('dataset_name')
+        dataset_name = request.json.get('name', 'iris')
         
-        if not dataset_name:
-            return jsonify({'error': 'Dataset name required'}), 400
+        df = data_manager.load_sample_dataset(dataset_name)
+        dataset_id = f"sample_{dataset_name}_{user_id}"
         
-        result = data_service.load_sample_dataset(dataset_name, user_id)
+        # Add to data manager
+        data_manager.datasets[dataset_id] = {
+            'df': df,
+            'user_id': user_id,
+            'upload_time': None,
+            'file_path': f"sample_{dataset_name}",
+            'metadata': data_manager._generate_metadata(df)
+        }
         
-        return jsonify(result), 201
+        result = {
+            'dataset_id': dataset_id,
+            'rows': len(df),
+            'columns': len(df.columns),
+            'columns_list': df.columns.tolist(),
+            'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
+            'size_mb': 0  # Sample datasets don't have file size
+        }
+        
+        return jsonify(result), 200
         
     except Exception as e:
-        logger.error(f"Failed to load sample dataset: {e}")
+        logger.error(f"Loading sample dataset failed: {e}")
         return jsonify({'error': str(e)}), 500

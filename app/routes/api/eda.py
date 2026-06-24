@@ -1,19 +1,16 @@
 """
-FINESE2 - EDA API Routes
-Handles exploratory data analysis endpoints.
+FINESE2 - Consolidated EDA API Routes
+Handles all EDA operations using the consolidated EDA module.
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
-from app.services.data_service import data_service
-from app.services.eda_service import EDASer
+from app.core.eda import eda_engine
+from app.core.data import data_manager
 
 logger = logging.getLogger(__name__)
 
 eda_bp = Blueprint('api_eda', __name__)
-
-# EDASer is created per-request/user because it is instantiated with a user_id
-
 
 
 @eda_bp.route('/profile', methods=['POST'])
@@ -27,23 +24,17 @@ def generate_profile():
         if not dataset_id:
             return jsonify({'error': 'Dataset ID required'}), 400
         
-        # Load dataset
-        df = data_service.load_dataframe(dataset_id, user_id)
-
-        # Initialize EDA service (user-scoped)
-        eda_service = EDASer(str(user_id))
-
+        df = data_manager.get_dataset(dataset_id)
         if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
-        # Generate profile using engine
-        from engine.eda_engine import EDAEngine
-        profile = EDAEngine.quick_profile(df)
+        # Load data into EDA engine and generate profile
+        profile = eda_engine.load_data(df).generate_profile_report()
         
-        return jsonify({'profile': profile}), 200
+        return jsonify(profile), 200
         
     except Exception as e:
-        logger.error(f"EDA profiling failed: {e}")
+        logger.error(f"EDA profile generation failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -58,24 +49,24 @@ def detect_issues():
         if not dataset_id:
             return jsonify({'error': 'Dataset ID required'}), 400
         
-        df = data_service.load_dataframe(dataset_id, user_id)
+        df = data_manager.get_dataset(dataset_id)
         if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
-        from engine.eda_engine import EDAEngine
-        issues = EDAEngine.detect_issues(df)
+        # Load data into EDA engine and detect issues
+        issues = eda_engine.load_data(df).missing_values_analysis()
         
-        return jsonify({'issues': issues}), 200
+        return jsonify(issues), 200
         
     except Exception as e:
-        logger.error(f"Issue detection failed: {e}")
+        logger.error(f"EDA issues detection failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@eda_bp.route('/distribution/<string:column>', methods=['POST'])
+@eda_bp.route('/distribution/<column>', methods=['POST'])
 @jwt_required()
-def get_distribution(column):
-    """Get distribution plot for a column."""
+def analyze_distribution(column):
+    """Analyze distribution of a specific column."""
     try:
         user_id = get_jwt_identity()
         dataset_id = request.json.get('dataset_id')
@@ -83,52 +74,50 @@ def get_distribution(column):
         if not dataset_id:
             return jsonify({'error': 'Dataset ID required'}), 400
         
-        df = data_service.load_dataframe(dataset_id, user_id)
+        df = data_manager.get_dataset(dataset_id)
         if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
-        from engine.eda_engine import EDAEngine
-        fig = EDAEngine.create_distribution_plot(df, column)
+        # Load data into EDA engine and analyze distribution
+        distribution = eda_engine.load_data(df).distribution_analysis(column)
         
-        return jsonify({'plot': fig.to_json()}), 200
+        return jsonify(distribution), 200
         
     except Exception as e:
-        logger.error(f"Distribution plot failed: {e}")
+        logger.error(f"EDA distribution analysis failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @eda_bp.route('/correlation', methods=['POST'])
 @jwt_required()
-def get_correlation():
-    """Get correlation heatmap."""
+def analyze_correlation():
+    """Analyze correlations in the dataset."""
     try:
         user_id = get_jwt_identity()
         dataset_id = request.json.get('dataset_id')
+        method = request.json.get('method', 'pearson')
         
         if not dataset_id:
             return jsonify({'error': 'Dataset ID required'}), 400
         
-        df = data_service.load_dataframe(dataset_id, user_id)
+        df = data_manager.get_dataset(dataset_id)
         if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
-        from engine.eda_engine import EDAEngine
-        fig = EDAEngine.create_correlation_heatmap(df)
+        # Load data into EDA engine and analyze correlation
+        correlation = eda_engine.load_data(df).correlation_analysis(method)
         
-        if fig is None:
-            return jsonify({'error': 'Not enough numeric columns for correlation'}), 400
-        
-        return jsonify({'plot': fig.to_json()}), 200
+        return jsonify(correlation), 200
         
     except Exception as e:
-        logger.error(f"Correlation heatmap failed: {e}")
+        logger.error(f"EDA correlation analysis failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @eda_bp.route('/missing-pattern', methods=['POST'])
 @jwt_required()
-def get_missing_pattern():
-    """Get missing values pattern heatmap."""
+def analyze_missing_patterns():
+    """Analyze missing value patterns."""
     try:
         user_id = get_jwt_identity()
         dataset_id = request.json.get('dataset_id')
@@ -136,24 +125,24 @@ def get_missing_pattern():
         if not dataset_id:
             return jsonify({'error': 'Dataset ID required'}), 400
         
-        df = data_service.load_dataframe(dataset_id, user_id)
+        df = data_manager.get_dataset(dataset_id)
         if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
-        from engine.eda_engine import EDAEngine
-        fig = EDAEngine.create_missing_heatmap(df)
+        # Load data into EDA engine and analyze missing patterns
+        missing_analysis = eda_engine.load_data(df).missing_values_analysis()
         
-        return jsonify({'plot': fig.to_json()}), 200
+        return jsonify(missing_analysis), 200
         
     except Exception as e:
-        logger.error(f"Missing pattern failed: {e}")
+        logger.error(f"EDA missing patterns analysis failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @eda_bp.route('/ydata-report', methods=['POST'])
 @jwt_required()
 def generate_ydata_report():
-    """Generate ydata-profiling HTML report."""
+    """Generate YData-style report."""
     try:
         user_id = get_jwt_identity()
         dataset_id = request.json.get('dataset_id')
@@ -161,17 +150,14 @@ def generate_ydata_report():
         if not dataset_id:
             return jsonify({'error': 'Dataset ID required'}), 400
         
-        df = data_service.load_dataframe(dataset_id, user_id)
+        df = data_manager.get_dataset(dataset_id)
         if df is None:
-            return jsonify({'error': 'Dataset not found or access denied'}), 404
+            return jsonify({'error': 'Dataset not found'}), 404
         
-        from engine.eda_engine import EDAEngine
-        report_html = EDAEngine.generate_ydata_report(df)
+        # Generate a simplified version of the profile report
+        profile = eda_engine.load_data(df).generate_profile_report()
         
-        if report_html is None:
-            return jsonify({'error': 'Failed to generate report or ydata-profiling not installed'}), 500
-        
-        return jsonify({'report': report_html}), 200
+        return jsonify(profile), 200
         
     except Exception as e:
         logger.error(f"YData report generation failed: {e}")

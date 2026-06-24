@@ -1,11 +1,14 @@
 """
 FINESE2 - MLOps API Routes
-Handles experiment tracking, model registry, and leaderboard.
+Handles MLOps operations using the consolidated MLOps module.
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
-from app.services.mlops_service import mlops_service
+import time
+from app.core.mlops import mlops_manager
+from app.core.ml_models import ml_model_manager
+from app.core.data import data_manager
 
 logger = logging.getLogger(__name__)
 
@@ -18,134 +21,116 @@ def create_experiment():
     """Create a new experiment."""
     try:
         user_id = get_jwt_identity()
-        name = request.json.get('name')
+        experiment_name = request.json.get('name', f'Experiment_{user_id}_{int(time.time())}')
         description = request.json.get('description', '')
-        dataset_id = request.json.get('dataset_id')
-        params = request.json.get('params', {})
         
-        if not name:
-            return jsonify({'error': 'Experiment name required'}), 400
+        experiment_id = mlops_manager.start_experiment(experiment_name, description)
         
-        result = mlops_service.create_experiment(
-            name=name,
-            description=description,
-            user_id=user_id,
-            dataset_id=dataset_id,
-            params=params
-        )
-        
-        return jsonify(result), 201
+        return jsonify({
+            'success': True,
+            'experiment_id': experiment_id,
+            'name': experiment_name
+        }), 200
         
     except Exception as e:
-        logger.error(f"Failed to create experiment: {e}")
+        logger.error(f"Creating experiment failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @mlops_bp.route('/experiments', methods=['GET'])
 @jwt_required()
-def list_experiments():
-    """List user's experiments."""
+def get_experiments():
+    """Get list of experiments."""
     try:
         user_id = get_jwt_identity()
-        limit = int(request.args.get('limit', 50))
-        offset = int(request.args.get('offset', 0))
-        status = request.args.get('status')
+        experiment_name = request.args.get('name')
         
-        experiments = mlops_service.get_experiments(
-            user_id=user_id,
-            limit=limit,
-            offset=offset,
-            status=status
-        )
+        experiments = mlops_manager.get_experiment_history(experiment_name)
         
-        return jsonify({'experiments': experiments}), 200
+        return jsonify({
+            'success': True,
+            'experiments': experiments
+        }), 200
         
     except Exception as e:
-        logger.error(f"Failed to list experiments: {e}")
+        logger.error(f"Getting experiments failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@mlops_bp.route('/experiments/<int:experiment_id>', methods=['PUT'])
+@mlops_bp.route('/experiments/<experiment_id>', methods=['PUT'])
 @jwt_required()
 def update_experiment(experiment_id):
-    """Update experiment with results."""
+    """Update an experiment with metrics or parameters."""
     try:
         user_id = get_jwt_identity()
-        metrics = request.json.get('metrics')
-        status = request.json.get('status')
-        duration_ms = request.json.get('duration_ms')
+        metrics = request.json.get('metrics', {})
+        parameters = request.json.get('parameters', {})
         
-        result = mlops_service.update_experiment(
-            experiment_id=experiment_id,
-            user_id=user_id,
-            metrics=metrics,
-            status=status,
-            duration_ms=duration_ms
-        )
+        # Log metrics and parameters
+        for metric_name, value in metrics.items():
+            mlops_manager.log_metric(metric_name, value)
         
-        return jsonify(result), 200
+        for param_name, value in parameters.items():
+            mlops_manager.log_parameter(param_name, value)
+        
+        return jsonify({
+            'success': True,
+            'experiment_id': experiment_id
+        }), 200
         
     except Exception as e:
-        logger.error(f"Failed to update experiment: {e}")
+        logger.error(f"Updating experiment failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @mlops_bp.route('/models', methods=['POST'])
 @jwt_required()
 def register_model():
-    """Register a model in the registry."""
+    """Register a model in the model registry."""
     try:
         user_id = get_jwt_identity()
-        name = request.json.get('name')
+        model_data = request.json.get('model_data')  # In a real app, this would be a model ID or path
+        model_name = request.json.get('name', f'Model_{user_id}_{int(time.time())}')
         version = request.json.get('version', '1.0')
-        experiment_id = request.json.get('experiment_id')
-        model_type = request.json.get('model_type')
-        problem_type = request.json.get('problem_type')
         metrics = request.json.get('metrics', {})
-        tags = request.json.get('tags', [])
+        description = request.json.get('description', '')
         
-        if not name or not experiment_id:
-            return jsonify({'error': 'Name and experiment ID required'}), 400
-        
-        result = mlops_service.register_model(
-            name=name,
+        # In a real implementation, you would load the actual model
+        # For now, we'll simulate registering a model
+        model_id = mlops_manager.register_model(
+            model=None,  # Placeholder - in real app would be actual model object
+            model_name=model_name,
             version=version,
-            experiment_id=experiment_id,
-            user_id=user_id,
-            model_type=model_type,
-            problem_type=problem_type,
             metrics=metrics,
-            tags=tags
+            description=description
         )
         
-        return jsonify(result), 201
+        return jsonify({
+            'success': True,
+            'model_id': model_id,
+            'model_name': model_name
+        }), 200
         
     except Exception as e:
-        logger.error(f"Failed to register model: {e}")
+        logger.error(f"Registering model failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @mlops_bp.route('/models', methods=['GET'])
 @jwt_required()
-def list_models():
-    """List user's models."""
+def get_models():
+    """Get list of registered models."""
     try:
         user_id = get_jwt_identity()
-        limit = int(request.args.get('limit', 50))
-        offset = int(request.args.get('offset', 0))
-        status = request.args.get('status')
+        models = mlops_manager.get_leaderboard(top_n=20)  # Get top 20 models
         
-        models = mlops_service.get_models(
-            user_id=user_id,
-            limit=limit,
-            offset=offset,
-            status=status
-        )
-        
-        return jsonify({'models': models}), 200
+        return jsonify({
+            'success': True,
+            'models': models
+        }), 200
         
     except Exception as e:
-        logger.error(f"Failed to list models: {e}")
+        logger.error(f"Getting models failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -176,19 +161,39 @@ def get_leaderboard():
     """Get model leaderboard."""
     try:
         user_id = get_jwt_identity()
-        metric = request.args.get('metric', 'accuracy')
-        problem_type = request.args.get('problem_type')
-        limit = int(request.args.get('limit', 10))
+        top_n = int(request.args.get('top_n', 10))
         
-        leaderboard = mlops_service.get_leaderboard(
-            user_id=user_id,
-            metric=metric,
-            problem_type=problem_type,
-            limit=limit
-        )
+        leaderboard = mlops_manager.get_leaderboard(top_n=top_n)
         
-        return jsonify({'leaderboard': leaderboard}), 200
+        return jsonify({
+            'success': True,
+            'leaderboard': leaderboard
+        }), 200
         
     except Exception as e:
-        logger.error(f"Failed to get leaderboard: {e}")
+        logger.error(f"Getting leaderboard failed: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@mlops_bp.route('/models/compare', methods=['POST'])
+@jwt_required()
+def compare_models():
+    """Compare multiple models."""
+    try:
+        user_id = get_jwt_identity()
+        model_ids = request.json.get('model_ids', [])
+        metric = request.json.get('metric', 'accuracy')
+        
+        if not model_ids:
+            return jsonify({'error': 'Model IDs required'}), 400
+        
+        comparisons = mlops_manager.compare_models(model_ids, metric)
+        
+        return jsonify({
+            'success': True,
+            'comparisons': comparisons
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Comparing models failed: {e}")
         return jsonify({'error': str(e)}), 500

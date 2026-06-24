@@ -16,7 +16,6 @@ def index():
     Returns:
         Rendered HTML template
     """
-    # dashboard/templates contains dashboard.html (not index.html)
     return render_template('dashboard.html')
 
 
@@ -68,15 +67,15 @@ def about():
     """
     return jsonify({
         'name': 'FINESE2',
-        'version': '3.0.0',
+        'version': '4.0.0',
         'description': 'Professional Data Intelligence Platform',
         'features': [
             'Data Upload & Management',
             'Automated EDA & Profiling',
             'Interactive Visualizations',
             'Machine Learning AutoML',
-            'AI-Powered Assistant',
-            'MLOps Experiment Tracking'
+            'MLOps Experiment Tracking',
+            'Consolidated Architecture'
         ]
     })
 
