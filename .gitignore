@@ -1,110 +1,172 @@
-# ============================================
-# FINESE2 - Git Ignore Configuration
-# ============================================
-
+# =============================================================================
 # Python
+# =============================================================================
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# C extensions
+*.o
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
 dist/
-*.whl
-*.egg
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
 .installed.cfg
+*.egg
 MANIFEST
 
-# Virtual environments
+# =============================================================================
+# Virtual Environments
+# =============================================================================
 venv/
 env/
 ENV/
-.venv
-venv_backend/
-venv_frontend/
+.venv/
 
-# IDE
+# =============================================================================
+# IDEs & Editors
+# =============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-!.env.example
+# =============================================================================
+# Operating System Files
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-instance/*.db
-instance/*.sqlite
-
-# Uploads and temporary files
-/tmp/finese2_uploads/
-uploads/*
-!uploads/.gitkeep
-dashboard/uploads/*
-!dashboard/uploads/.gitkeep
-app/dashboard/uploads/*
-!app/dashboard/uploads/.gitkeep
-
-# Models
-models/*
-!models/.gitkeep
-*.pkl
-*.joblib
-
-# Reports
-reports/*
-!reports/.gitkeep
-*.pdf
-*.html
-
-# Logs
+# =============================================================================
+# Logs & Debugging
+# =============================================================================
 *.log
 logs/
+debug.log
+error.log
+access.log
 
-# Testing
+# =============================================================================
+# Testing & Coverage
+# =============================================================================
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
-nosetests.xml
+.nox/
 coverage.xml
+*.cover
+.hypothesis/
 
-# Jupyter
+# =============================================================================
+# Jupyter Notebooks
+# =============================================================================
 .ipynb_checkpoints
 *.ipynb
 
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
+# =============================================================================
+# Environment Variables & Secrets
+# =============================================================================
+.env
+.env.local
+.env.dev
+.env.prod
+.env.test
+*.env.*
 
-# Type checking
+# =============================================================================
+# Flask-Specific
+# =============================================================================
+# Server-side session files
+flask_session/
+instance/
+.webassets-cache
+
+# =============================================================================
+# Data Files (Untracked by Default)
+# =============================================================================
+# Uploaded datasets and temporary files
+static/uploads/*.csv
+static/uploads/*.xlsx
+static/uploads/*.xls
+static/uploads/*.json
+static/uploads/*.parquet
+static/uploads/*.h5
+static/uploads/*.pkl
+static/uploads/*.joblib
+static/uploads/*.pickle
+
+# Keep .gitkeep to preserve directory structure
+!static/uploads/.gitkeep
+
+# =============================================================================
+# Streamlit Legacy (from v1 - can be removed if not needed)
+# =============================================================================
+.streamlit/
+
+# =============================================================================
+# Cache Directories
+# =============================================================================
+.cache/
 .mypy_cache/
-.dmypy.json
+.ropeproject/
 
-# Documentation
+# =============================================================================
+# Machine Learning Models & Artifacts
+# =============================================================================
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.h5
+models/
+checkpoints/
+artifacts/
+
+# =============================================================================
+# Documentation Build
+# =============================================================================
 docs/_build/
 site/
 
-# Docker
-docker-compose.override.yml
+# =============================================================================
+# Temporary Files
+# =============================================================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
 
-# Secrets
-*.pem
-*.key
-secrets/
-
-# Data files (optional - uncomment if needed)
-# *.csv
-# *.xlsx
-# *.parquet
-# data/
+# =============================================================================
+# OS-Specific Temporary Files
+# =============================================================================
+$RECYCLE.BIN/
+System Volume Information/

@@ -1,0 +1,27 @@
+#sidebar-wrapper {
+    min-height: 100vh;
+    width: 280px;
+    flex-shrink: 0;
+}
+#page-content-wrapper {
+    flex-grow: 1;
+    min-width: 0;
+}
+body {
+    overflow-x: hidden;
+}
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+}
+.ag-theme-alpine {
+    --ag-font-family: system-ui, -apple-system, sans-serif;
+}
+.nav-tabs .nav-link {
+    font-weight: 500;
+    color: #495057;
+}
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+}

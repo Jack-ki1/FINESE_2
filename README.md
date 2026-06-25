@@ -1,374 +1,379 @@
-# 🧬 FINESE2 - Professional Data Intelligence Platform
+# FINESE 2 - Smart Data Explorer Pro (Flask Edition)
 
-> **Enterprise-grade data platform** — Comprehensive solution for data scientists, analysts, and MLOps engineers with modern DevOps practices
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-310/)
+[![Flask](https://img.shields.io/badge/flask-3.0+-black.svg)](https://flask.palletsprojects.com/)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Flask](https://img.shields.io/badge/flask-3.x-orange.svg)](https://flask.palletsprojects.com/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-4.0.0-blueviolet.svg)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-pytest-yellow.svg)](tests/)
-[![Docker](https://img.shields.io/badge/docker-supported-blue.svg)](Dockerfile)
+**FINESE 2** (Fast Intelligent NEural Statistical Engine) is a comprehensive, Flask-based data analysis platform with AI-powered insights, automated cleaning, modeling, and export capabilities. Transform raw datasets into actionable insights through a modern web dashboard without writing code.
 
-## 🚀 What's New in v4.0.0?
+## 🎯 Overview
 
-**Major Infrastructure & Quality Improvements**: Enhanced the platform with professional development tooling, comprehensive testing, Docker support, and improved documentation!
+FINESE 2 is a powerful data intelligence platform that transforms raw datasets into actionable insights without writing code. Built on Flask with a Bootstrap frontend, it provides a seamless workflow for exploring, cleaning, analyzing, and presenting data through an intuitive web interface.
 
-### ✨ New Features
-- ✅ **Database Models**: Full ORM models for users, datasets, experiments, and more
-- ✅ **Testing Framework**: Pytest setup with unit and integration tests
-- ✅ **Docker Support**: Containerized deployment with docker-compose
-- ✅ **Environment Management**: .env configuration with python-dotenv
-- ✅ **Code Quality Tools**: Pre-commit hooks, black, isort, flake8
-- ✅ **Documentation**: Comprehensive guides and API reference
-- ✅ **Makefile**: Automated common development tasks
-- ✅ **CI/CD Ready**: GitHub Actions workflow included
+The application features seven integrated modules for different data analysis tasks:
 
-### 📊 Improvements
-- Better project structure and organization
-- Enhanced error handling and logging
-- Improved security with proper secret management
-- SPA-style routing for better UX
-- Version tracking with CHANGELOG
+| Feature Module | Description |
+|----------------|-------------|
+| **Review** | Automatic data profiling, quality assessment, and visual summaries |
+| **Cleaning** | Smart type detection, issue identification, and bulk transformations |
+| **Charts & Pivot** | Interactive Plotly visualizations with drag-and-drop builder |
+| **Chatbot** | Natural language queries powered by OpenAI, Anthropic, or Gemini |
+| **ML Studio** | Automated machine learning with model training and evaluation |
+| **SQL** | DuckDB-powered SQL query interface with schema explorer |
+| **Export** | Download cleaned data in CSV, Excel, or JSON formats |
 
-## 🏗️ Architecture Overview
+## ✨ Key Features
+
+### 🔍 **Intelligent Data Review**
+- Automatic data profiling with key metrics (rows, columns, nulls, duplicates, memory)
+- Top/bottom row previews using AG-Grid interactive tables
+- Data type detection and summary statistics
+- Real-time dataset information in sidebar
+
+### 🧹 **Smart Data Cleaning**
+- Automated issue detection (numeric-as-text, date-as-text patterns)
+- Severity-based recommendations with one-click fixes
+- Bulk apply transformations (to_numeric, to_datetime, drop_na)
+- Preview changes before applying
+- Persistent cleaning log across sessions
+
+### 📊 **Interactive Charts & Visualizations**
+- Five chart types: Bar, Line, Scatter, Histogram, Box plots
+- Dynamic column selection for X, Y, and Color axes
+- Plotly-powered interactive charts with zoom, pan, and hover
+- Clean white template styling for professional presentations
+
+### 💬 **AI-Powered Chatbot**
+- Natural language queries about your dataset
+- Multi-model support: OpenAI GPT, Anthropic Claude, Google Gemini
+- Context-aware responses with dataset metadata
+- Persistent chat history within session
+- Extensible architecture for custom LLM integration
+
+### 🧠 **Machine Learning Studio**
+- Model training interface with target column selection
+- Support for classification and regression tasks
+- Real-time progress tracking with visual progress bar
+- Job-based asynchronous training with status polling
+- Results display with accuracy metrics and model details
+
+### 🗣️ **SQL Query Interface**
+- Standard SQL syntax support via DuckDB engine
+- Schema explorer showing all columns with data types
+- Instant query execution with AG-Grid result display
+- Sortable, filterable, resizable result columns
+- Error handling with descriptive messages
+
+### 📤 **Comprehensive Export Options**
+- One-click downloads in three formats: CSV, Excel, JSON
+- Automatic filename generation from original dataset
+- In-memory streaming for efficient large file handling
+- Proper MIME types for browser compatibility
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Framework**: Flask 3.0+ with Blueprint architecture
+- **Session Management**: Flask-Session (filesystem backend)
+- **Data Processing**: Pandas 2.0+, NumPy 1.24+
+- **Database Engine**: DuckDB 0.9+ for SQL queries
+- **Serialization**: Pickle for server-side DataFrame persistence
+
+### Frontend
+- **UI Framework**: Bootstrap 5.3.2
+- **Data Grids**: AG-Grid Community 31.0.0
+- **Visualizations**: Plotly.js 2.27.0
+- **JavaScript**: Vanilla ES6+ with async/await
+
+### Machine Learning & AI
+- **ML Libraries**: Scikit-learn 1.3+, XGBoost 2.0+, LightGBM 4.0+, CatBoost 1.2+
+- **LLM Providers**: OpenAI 1.0+, Anthropic 0.8+, Google Generative AI 0.3+
+- **Report Generation**: ReportLab 4.0+, Python-PPTX 0.6+
+
+### Architecture
+- **Pattern**: Service-oriented with modular blueprints
+- **State Management**: Server-side sessions with filesystem storage
+- **Data Persistence**: Pickle-based DatasetStore for DataFrame caching
+- **File Uploads**: 50MB limit with temporary storage
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Python**: 3.10 or higher
+- **pip**: Latest version
+- **Memory**: 4GB RAM minimum (8GB+ recommended for ML features)
+- **Browser**: Modern browser with JavaScript enabled (Chrome, Firefox, Edge, Safari)
+
+### Local Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/finese2.git
+   cd finese2
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+
+   # macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install all dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Create required directories** (auto-created on first run, but can be manual):
+   ```bash
+   mkdir flask_session
+   mkdir static/uploads
+   ```
+
+5. **Run the Flask application**:
+   ```bash
+   python app.py
+   ```
+
+6. **Open your browser**:
+   Navigate to [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+### Production Deployment (Gunicorn)
+
+For production environments, use Gunicorn as the WSGI server:
+
+1. **Install Gunicorn**:
+   ```bash
+   pip install gunicorn
+   ```
+
+2. **Run with multiple workers**:
+   ```bash
+   gunicorn -w 4 -b 0.0.0.0:5000 app:app
+   ```
+
+3. **Environment variables** (create `.env` file):
+   ```env
+   SECRET_KEY=your-production-secret-key-here
+   OPENAI_API_KEY=sk-your-openai-key
+   ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+   GOOGLE_API_KEY=your-google-api-key
+   ```
+
+### Docker Deployment
+
+Build and run using the included Dockerfile:
+
+```bash
+docker build -t finese2 .
+docker run -p 5000:5000 -v $(pwd)/flask_session:/app/flask_session finese2
+```
+
+## 📁 Project Structure
 
 ```
 FINESE2/
-├── app/
-│   ├── core/                 # Core business logic (9 modules)
-│   │   ├── data.py          # Data management
-│   │   ├── eda.py           # Exploratory data analysis
-│   │   ├── cleaning.py      # Data cleaning
-│   │   ├── visualize.py     # Visualization
-│   │   ├── analysis.py      # Statistical analysis
-│   │   ├── ml_models.py     # Machine learning
-│   │   ├── mlops.py         # MLOps operations
-│   │   ├── reports.py       # Report generation
-│   │   └── dashboard.py     # Dashboard creation
-│   ├── models/              # Database models (NEW!)
-│   ├── routes/              # API endpoints
-│   ├── utils/               # Utility functions
-│   └── __init__.py          # App factory
-├── tests/                   # Test suite (NEW!)
-│   ├── unit/               # Unit tests
-│   └── integration/        # Integration tests
-├── docs/                    # Documentation (NEW!)
-├── dashboard/               # Frontend templates
-│   └── templates/
-│       └── dashboard.html  # Main UI
-├── instance/                # SQLite databases
-├── models/                  # Saved ML models
-├── reports/                 # Generated reports
-├── Dockerfile              # Docker configuration (NEW!)
-├── docker-compose.yml      # Docker Compose (NEW!)
-├── Makefile                # Task automation (NEW!)
-├── requirements.txt        # Python dependencies
-├── .env.example            # Environment template (NEW!)
-├── .pre-commit-config.yaml # Pre-commit hooks (NEW!)
-├── pyproject.toml          # Project config (NEW!)
-└── main.py                 # Application entry point
+├── app.py                      # Flask entry point with blueprint registration
+├── config.py                   # Global configuration constants
+├── state.py                    # Flask session default values
+├── requirements.txt            # Python dependencies
+├── core/                       # Core data management (unchanged from v1)
+│   ├── __init__.py
+│   ├── dataset_context.py      # Original dataset context manager
+│   └── dataset_store.py        # NEW: Server-side DataFrame persistence
+├── services/                   # Business logic (unchanged from v1)
+│   ├── __init__.py
+│   ├── chart_service.py        # Chart generation logic
+│   ├── cleaning_service.py     # Data cleaning algorithms
+│   ├── health_service.py       # Data health scoring
+│   ├── llm_service.py          # LLM integration
+│   ├── ml_service.py           # Machine learning pipelines
+│   ├── profiling_service.py    # Data profiling utilities
+│   └── sql_service.py          # SQL query processing
+├── routes/                     # NEW: Flask route blueprints
+│   ├── __init__.py             # Blueprint exports
+│   ├── data.py                 # File upload & dataset info
+│   ├── review.py               # Data profiling endpoints
+│   ├── cleaning.py             # Smart cleanup endpoints
+│   ├── charts.py               # Visualization builder
+│   ├── chatbot.py              # AI chat endpoints
+│   ├── ml.py                   # ML training endpoints
+│   ├── sql.py                  # SQL query endpoints
+│   └── export.py               # File download endpoints
+├── templates/                  # NEW: Jinja2 HTML templates
+│   ├── base.html               # Master layout with sidebar
+│   ├── review.html             # Data review dashboard
+│   ├── cleaning.html           # Cleaning interface
+│   ├── charts.html             # Chart builder
+│   ├── chatbot.html            # Chat interface
+│   ├── ml.html                 # ML studio
+│   ├── sql.html                # SQL query editor
+│   └── export.html             # Export options
+├── static/                     # NEW: Static assets
+│   ├── css/
+│   │   └── style.css           # Custom styles
+│   ├── js/
+│   │   └── main.js             # Shared JavaScript
+│   └── uploads/                # Temporary dataset storage
+├── utils/                      # Utility functions (unchanged from v1)
+│   ├── __init__.py
+│   ├── data_utils.py           # Data manipulation helpers
+│   ├── health_utils.py         # Health check utilities
+│   ├── ml_utils.py             # ML helper functions
+│   └── ui_utils.py             # UI rendering utilities
+└── flask_session/              # Server-side session files (gitignored)
 ```
 
-## 🌟 Key Features
+## 🔄 Migration from FINESE 1 (Streamlit)
 
-### 📊 **Interactive Dashboard**
-- Modern Bootstrap 5 UI with responsive design
-- Multiple dashboard views (analytics, ML monitoring)
-- Real-time KPI widgets with drill-down capabilities
-- Single Page Application (SPA) experience
+FINESE 2 represents a complete migration from Streamlit to Flask while preserving 100% of backend logic:
 
-### 📈 **Data Operations**
-- Upload CSV, Excel, JSON, Parquet files (up to 50MB)
-- Sample dataset loading (Iris, Titanic, Wine)
-- Data preview and metadata extraction
-- Export in multiple formats
-- Database persistence with SQLAlchemy
+### What Changed
+- ✅ **Presentation Layer**: Streamlit → Flask + Bootstrap + Jinja2
+- ✅ **Session Management**: `st.session_state` → Flask-Session (filesystem)
+- ✅ **Data Persistence**: In-memory → Pickle-based DatasetStore
+- ✅ **Routing**: Streamlit pages → Flask Blueprints
+- ✅ **Frontend**: Streamlit widgets → Bootstrap components + AG-Grid + Plotly.js
 
-### 🔍 **Exploratory Data Analysis (EDA)**
-- Comprehensive statistical summaries
-- Correlation analysis with heatmaps
-- Distribution analysis and visualization
-- Missing values detection and reporting
-- Anomaly detection algorithms
+### What Stayed the Same
+- ✅ All [`services/`](c:\Users\PC\Desktop\PROJECTS\FINESE2\services) modules (zero changes)
+- ✅ [`core/dataset_context.py`](c:\Users\PC\Desktop\PROJECTS\FINESE2\core\dataset_context.py) (unchanged)
+- ✅ [`utils/`](c:\Users\PC\Desktop\PROJECTS\FINESE2\utils) utility functions (unchanged)
+- ✅ All business logic and algorithms
+- ✅ Feature parity across all 7 modules
 
-### 🧹 **Data Cleaning**
-- Automatic issue detection
-- Intelligent cleaning recommendations
-- Missing value imputation (mean, median, mode)
-- Outlier detection and removal (IQR method)
-- Data normalization and scaling
-- Categorical encoding
+### Benefits of Migration
+- 🚀 Better performance with server-side rendering
+- 🔒 Enhanced security with server-side sessions
+- 📱 Responsive design works on mobile devices
+- 🎨 Full control over HTML/CSS/JavaScript
+- 🌐 Standard web architecture (easier deployment)
+- 💾 Persistent sessions across page refreshes
 
-### 📊 **Visualization**
-- 12+ chart types (scatter, line, bar, histogram, box, etc.)
-- Interactive Plotly visualizations
-- Statistical summary charts
-- Custom dashboard creation
-- Export to PNG/SVG/HTML
-
-### 📋 **Statistical Analysis**
-- Descriptive statistics
-- Hypothesis testing (t-test, ANOVA, Chi-square)
-- Regression analysis
-- Time series decomposition
-- Feature importance ranking
-
-### 🤖 **Machine Learning**
-- 14+ algorithms (classification & regression)
-- Automated model selection
-- Hyperparameter tuning with GridSearch
-- Cross-validation (k-fold)
-- Model comparison and evaluation
-- Performance metrics (accuracy, precision, recall, F1, RMSE, etc.)
-
-### 🚀 **MLOps**
-- Experiment tracking with database
-- Model registry and versioning
-- Model performance monitoring
-- Model promotion workflows
-- Audit trail for all operations
-
-### 📄 **Reporting**
-- HTML report templates
-- Multiple report types (EDA, ML, cleaning)
-- Export to PDF/HTML
-- Customizable layouts
-- Automated report generation
-
-### 🧠 **AI Integration**
-- Tokenized AI tool execution
-- Multi-provider support (OpenAI, Anthropic, Google)
-- Budget-controlled API calls
-- Deterministic tool registry
-- AI-assisted insights
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
-- Git (optional, for cloning)
-- Docker (optional, for containerized deployment)
-
-### Option 1: Local Installation (Recommended for Development)
-
-```bash
-# Clone repository
-git clone https://github.com/your-username/FINESE2.git
-cd FINESE2
-
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # macOS/Linux
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Run the application
-py main.py --host 0.0.0.0 --port 5000
-```
-
-Open your browser to: **http://localhost:5000**
-
-### Option 2: Docker Installation (Recommended for Production)
-
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop containers
-docker-compose down
-```
-
-### Option 3: Using Makefile
-
-```bash
-# Install dependencies and setup
-make install
-
-# Run application
-make run
-
-# Run tests
-make test
-
-# Format code
-make format
-
-# Build Docker image
-make docker-build
-```
-
-## 🛠️ Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
-Create a `.env` file from `.env.example`:
+Create a `.env` file in the project root for API keys and secrets:
 
-```bash
-# Required
+```env
+# Flask Configuration
 SECRET_KEY=your-super-secret-key-change-this
+FLASK_ENV=development  # Set to 'production' in production
 
-# Optional
-DATABASE_URL=sqlite:///instance/finese2.db
-REDIS_URL=redis://localhost:6379/0
-ENABLE_JWT=false
-OPENAI_API_KEY=sk-...
-MAX_UPLOAD_SIZE=50
-LOG_LEVEL=INFO
+# AI Provider Keys (optional, for chatbot features)
+OPENAI_API_KEY=sk-your-openai-api-key
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+GOOGLE_API_KEY=your-google-generative-ai-key
+
+# Optional: Custom Session Lifetime (in hours)
+SESSION_LIFETIME=2
 ```
 
-### Database
+### App Configuration
 
-- **Development**: SQLite (default)
-- **Production**: PostgreSQL recommended
+Key settings in [`app.py`](c:\Users\PC\Desktop\PROJECTS\FINESE2\app.py):
 
-```bash
-# PostgreSQL example
-DATABASE_URL=postgresql://user:password@localhost:5432/finese2
+```python
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB uploads
 ```
-
-## 📡 API Endpoints
-
-### Base URL: `http://localhost:5000/api/v1`
-
-#### Data Operations (`/api/v1/data`)
-- `POST /upload` - Upload dataset
-- `POST /load-sample` - Load sample dataset
-- `GET /info/{dataset_id}` - Get dataset info
-- `DELETE /delete/{dataset_id}` - Delete dataset
-
-#### EDA (`/api/v1/eda`)
-- `POST /profile` - Generate EDA profile
-- `POST /correlation` - Correlation analysis
-- `POST /missing-values` - Missing values analysis
-
-#### Cleaning (`/api/v1/cleaning`)
-- `POST /detect-issues` - Detect data issues
-- `POST /recommendations` - Get cleaning recommendations
-- `POST /apply` - Apply cleaning operations
-
-#### Machine Learning (`/api/v1/ml`)
-- `POST /train` - Train model
-- `POST /predict` - Make predictions
-- `GET /models` - List trained models
-- `DELETE /models/{model_id}` - Delete model
-
-#### Dashboard (`/api/v1/dashboard`)
-- `POST /create` - Create dashboard
-- `GET /list` - List dashboards
-
-#### Jobs (`/api/v1/jobs`)
-- `GET /status/{job_id}` - Check job status
-- `GET /list` - List all jobs
-
-#### AI Operations (`/api/v1/ai`)
-- `POST /execute` - Execute AI tools with token budget
-
-### Health Checks
-- `GET /health` - Application health status
-- `GET /ready` - Readiness check
 
 ## 🧪 Testing
 
+Run the test suite to verify installation:
+
 ```bash
-# Run all tests
-pytest tests/ -v
+# Test imports
+python test_imports.py
 
-# Run with coverage
-pytest tests/ --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/unit/test_data.py -v
-
-# Open coverage report
-open htmlcov/index.html  # macOS
-start htmlcov/index.html  # Windows
+# Test architecture
+python test_architecture.py
 ```
 
-## 📚 Documentation
+## 🐛 Troubleshooting
 
-Comprehensive documentation available in `docs/`:
-
-- [Getting Started](docs/getting-started.md)
-- [Architecture Guide](docs/architecture.md)
-- [API Reference](docs/api-reference.md)
-- [Development Guide](docs/development-guide.md)
-- [Deployment Guide](docs/deployment.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Troubleshooting](docs/troubleshooting.md)
+| Problem | Solution |
+|---------|----------|
+| `ModuleNotFoundError: No module named 'flask'` | Run `pip install -r requirements.txt` |
+| `KeyError: 'dataset_id'` | Clear browser cookies and refresh |
+| Upload fails with 413 error | Increase `MAX_CONTENT_LENGTH` in [`app.py`](c:\Users\PC\Desktop\PROJECTS\FINESE2\app.py) |
+| Charts don't render | Check internet connection for Plotly CDN |
+| AG-Grid shows blank | Ensure div has explicit height in CSS |
+| Session lost on refresh | Verify `flask_session/` directory exists and is writable |
+| Import errors on startup | Delete `__pycache__/` folders and restart |
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please follow these steps:
 
-### Quick Start for Contributors
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Install pre-commit hooks: `pre-commit install`
-4. Make your changes
-5. Run tests: `pytest tests/ -v`
-6. Format code: `make format`
-7. Commit: `git commit -m "feat: add amazing feature"`
-8. Push: `git push origin feature/amazing-feature`
-9. Open a Pull Request
-
-## 📊 Project Statistics
-
-| Metric | Value |
-|--------|-------|
-| Core Modules | 9 |
-| API Endpoints | 20+ |
-| ML Algorithms | 14+ |
-| Chart Types | 12+ |
-| Test Coverage | Growing |
-| Python Versions | 3.8-3.12 |
-
-## 🔧 Development Tools
-
-- **Code Formatting**: Black
-- **Import Sorting**: isort
-- **Linting**: flake8
-- **Type Checking**: mypy (optional)
-- **Pre-commit Hooks**: pre-commit
-- **Testing**: pytest with coverage
-- **Documentation**: Markdown + MkDocs (planned)
+### Development Guidelines
+- Follow PEP 8 for Python code style
+- Add docstrings to all new functions
+- Update documentation for new features
+- Test thoroughly before submitting
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🆘 Support
+
+If you encounter issues:
+
+1. Check the [Troubleshooting](#-troubleshooting) section above
+2. Search existing [Issues](https://github.com/your-username/finese2/issues)
+3. Create a new issue with:
+   - Python version (`python --version`)
+   - Operating system
+   - Flask version (`pip show flask`)
+   - Steps to reproduce
+   - Error message and stack trace
+
 ## 🙏 Acknowledgments
 
-- Flask web framework
-- Plotly for visualizations
-- scikit-learn for ML algorithms
-- pandas for data manipulation
-- All open-source contributors
+- **Flask** team for the excellent web framework
+- **Bootstrap** for the responsive UI components
+- **Plotly** for interactive visualizations
+- **AG-Grid** for powerful data grids
+- **DuckDB** for fast analytical SQL
+- **Hugging Face** for hosting the original Streamlit version
+- The open-source community for invaluable packages
 
-## 📞 Support
+## 📈 Roadmap
 
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/your-username/FINESE2/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/FINESE2/discussions)
+Future enhancements planned:
+- [ ] User authentication and multi-user support
+- [ ] Database backend (PostgreSQL/MySQL) instead of pickle files
+- [ ] Real-time collaboration features
+- [ ] Advanced ML pipeline customization
+- [ ] Custom report templates
+- [ ] API endpoint exposure for programmatic access
+- [ ] Plugin system for custom visualizations
+- [ ] Dark mode theme
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by the FINESE2 Team**
+**Built with ❤️ using Flask, Bootstrap, and Python**
 
-[⭐ Star this repo](https://github.com/your-username/FINESE2) • [🐛 Report Bug](https://github.com/your-username/FINESE2/issues) • [💡 Request Feature](https://github.com/your-username/FINESE2/issues)
+⭐ Star this repo if you find it helpful!
 
-**Version 4.0.0** | **Production Ready** ✅ | **Docker Supported** 🐳 | **Tested** 🧪
+[Report Bug](https://github.com/your-username/finese2/issues) · [Request Feature](https://github.com/your-username/finese2/issues)
 
 </div>

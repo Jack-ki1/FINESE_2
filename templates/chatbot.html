@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex flex-column" style="height: 70vh;">
+    <div id="chatHistory" class="flex-grow-1 overflow-auto border rounded p-3 mb-3 bg-white"></div>
+    <div class="input-group">
+        <select class="form-select" style="max-width: 150px;" id="modelSelect"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select>
+        <input type="text" class="form-control" id="chatInput" placeholder="Ask about your data...">
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim(); if (!msg) return; input.value = '';
+    appendBubble('user', msg);
+    const res = await fetch('/chatbot/api/ask', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg, model: document.getElementById('modelSelect').value})});
+    const data = await res.json();
+    appendBubble('assistant', data.reply);
+}
+function appendBubble(role, text) {
+    const div = document.createElement('div'); div.className = `mb-2 ${role === 'user' ? 'text-end' : 'text-start'}`;
+    const badge = document.createElement('span'); badge.className = `d-inline-block p-2 rounded ${role === 'user' ? 'bg-primary text-white' : 'bg-light text-dark border'}`; badge.style.maxWidth = '80%'; badge.textContent = text;
+    div.appendChild(badge); document.getElementById('chatHistory').appendChild(div);
+    document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
+}
+</script>
+{% endblock %}

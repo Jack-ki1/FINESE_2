@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="cleaningContent">
+    <div class="alert alert-info" id="noDataAlert">Load a dataset to see cleaning recommendations.</div>
+    <div id="cleaningDashboard" style="display:none;">
+        <h5 class="mb-3">Unified Data Cleaning & Typing</h5>
+        <div class="alert alert-warning" id="issueBanner"></div>
+        <table class="table table-bordered table-hover" id="issuesTable">
+            <thead class="table-light"><tr><th><input type="checkbox" id="selectAll"></th><th>Column</th><th>Issue</th><th>Recommendation</th><th>Severity</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" onclick="previewFixes()">Preview All Fixes</button>
+            <button class="btn btn-primary" onclick="applyFixes()">Apply Fixes to Working Dataset</button>
+        </div>
+        <div id="previewArea" class="mt-4" style="display:none;">
+            <h6>Preview</h6>
+            <div id="previewGrid" class="ag-theme-alpine" style="height: 300px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let currentIssues = [];
+document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); analyzeCleaning(); });
+async function analyzeCleaning() {
+    const res = await fetch('/cleaning/api/analyze');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.issue_count === 0) {
+        document.getElementById('noDataAlert').textContent = 'No issues found. Your data looks clean!';
+        document.getElementById('noDataAlert').className = 'alert alert-success';
+        return;
+    }
+    document.getElementById('noDataAlert').style.display = 'none';
+    document.getElementById('cleaningDashboard').style.display = 'block';
+    document.getElementById('issueBanner').textContent = `Found ${data.issue_count} potential issues to address.`;
+    currentIssues = data.issues;
+    const tbody = document.querySelector('#issuesTable tbody');
+    tbody.innerHTML = '';
+    data.issues.forEach((issue, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="checkbox" class="issue-check" data-idx="${idx}"></td><td>${issue.column}</td><td>${issue.issue}</td><td><code>${issue.recommendation}</code></td><td><span class="badge bg-warning text-dark">${issue.severity}</span></td>`;
+        tbody.appendChild(tr);
+    });
+}
+function getSelectedFixes() {
+    return Array.from(document.querySelectorAll('.issue-check:checked')).map(c => {
+        const idx = parseInt(c.dataset.idx);
+        const issue = currentIssues[idx];
+        let action = 'to_numeric';
+        if (issue.issue.includes('date')) action = 'to_datetime';
+        if (issue.issue.includes('NA')) action = 'drop_na';
+        return {column: issue.column, action: action};
+    });
+}
+async function applyFixes() {
+    const fixes = getSelectedFixes();
+    if (!fixes.length) return alert('Select at least one issue to fix.');
+    const res = await fetch('/cleaning/api/apply', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({fixes})});
+    const data = await res.json();
+    alert(`Applied! New shape: ${data.shape[0]} rows x ${data.shape[1]} cols`);
+    loadDatasetInfo(); analyzeCleaning();
+}
+async function previewFixes() {
+    const res = await fetch('/review/api/profile');
+    const data = await res.json();
+    document.getElementById('previewArea').style.display = 'block';
+    const cols = Object.keys(data.top_rows[0] || {}).map(k => ({field: k}));
+    new agGrid.Grid(document.getElementById('previewGrid'), {columnDefs: cols, rowData: data.top_rows, defaultColDef: {sortable: true, resizable: true}});
+}
+</script>
+{% endblock %}

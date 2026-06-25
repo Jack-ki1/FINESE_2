@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card"><div class="card-header">Schema Explorer</div><div class="card-body"><ul class="list-group list-group-flush" id="schemaList"></ul></div></div>
+    </div>
+    <div class="col-md-9">
+        <div class="mb-3"><textarea class="form-control font-monospace" id="sqlQuery" rows="4" placeholder="SELECT * FROM df LIMIT 10;"></textarea></div>
+        <button class="btn btn-primary mb-3" onclick="runSQL()">Run Query</button>
+        <div id="sqlGrid" class="ag-theme-alpine" style="height: 400px;"></div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const res = await fetch('/api/data/info');
+    const data = await res.json();
+    if (data.loaded) {
+        const list = document.getElementById('schemaList');
+        Object.entries(data.dtypes).forEach(([col, dtype]) => {
+            const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between';
+            li.innerHTML = `<span>${col}</span><span class="badge bg-secondary">${dtype}</span>`; list.appendChild(li);
+        });
+    }
+});
+async function runSQL() {
+    const query = document.getElementById('sqlQuery').value;
+    const res = await fetch('/sql/api/execute', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query})});
+    const data = await res.json();
+    if (data.error) return alert(data.error);
+    const cols = data.columns.map(c => ({field: c}));
+    new agGrid.Grid(document.getElementById('sqlGrid'), {columnDefs: cols, rowData: data.rows, defaultColDef: {sortable: true, filter: true, resizable: true}});
+}
+</script>
+{% endblock %}

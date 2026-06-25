@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="mlContent">
+    <div class="alert alert-info" id="noDataAlert">Load a dataset to train models.</div>
+    <div id="mlDashboard" style="display:none;">
+        <div class="card p-4">
+            <h5>Train Model</h5>
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">Target Column</label><select class="form-select" id="targetCol"></select></div>
+                <div class="col-md-4"><label class="form-label">Model Type</label><select class="form-select" id="modelType"><option value="classification">Classification</option><option value="regression">Regression</option></select></div>
+            </div>
+            <button class="btn btn-success mt-3" onclick="trainModel()">Start Training</button>
+            <div class="mt-4" id="progressArea" style="display:none;">
+                <div class="progress mb-2"><div class="progress-bar" id="trainProgress" style="width: 0%"></div></div>
+                <div id="trainStatus">Initializing...</div>
+            </div>
+            <div class="mt-4" id="resultArea" style="display:none;">
+                <h6>Results</h6><pre id="resultJson"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let pollInterval;
+document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); initML(); });
+async function initML() {
+    const res = await fetch('/api/data/info');
+    const data = await res.json();
+    if (!data.loaded) return;
+    document.getElementById('noDataAlert').style.display = 'none';
+    document.getElementById('mlDashboard').style.display = 'block';
+    const sel = document.getElementById('targetCol');
+    data.columns.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
+}
+async function trainModel() {
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('resultArea').style.display = 'none';
+    const res = await fetch('/ml/api/train', {method: 'POST'});
+    const data = await res.json();
+    pollInterval = setInterval(() => pollStatus(data.job_id), 1000);
+}
+async function pollStatus(jobId) {
+    const res = await fetch(`/ml/api/status/${jobId}`);
+    const data = await res.json();
+    document.getElementById('trainProgress').style.width = data.progress + '%';
+    document.getElementById('trainStatus').textContent = data.status;
+    if (data.status === 'completed') { clearInterval(pollInterval); document.getElementById('resultArea').style.display = 'block'; document.getElementById('resultJson').textContent = JSON.stringify(data.result, null, 2); }
+}
+</script>
+{% endblock %}

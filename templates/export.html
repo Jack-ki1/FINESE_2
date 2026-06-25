@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-md-4"><div class="card p-3 text-center"><h5>CSV</h5><a href="/export/api/download/csv" class="btn btn-outline-primary">Download</a></div></div>
+    <div class="col-md-4"><div class="card p-3 text-center"><h5>Excel</h5><a href="/export/api/download/excel" class="btn btn-outline-primary">Download</a></div></div>
+    <div class="col-md-4"><div class="card p-3 text-center"><h5>JSON</h5><a href="/export/api/download/json" class="btn btn-outline-primary">Download</a></div></div>
+</div>
+{% endblock %}

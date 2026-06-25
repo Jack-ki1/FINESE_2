@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="chartsContent">
+    <div class="alert alert-info" id="noDataAlert">Load a dataset to build charts.</div>
+    <div id="chartsDashboard" style="display:none;">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3"><label class="form-label">Chart Type</label><select class="form-select" id="chartType"><option value="bar">Bar</option><option value="line">Line</option><option value="scatter">Scatter</option><option value="histogram">Histogram</option><option value="box">Box</option></select></div>
+            <div class="col-md-3"><label class="form-label">X Axis</label><select class="form-select" id="xCol"></select></div>
+            <div class="col-md-3"><label class="form-label">Y Axis</label><select class="form-select" id="yCol"></select></div>
+            <div class="col-md-3"><label class="form-label">Color (optional)</label><select class="form-select" id="colorCol"><option value="">None</option></select></div>
+        </div>
+        <button class="btn btn-primary mb-4" onclick="buildChart()">Build Chart</button>
+        <div id="chartPlot" style="height: 500px;"></div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); initChartControls(); });
+async function initChartControls() {
+    const res = await fetch('/api/data/info');
+    const data = await res.json();
+    if (!data.loaded) return;
+    document.getElementById('noDataAlert').style.display = 'none';
+    document.getElementById('chartsDashboard').style.display = 'block';
+    const populate = (sel) => { sel.innerHTML = ''; data.columns.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); }); };
+    populate(document.getElementById('xCol')); populate(document.getElementById('yCol'));
+    const colorSel = document.getElementById('colorCol'); colorSel.innerHTML = '<option value="">None</option>'; data.columns.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; colorSel.appendChild(opt); });
+}
+async function buildChart() {
+    const payload = {type: document.getElementById('chartType').value, x: document.getElementById('xCol').value, y: document.getElementById('yCol').value, color: document.getElementById('colorCol').value || null};
+    const res = await fetch('/charts/api/build', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+    const data = await res.json();
+    if (data.error) return alert(data.error);
+    Plotly.newPlot('chartPlot', JSON.parse(data.graph_json));
+}
+</script>
+{% endblock %}

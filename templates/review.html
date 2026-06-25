@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="reviewContent">
+    <div class="alert alert-info" id="noDataAlert">Load a dataset from the sidebar to begin.</div>
+    <div id="dataDashboard" style="display:none;">
+        <div class="row g-3 mb-4">
+            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">ROWS</div><h3 id="metricRows">0</h3></div></div>
+            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">COLUMNS</div><h3 id="metricCols">0</h3></div></div>
+            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">NULLS</div><h3 id="metricNulls">0</h3></div></div>
+            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">DUPLICATES</div><h3 id="metricDups">0</h3></div></div>
+            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">MEMORY (KB)</div><h3 id="metricMem">0</h3></div></div>
+        </div>
+        <h5 class="mb-3">Data Snapshot</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card"><div class="card-header">Top 10 Rows</div><div class="card-body"><div id="topGrid" class="ag-theme-alpine" style="height: 300px;"></div></div></div>
+            </div>
+            <div class="col-md-6">
+                <div class="card"><div class="card-header">Bottom 10 Rows</div><div class="card-body"><div id="bottomGrid" class="ag-theme-alpine" style="height: 300px;"></div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); loadProfile(); });
+async function loadProfile() {
+    const res = await fetch('/review/api/profile');
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('noDataAlert').style.display = 'none';
+    document.getElementById('dataDashboard').style.display = 'block';
+    document.getElementById('metricRows').textContent = data.rows;
+    document.getElementById('metricCols').textContent = data.columns;
+    document.getElementById('metricNulls').textContent = data.nulls;
+    document.getElementById('metricDups').textContent = data.duplicates;
+    document.getElementById('metricMem').textContent = data.memory_kb;
+    if (data.top_rows.length) {
+        const cols = Object.keys(data.top_rows[0]).map(k => ({field: k}));
+        new agGrid.Grid(document.getElementById('topGrid'), {columnDefs: cols, rowData: data.top_rows, defaultColDef: {sortable: true, filter: true, resizable: true}});
+        new agGrid.Grid(document.getElementById('bottomGrid'), {columnDefs: cols, rowData: data.bottom_rows, defaultColDef: {sortable: true, filter: true, resizable: true}});
+    }
+}
+</script>
+{% endblock %}

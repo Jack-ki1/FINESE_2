@@ -1,0 +1,8 @@
+from .data import bp as data_bp
+from .review import bp as review_bp
+from .cleaning import bp as cleaning_bp
+from .charts import bp as charts_bp
+from .chatbot import bp as chatbot_bp
+from .ml import bp as ml_bp
+from .sql import bp as sql_bp
+from .export import bp as export_bp
