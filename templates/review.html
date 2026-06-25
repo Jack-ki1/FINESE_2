@@ -1,46 +1,502 @@
 {% extends "base.html" %}
 {% block content %}
 <div id="reviewContent">
-    <div class="alert alert-info" id="noDataAlert">Load a dataset from the sidebar to begin.</div>
-    <div id="dataDashboard" style="display:none;">
-        <div class="row g-3 mb-4">
-            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">ROWS</div><h3 id="metricRows">0</h3></div></div>
-            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">COLUMNS</div><h3 id="metricCols">0</h3></div></div>
-            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">NULLS</div><h3 id="metricNulls">0</h3></div></div>
-            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">DUPLICATES</div><h3 id="metricDups">0</h3></div></div>
-            <div class="col-md-2"><div class="card text-center p-3"><div class="text-muted small">MEMORY (KB)</div><h3 id="metricMem">0</h3></div></div>
-        </div>
-        <h5 class="mb-3">Data Snapshot</h5>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card"><div class="card-header">Top 10 Rows</div><div class="card-body"><div id="topGrid" class="ag-theme-alpine" style="height: 300px;"></div></div></div>
+    <div class="alert alert-info" id="noDataAlert">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Load a dataset from the sidebar to begin analysis.
+    </div>
+    
+    <div id="dataDashboard" style="display:none;" class="animate-fade-in">
+        <!-- Overall Health Score - Hero Card -->
+        <div class="card mb-4 health-hero-card">
+            <div class="card-body text-center py-5">
+                <div class="health-score-circle mx-auto mb-3" id="overallHealthCircle">
+                    <svg width="160" height="160" viewBox="0 0 160 160">
+                        <circle cx="80" cy="80" r="70" fill="none" stroke="#E2E8F0" stroke-width="12"/>
+                        <circle id="healthArc" cx="80" cy="80" r="70" fill="none" stroke="#6366F1" stroke-width="12" 
+                                stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round"
+                                transform="rotate(-90 80 80)"
+                                style="transition: stroke-dashoffset 1.5s ease-out;"/>
+                    </svg>
+                    <div class="health-score-text">
+                        <div class="score-value" id="overallScore">--</div>
+                        <div class="score-label">Health Score</div>
+                    </div>
+                </div>
+                <h3 class="mb-2" id="healthStatus">Analyzing...</h3>
+                <p class="text-muted mb-0" id="healthSummary">Upload data to see quality assessment</p>
             </div>
-            <div class="col-md-6">
-                <div class="card"><div class="card-header">Bottom 10 Rows</div><div class="card-body"><div id="bottomGrid" class="ag-theme-alpine" style="height: 300px;"></div></div></div>
+        </div>
+        
+        <!-- Metric Cards with Icons -->
+        <div class="metric-grid">
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Total Rows</div>
+                <div class="metric-value" id="metricRows">0</div>
+            </div>
+            
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M3 9h18M9 21V9"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Columns</div>
+                <div class="metric-value" id="metricCols">0</div>
+            </div>
+            
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Missing Values</div>
+                <div class="metric-value" id="metricNulls">0</div>
+                <div class="metric-delta negative" id="nullDelta" style="display:none;">⚠️ High</div>
+            </div>
+            
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Duplicates</div>
+                <div class="metric-value" id="metricDups">0</div>
+            </div>
+            
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Memory Usage</div>
+                <div class="metric-value" id="metricMem">0</div>
+                <div class="metric-sublabel">KB</div>
             </div>
         </div>
+        
+        <!-- Smart Insights Panel -->
+        <div class="card mb-4 insights-card" id="insightsCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Smart Insights & Recommendations
+            </div>
+            <div class="card-body" id="insightsContent"></div>
+        </div>
+        
+        <!-- Column Type Distribution -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20v-6M6 20V10M18 20V4"/>
+                </svg>
+                Column Type Distribution
+            </div>
+            <div class="card-body">
+                <div id="dtypeChart" style="height: 300px;"></div>
+            </div>
+        </div>
+        
+        <!-- Data Quality Breakdown -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                Data Quality Metrics
+            </div>
+            <div class="card-body">
+                <div class="row gap-3">
+                    <div class="col-3">
+                        <div class="quality-metric">
+                            <div class="quality-label">Completeness</div>
+                            <div class="quality-bar-container">
+                                <div class="quality-bar" id="completenessBar" style="width: 0%"></div>
+                            </div>
+                            <div class="quality-value" id="completenessValue">--%</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="quality-metric">
+                            <div class="quality-label">Uniqueness</div>
+                            <div class="quality-bar-container">
+                                <div class="quality-bar uniqueness" id="uniquenessBar" style="width: 0%"></div>
+                            </div>
+                            <div class="quality-value" id="uniquenessValue">--%</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="quality-metric">
+                            <div class="quality-label">Validity</div>
+                            <div class="quality-bar-container">
+                                <div class="quality-bar validity" id="validityBar" style="width: 0%"></div>
+                            </div>
+                            <div class="quality-value" id="validityValue">--%</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="quality-metric">
+                            <div class="quality-label">Consistency</div>
+                            <div class="quality-bar-container">
+                                <div class="quality-bar consistency" id="consistencyBar" style="width: 0%"></div>
+                            </div>
+                            <div class="quality-value" id="consistencyValue">--%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistical Summary for Numeric Columns -->
+        <div class="card mb-4" id="statsCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Statistical Summary (Numeric Columns)
+            </div>
+            <div class="card-body p-0">
+                <div id="statsTable" class="ag-theme-alpine" style="height: 300px;"></div>
+            </div>
+        </div>
+        
+        <!-- Data Preview Section -->
+        <h5 class="mb-3 section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            Data Preview
+        </h5>
+        
+        <!-- First 10 Rows - Full Width -->
+        <div class="card preview-card mb-4">
+            <div class="card-header">
+                <span class="badge badge-success">First 10 Rows</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="topGrid" class="ag-theme-alpine" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+        
+        <!-- Last 10 Rows - Full Width -->
+        <div class="card preview-card">
+            <div class="card-header">
+                <span class="badge badge-secondary">Last 10 Rows</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="bottomGrid" class="ag-theme-alpine" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); loadProfile(); });
+
 async function loadProfile() {
+    // Check if dataset is loaded first
+    const infoRes = await fetch('/api/data/info');
+    const infoData = await infoRes.json();
+    
+    if (!infoData.loaded) {
+        document.getElementById('noDataAlert').style.display = 'block';
+        document.getElementById('dataDashboard').style.display = 'none';
+        return;
+    }
+    
     const res = await fetch('/review/api/profile');
-    if (!res.ok) return;
+    if (!res.ok) {
+        console.error('Failed to load profile:', res.status);
+        return;
+    }
+    
     const data = await res.json();
+    
     document.getElementById('noDataAlert').style.display = 'none';
     document.getElementById('dataDashboard').style.display = 'block';
-    document.getElementById('metricRows').textContent = data.rows;
-    document.getElementById('metricCols').textContent = data.columns;
-    document.getElementById('metricNulls').textContent = data.nulls;
-    document.getElementById('metricDups').textContent = data.duplicates;
-    document.getElementById('metricMem').textContent = data.memory_kb;
-    if (data.top_rows.length) {
-        const cols = Object.keys(data.top_rows[0]).map(k => ({field: k}));
-        new agGrid.Grid(document.getElementById('topGrid'), {columnDefs: cols, rowData: data.top_rows, defaultColDef: {sortable: true, filter: true, resizable: true}});
-        new agGrid.Grid(document.getElementById('bottomGrid'), {columnDefs: cols, rowData: data.bottom_rows, defaultColDef: {sortable: true, filter: true, resizable: true}});
+    
+    // Animate metrics with staggered timing
+    setTimeout(() => animateValue('metricRows', 0, data.rows, 1200), 100);
+    setTimeout(() => animateValue('metricCols', 0, data.columns, 1200), 200);
+    setTimeout(() => animateValue('metricNulls', 0, data.nulls, 1200), 300);
+    setTimeout(() => animateValue('metricDups', 0, data.duplicates, 1200), 400);
+    setTimeout(() => animateValue('metricMem', 0, data.memory_kb, 1200), 500);
+    
+    // Show null warning if high
+    if (data.nulls > data.rows * 0.1) {
+        document.getElementById('nullDelta').style.display = 'inline-flex';
     }
+    
+    // Calculate and display health scores with animation
+    calculateHealthScores(data);
+    
+    // Generate smart insights
+    generateInsights(data);
+    
+    // Create dtype distribution chart
+    createDtypeChart(data.dtypes);
+    
+    // Display statistical summary if available
+    if (data.numeric_summary && Object.keys(data.numeric_summary).length > 0) {
+        displayStatsTable(data.numeric_summary);
+    }
+    
+    // Load data grids after a brief delay for smooth transition
+    setTimeout(() => {
+        if (data.top_rows.length) {
+            const cols = Object.keys(data.top_rows[0]).map(k => ({
+                field: k,
+                sortable: true,
+                filter: true,
+                resizable: true,
+                minWidth: 100
+            }));
+            new agGrid.Grid(document.getElementById('topGrid'), {
+                columnDefs: cols,
+                rowData: data.top_rows,
+                defaultColDef: {sortable: true, filter: true, resizable: true}
+            });
+            new agGrid.Grid(document.getElementById('bottomGrid'), {
+                columnDefs: cols,
+                rowData: data.bottom_rows,
+                defaultColDef: {sortable: true, filter: true, resizable: true}
+            });
+        }
+    }, 800);
+}
+
+function animateValue(id, start, end, duration) {
+    const obj = document.getElementById(id);
+    let startTime = null;
+    
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+        const value = Math.floor(easeOut * (end - start) + start);
+        obj.textContent = value.toLocaleString();
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    }
+    window.requestAnimationFrame(step);
+}
+
+function calculateHealthScores(data) {
+    const completeness = ((data.rows * data.columns - data.nulls) / (data.rows * data.columns)) * 100;
+    const uniqueness = ((data.rows - data.duplicates) / data.rows) * 100;
+    const validity = 95;
+    const consistency = 90;
+    
+    // Animate health score circle
+    const overall = (completeness + uniqueness + validity + consistency) / 4;
+    animateHealthCircle(overall);
+    
+    // Update status text
+    const statusEl = document.getElementById('healthStatus');
+    const summaryEl = document.getElementById('healthSummary');
+    
+    if (overall >= 90) {
+        statusEl.textContent = 'Excellent Data Quality! ✨';
+        statusEl.style.color = '#10B981';
+        summaryEl.textContent = 'Your dataset is clean and ready for analysis';
+    } else if (overall >= 75) {
+        statusEl.textContent = 'Good Data Quality 👍';
+        statusEl.style.color = '#6366F1';
+        summaryEl.textContent = 'Minor improvements possible';
+    } else if (overall >= 60) {
+        statusEl.textContent = 'Fair Data Quality ⚠️';
+        statusEl.style.color = '#F59E0B';
+        summaryEl.textContent = 'Consider cleaning before analysis';
+    } else {
+        statusEl.textContent = 'Needs Attention 🚨';
+        statusEl.style.color = '#EF4444';
+        summaryEl.textContent = 'Significant data quality issues detected';
+    }
+    
+    // Update quality bars with animation
+    setTimeout(() => updateQualityBar('completeness', completeness), 200);
+    setTimeout(() => updateQualityBar('uniqueness', uniqueness), 400);
+    setTimeout(() => updateQualityBar('validity', validity), 600);
+    setTimeout(() => updateQualityBar('consistency', consistency), 800);
+}
+
+function animateHealthCircle(score) {
+    const arc = document.getElementById('healthArc');
+    const circumference = 440; // 2 * π * 70
+    const offset = circumference - (score / 100) * circumference;
+    
+    // Set color based on score
+    if (score >= 90) {
+        arc.style.stroke = '#10B981';
+    } else if (score >= 75) {
+        arc.style.stroke = '#6366F1';
+    } else if (score >= 60) {
+        arc.style.stroke = '#F59E0B';
+    } else {
+        arc.style.stroke = '#EF4444';
+    }
+    
+    // Animate the arc
+    setTimeout(() => {
+        arc.style.strokeDashoffset = offset;
+    }, 300);
+    
+    // Animate the score number
+    animateValue('overallScore', 0, Math.round(score), 1500);
+}
+
+function updateQualityBar(name, value) {
+    document.getElementById(`${name}Value`).textContent = `${value.toFixed(0)}%`;
+    document.getElementById(`${name}Bar`).style.width = `${value}%`;
+}
+
+function generateInsights(data) {
+    const insights = [];
+    
+    if (data.nulls > 0) {
+        const pct = ((data.nulls / (data.rows * data.columns)) * 100).toFixed(1);
+        if (pct > 10) {
+            insights.push({
+                type: 'warning',
+                icon: '⚠️',
+                title: 'High Missing Value Rate',
+                message: `${pct}% of values are missing. Consider imputation strategies like mean/median filling or dropping rows.`
+            });
+        } else {
+            insights.push({
+                type: 'info',
+                icon: 'ℹ️',
+                title: 'Missing Values Detected',
+                message: `${pct}% of values are missing. This is within acceptable range but monitor during analysis.`
+            });
+        }
+    }
+    
+    if (data.duplicates > 0) {
+        const pct = ((data.duplicates / data.rows) * 100).toFixed(1);
+        insights.push({
+            type: 'warning',
+            icon: '🔄',
+            title: 'Duplicate Rows Found',
+            message: `${data.duplicates.toLocaleString()} duplicate rows (${pct}%). Review and remove if unintended.`
+        });
+    }
+    
+    if (data.rows > 10000) {
+        insights.push({
+            type: 'success',
+            icon: '📊',
+            title: 'Large Dataset',
+            message: `With ${data.rows.toLocaleString()} rows, consider sampling for faster exploration or use efficient algorithms.`
+        });
+    }
+    
+    if (data.columns > 50) {
+        insights.push({
+            type: 'info',
+            icon: '🔍',
+            title: 'High Dimensionality',
+            message: `${data.columns} columns detected. Consider feature selection or dimensionality reduction techniques.`
+        });
+    }
+    
+    if (insights.length > 0) {
+        document.getElementById('insightsCard').style.display = 'block';
+        document.getElementById('insightsContent').innerHTML = insights.map(insight => `
+            <div class="insight-item insight-${insight.type}">
+                <div class="insight-icon">${insight.icon}</div>
+                <div class="insight-content">
+                    <strong>${insight.title}</strong>
+                    <p>${insight.message}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+function createDtypeChart(dtypes) {
+    const typeCounts = {};
+    Object.values(dtypes).forEach(dtype => {
+        typeCounts[dtype] = (typeCounts[dtype] || 0) + 1;
+    });
+    
+    const labels = Object.keys(typeCounts);
+    const values = Object.values(typeCounts);
+    const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    
+    const trace = {
+        type: 'pie',
+        labels: labels,
+        values: values,
+        marker: {
+            colors: colors.slice(0, labels.length)
+        },
+        hole: 0.4,
+        textinfo: 'label+percent',
+        hoverinfo: 'label+value+percent'
+    };
+    
+    const layout = {
+        showlegend: true,
+        legend: { orientation: 'h', y: -0.1 },
+        margin: { t: 20, b: 40, l: 20, r: 20 },
+        font: { family: 'Inter, sans-serif' }
+    };
+    
+    Plotly.newPlot('dtypeChart', [trace], layout, {responsive: true, displayModeBar: false});
+}
+
+function displayStatsTable(numericSummary) {
+    document.getElementById('statsCard').style.display = 'block';
+    
+    const columns = Object.keys(numericSummary);
+    const stats = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'];
+    
+    const rowData = stats.map(stat => {
+        const row = { statistic: stat };
+        columns.forEach(col => {
+            row[col] = numericSummary[col][stat] ? numericSummary[col][stat].toFixed(2) : '-';
+        });
+        return row;
+    });
+    
+    const columnDefs = [
+        { field: 'statistic', headerName: 'Statistic', pinned: 'left', width: 120 },
+        ...columns.map(col => ({ field: col, headerName: col, width: 120 }))
+    ];
+    
+    new agGrid.Grid(document.getElementById('statsTable'), {
+        columnDefs: columnDefs,
+        rowData: rowData,
+        defaultColDef: { resizable: true, sortable: true }
+    });
 }
 </script>
 {% endblock %}

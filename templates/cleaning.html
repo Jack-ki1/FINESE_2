@@ -1,53 +1,572 @@
 {% extends "base.html" %}
 {% block content %}
 <div id="cleaningContent">
-    <div class="alert alert-info" id="noDataAlert">Load a dataset to see cleaning recommendations.</div>
-    <div id="cleaningDashboard" style="display:none;">
-        <h5 class="mb-3">Unified Data Cleaning & Typing</h5>
-        <div class="alert alert-warning" id="issueBanner"></div>
-        <table class="table table-bordered table-hover" id="issuesTable">
-            <thead class="table-light"><tr><th><input type="checkbox" id="selectAll"></th><th>Column</th><th>Issue</th><th>Recommendation</th><th>Severity</th></tr></thead>
-            <tbody></tbody>
-        </table>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" onclick="previewFixes()">Preview All Fixes</button>
-            <button class="btn btn-primary" onclick="applyFixes()">Apply Fixes to Working Dataset</button>
+    <div class="alert alert-info" id="noDataAlert">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Load a dataset to see cleaning recommendations.
+    </div>
+    
+    <div id="cleaningDashboard" style="display:none;" class="animate-fade-in">
+        <!-- Header with Issue Count Badge -->
+        <div class="card mb-4">
+            <div class="card-body py-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="mb-1">🧹 Smart Data Cleaning</h5>
+                        <p class="text-muted mb-0" style="font-size: 13px;">AI-powered issue detection with manual and automatic cleaning options</p>
+                    </div>
+                    <div class="badge badge-warning" id="issueBadge" style="font-size: 18px; padding: 12px 20px;">
+                        <span id="issueCount">0</span> Issues Found
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="previewArea" class="mt-4" style="display:none;">
-            <h6>Preview</h6>
-            <div id="previewGrid" class="ag-theme-alpine" style="height: 300px;"></div>
+        
+        <!-- Issue Summary Cards -->
+        <div class="metric-grid mb-4" id="summaryCards"></div>
+        
+        <!-- Tab Navigation for Cleaning Modes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary" id="autoTab" onclick="switchCleaningMode('auto')">
+                        ⚡ Automatic Cleaning
+                    </button>
+                    <button class="btn btn-sm btn-secondary" id="manualTab" onclick="switchCleaningMode('manual')">
+                        🛠️ Manual Cleaning
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Automatic Cleaning Panel -->
+            <div class="card-body" id="autoPanel">
+                <h6 class="mb-3">One-Click Auto-Clean Options</h6>
+                <div class="row gap-3 mb-3">
+                    <div class="col-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoRemoveDuplicates" checked>
+                            <label class="form-check-label" for="autoRemoveDuplicates">Remove Duplicates</label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoHandleMissing" checked>
+                            <label class="form-check-label" for="autoHandleMissing">Handle Missing Values</label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoFixTypes" checked>
+                            <label class="form-check-label" for="autoFixTypes">Fix Data Types</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row gap-3 mb-3">
+                    <div class="col-4">
+                        <div class="form-group">
+                            <label class="form-label">Missing Value Strategy</label>
+                            <select class="form-control" id="missingStrategy">
+                                <option value="drop">Drop Rows</option>
+                                <option value="mean" selected>Fill with Mean</option>
+                                <option value="median">Fill with Median</option>
+                                <option value="mode">Fill with Mode</option>
+                                <option value="zero">Fill with Zero</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="form-group">
+                            <label class="form-label">Outlier Treatment</label>
+                            <select class="form-control" id="outlierTreatment">
+                                <option value="none" selected>No Treatment</option>
+                                <option value="clip">Clip to Bounds</option>
+                                <option value="remove">Remove Outliers</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="form-group">
+                            <label class="form-label">Text Normalization</label>
+                            <select class="form-control" id="textNormalization">
+                                <option value="none" selected>No Change</option>
+                                <option value="lower">Lowercase</option>
+                                <option value="upper">Uppercase</option>
+                                <option value="strip">Strip Whitespace</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success btn-lg w-100" onclick="executeAutoClean()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                    </svg>
+                    Execute Auto-Clean
+                </button>
+            </div>
+            
+            <!-- Manual Cleaning Panel -->
+            <div class="card-body" id="manualPanel" style="display:none;">
+                <h6 class="mb-3">Detected Issues & Manual Fixes</h6>
+                <table class="table table-bordered table-hover" id="issuesTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th>Column</th>
+                            <th>Issue Type</th>
+                            <th>Current State</th>
+                            <th>Recommended Fix</th>
+                            <th>Action</th>
+                            <th>Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" onclick="applySelectedFixes()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Apply Selected Fixes
+                    </button>
+                    <button class="btn btn-secondary" onclick="previewChanges()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Preview Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Custom Transformations Panel -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20v-6M6 20V10M18 20V4"/>
+                </svg>
+                Custom Transformations
+            </div>
+            <div class="card-body">
+                <div class="row gap-3 mb-3">
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Target Column</label>
+                            <select class="form-control" id="customCol"></select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Transformation</label>
+                            <select class="form-control" id="customTransform">
+                                <option value="log">Log Transform</option>
+                                <option value="sqrt">Square Root</option>
+                                <option value="square">Square</option>
+                                <option value="abs">Absolute Value</option>
+                                <option value="normalize">Normalize (0-1)</option>
+                                <option value="standardize">Standardize (Z-score)</option>
+                                <option value="bin">Bin into Categories</option>
+                                <option value="date_extract">Extract Date Part</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Parameters (Optional)</label>
+                            <input type="text" class="form-control" id="customParams" placeholder="e.g., bins=5 or part=year">
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-primary w-100" onclick="applyCustomTransform()">Apply Transform</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cleaning History -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Cleaning History
+            </div>
+            <div class="card-body p-0">
+                <div id="cleaningHistory" style="max-height: 200px; overflow-y: auto;">
+                    <div class="empty-state py-4">
+                        <p class="text-muted">No cleaning operations performed yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview Area -->
+        <div id="previewArea" class="card" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 21V9"/>
+                </svg>
+                Preview of Changes
+            </div>
+            <div class="card-body p-0">
+                <div id="previewGrid" class="ag-theme-alpine" style="height: 400px;"></div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
 let currentIssues = [];
-document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); analyzeCleaning(); });
+let selectedIndices = new Set();
+let cleaningHistory = [];
+let currentColumns = [];
+
+document.addEventListener('DOMContentLoaded', () => { 
+    loadDatasetInfo(); 
+    analyzeCleaning(); 
+});
+
 async function analyzeCleaning() {
-    const res = await fetch('/cleaning/api/analyze');
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.issue_count === 0) {
-        document.getElementById('noDataAlert').textContent = 'No issues found. Your data looks clean!';
-        document.getElementById('noDataAlert').className = 'alert alert-success';
+    const infoRes = await fetch('/api/data/info');
+    const infoData = await infoRes.json();
+    
+    if (!infoData.loaded) {
+        document.getElementById('noDataAlert').style.display = 'block';
+        document.getElementById('cleaningDashboard').style.display = 'none';
         return;
     }
+    
+    const res = await fetch('/review/api/profile');
+    const data = await res.json();
+    currentColumns = Object.keys(data.dtypes);
+    
+    // Populate custom column selector
+    const customColSelect = document.getElementById('customCol');
+    customColSelect.innerHTML = currentColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+    
+    const cleanRes = await fetch('/cleaning/api/analyze');
+    if (!cleanRes.ok) {
+        console.error('Failed to analyze cleaning:', cleanRes.status);
+        return;
+    }
+    
+    const cleanData = await cleanRes.json();
+    
+    if (cleanData.issue_count === 0) {
+        document.getElementById('noDataAlert').textContent = '✨ No issues found. Your data looks clean!';
+        document.getElementById('noDataAlert').className = 'alert alert-success';
+        document.getElementById('noDataAlert').style.display = 'block';
+        document.getElementById('cleaningDashboard').style.display = 'none';
+        return;
+    }
+    
     document.getElementById('noDataAlert').style.display = 'none';
     document.getElementById('cleaningDashboard').style.display = 'block';
-    document.getElementById('issueBanner').textContent = `Found ${data.issue_count} potential issues to address.`;
-    currentIssues = data.issues;
+    
+    animateValue('issueCount', 0, cleanData.issue_count, 800);
+    generateSummaryCards(cleanData.issues);
+    
+    currentIssues = cleanData.issues;
+    renderIssuesTable();
+}
+
+function switchCleaningMode(mode) {
+    const autoTab = document.getElementById('autoTab');
+    const manualTab = document.getElementById('manualTab');
+    const autoPanel = document.getElementById('autoPanel');
+    const manualPanel = document.getElementById('manualPanel');
+    
+    if (mode === 'auto') {
+        autoTab.className = 'btn btn-sm btn-primary';
+        manualTab.className = 'btn btn-sm btn-secondary';
+        autoPanel.style.display = 'block';
+        manualPanel.style.display = 'none';
+    } else {
+        autoTab.className = 'btn btn-sm btn-secondary';
+        manualTab.className = 'btn btn-sm btn-primary';
+        autoPanel.style.display = 'none';
+        manualPanel.style.display = 'block';
+    }
+}
+
+function renderIssuesTable() {
     const tbody = document.querySelector('#issuesTable tbody');
     tbody.innerHTML = '';
-    data.issues.forEach((issue, idx) => {
+    
+    currentIssues.forEach((issue, idx) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input type="checkbox" class="issue-check" data-idx="${idx}"></td><td>${issue.column}</td><td>${issue.issue}</td><td><code>${issue.recommendation}</code></td><td><span class="badge bg-warning text-dark">${issue.severity}</span></td>`;
+        tr.style.animation = `slideInRight 0.3s ease ${idx * 0.05}s both`;
+        
+        const severityClass = issue.severity === 'High' ? 'badge-danger' : 
+                             issue.severity === 'Medium' ? 'badge-warning' : 'badge-secondary';
+        
+        const actionButton = createActionButton(issue);
+        
+        tr.innerHTML = `
+            <td><input type="checkbox" class="issue-check" data-idx="${idx}" onchange="toggleSelection(${idx})"></td>
+            <td><strong>${issue.column}</strong></td>
+            <td>${issue.issue}</td>
+            <td><code style="font-size: 11px;">${issue.current_state || 'N/A'}</code></td>
+            <td><code style="background:#F1F5F9;padding:4px 8px;border-radius:4px;font-size:12px;color:#6366F1;">${issue.recommendation}</code></td>
+            <td>${actionButton}</td>
+            <td><span class="badge ${severityClass}">${issue.severity}</span></td>
+        `;
         tbody.appendChild(tr);
     });
 }
+
+function createActionButton(issue) {
+    if (issue.issue.includes('missing') || issue.issue.includes('null')) {
+        return `<button class="btn btn-sm btn-success" onclick="fixMissing('${issue.column}')">Fix Missing</button>`;
+    } else if (issue.issue.includes('duplicate')) {
+        return `<button class="btn btn-sm btn-success" onclick="removeDuplicates()">Remove</button>`;
+    } else if (issue.issue.includes('type') || issue.issue.includes('numeric')) {
+        return `<button class="btn btn-sm btn-success" onclick="fixType('${issue.column}')">Convert</button>`;
+    } else if (issue.issue.includes('outlier')) {
+        return `<button class="btn btn-sm btn-success" onclick="handleOutliers('${issue.column}')">Handle</button>`;
+    } else {
+        return `<button class="btn btn-sm btn-success" onclick="applyQuickFix('${issue.column}', '${issue.issue}')">Quick Fix</button>`;
+    }
+}
+
+async function executeAutoClean() {
+    const options = {
+        remove_duplicates: document.getElementById('autoRemoveDuplicates').checked,
+        handle_missing: document.getElementById('autoHandleMissing').checked,
+        fix_types: document.getElementById('autoFixTypes').checked,
+        missing_strategy: document.getElementById('missingStrategy').value,
+        outlier_treatment: document.getElementById('outlierTreatment').value,
+        text_normalization: document.getElementById('textNormalization').value
+    };
+    
+    showToast('Executing auto-clean...', 'info');
+    
+    try {
+        const res = await fetch('/cleaning/api/auto_clean', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(options)
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Auto-Clean', `Applied ${data.operations_applied} operations`);
+        showToast(`✅ Auto-clean complete! ${data.operations_applied} operations applied`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Auto-clean failed', 'error');
+    }
+}
+
+async function applySelectedFixes() {
+    const fixes = getSelectedFixes();
+    if (!fixes.length) {
+        showToast('Please select at least one issue to fix', 'warning');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/cleaning/api/apply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({fixes})
+        });
+        
+        const data = await res.json();
+        addToHistory('Manual Fix', `Applied ${fixes.length} fixes`);
+        showToast(`✅ Applied ${fixes.length} fixes!`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Failed to apply fixes', 'error');
+    }
+}
+
+async function fixMissing(column) {
+    const strategy = prompt('Choose strategy: mean, median, mode, drop, zero', 'mean');
+    if (!strategy) return;
+    
+    try {
+        const res = await fetch('/cleaning/api/fix_missing', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({column, strategy})
+        });
+        
+        const data = await res.json();
+        addToHistory('Fix Missing', `${column}: ${strategy}`);
+        showToast(`Fixed missing values in ${column}`, 'success');
+        analyzeCleaning();
+    } catch (e) {
+        showToast('Failed to fix missing values', 'error');
+    }
+}
+
+async function removeDuplicates() {
+    try {
+        const res = await fetch('/cleaning/api/remove_duplicates', {
+            method: 'POST'
+        });
+        
+        const data = await res.json();
+        addToHistory('Remove Duplicates', `Removed ${data.removed} duplicates`);
+        showToast(`Removed ${data.removed} duplicate rows`, 'success');
+        analyzeCleaning();
+    } catch (e) {
+        showToast('Failed to remove duplicates', 'error');
+    }
+}
+
+async function fixType(column) {
+    try {
+        const res = await fetch('/cleaning/api/fix_type', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({column})
+        });
+        
+        const data = await res.json();
+        addToHistory('Fix Type', `${column} converted`);
+        showToast(`Converted ${column} to correct type`, 'success');
+        analyzeCleaning();
+    } catch (e) {
+        showToast('Failed to fix type', 'error');
+    }
+}
+
+async function handleOutliers(column) {
+    const method = prompt('Choose method: clip, remove, cap', 'clip');
+    if (!method) return;
+    
+    try {
+        const res = await fetch('/cleaning/api/handle_outliers', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({column, method})
+        });
+        
+        const data = await res.json();
+        addToHistory('Handle Outliers', `${column}: ${method}`);
+        showToast(`Handled outliers in ${column}`, 'success');
+        analyzeCleaning();
+    } catch (e) {
+        showToast('Failed to handle outliers', 'error');
+    }
+}
+
+async function applyQuickFix(column, issue) {
+    try {
+        const res = await fetch('/cleaning/api/quick_fix', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({column, issue})
+        });
+        
+        const data = await res.json();
+        addToHistory('Quick Fix', `${column}: ${issue}`);
+        showToast(`Applied quick fix to ${column}`, 'success');
+        analyzeCleaning();
+    } catch (e) {
+        showToast('Quick fix failed', 'error');
+    }
+}
+
+async function applyCustomTransform() {
+    const column = document.getElementById('customCol').value;
+    const transform = document.getElementById('customTransform').value;
+    const params = document.getElementById('customParams').value;
+    
+    try {
+        const res = await fetch('/cleaning/api/custom_transform', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({column, transform, params})
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Custom Transform', `${column}: ${transform}`);
+        showToast(`Applied ${transform} to ${column}`, 'success');
+        analyzeCleaning();
+    } catch (e) {
+        showToast('Transform failed', 'error');
+    }
+}
+
+function addToHistory(operation, details) {
+    const timestamp = new Date().toLocaleTimeString();
+    cleaningHistory.unshift({operation, details, timestamp});
+    
+    if (cleaningHistory.length > 10) cleaningHistory.pop();
+    
+    const historyHTML = cleaningHistory.map(item => `
+        <div style="padding: 12px; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>${item.operation}</strong>
+                <span class="badge badge-secondary">${item.timestamp}</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">${item.details}</div>
+        </div>
+    `).join('');
+    
+    document.getElementById('cleaningHistory').innerHTML = historyHTML;
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.issue-check');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+        const idx = parseInt(cb.dataset.idx);
+        if (selectAll.checked) {
+            selectedIndices.add(idx);
+        } else {
+            selectedIndices.delete(idx);
+        }
+    });
+}
+
+function toggleSelection(idx) {
+    if (selectedIndices.has(idx)) {
+        selectedIndices.delete(idx);
+    } else {
+        selectedIndices.add(idx);
+    }
+}
+
 function getSelectedFixes() {
-    return Array.from(document.querySelectorAll('.issue-check:checked')).map(c => {
-        const idx = parseInt(c.dataset.idx);
+    return Array.from(selectedIndices).map(idx => {
         const issue = currentIssues[idx];
         let action = 'to_numeric';
         if (issue.issue.includes('date')) action = 'to_datetime';
@@ -55,20 +574,81 @@ function getSelectedFixes() {
         return {column: issue.column, action: action};
     });
 }
-async function applyFixes() {
-    const fixes = getSelectedFixes();
-    if (!fixes.length) return alert('Select at least one issue to fix.');
-    const res = await fetch('/cleaning/api/apply', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({fixes})});
-    const data = await res.json();
-    alert(`Applied! New shape: ${data.shape[0]} rows x ${data.shape[1]} cols`);
-    loadDatasetInfo(); analyzeCleaning();
-}
-async function previewFixes() {
+
+async function previewChanges() {
     const res = await fetch('/review/api/profile');
     const data = await res.json();
+    
     document.getElementById('previewArea').style.display = 'block';
+    document.getElementById('previewArea').scrollIntoView({ behavior: 'smooth' });
+    
     const cols = Object.keys(data.top_rows[0] || {}).map(k => ({field: k}));
-    new agGrid.Grid(document.getElementById('previewGrid'), {columnDefs: cols, rowData: data.top_rows, defaultColDef: {sortable: true, resizable: true}});
+    new agGrid.Grid(document.getElementById('previewGrid'), {
+        columnDefs: cols,
+        rowData: data.top_rows,
+        defaultColDef: {sortable: true, resizable: true}
+    });
+}
+
+function generateSummaryCards(issues) {
+    const highCount = issues.filter(i => i.severity === 'High').length;
+    const mediumCount = issues.filter(i => i.severity === 'Medium').length;
+    const lowCount = issues.filter(i => i.severity === 'Low').length;
+    
+    const summaryHTML = `
+        <div class="metric-card metric-card-animated" style="border-left: 4px solid #EF4444;">
+            <div class="metric-icon" style="background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <div class="metric-label">High Priority</div>
+            <div class="metric-value" style="color: #EF4444;">${highCount}</div>
+        </div>
+        <div class="metric-card metric-card-animated" style="border-left: 4px solid #F59E0B;">
+            <div class="metric-icon" style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <div class="metric-label">Medium Priority</div>
+            <div class="metric-value" style="color: #F59E0B;">${mediumCount}</div>
+        </div>
+        <div class="metric-card metric-card-animated" style="border-left: 4px solid #6B7280;">
+            <div class="metric-icon" style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+            </div>
+            <div class="metric-label">Low Priority</div>
+            <div class="metric-value" style="color: #6B7280;">${lowCount}</div>
+        </div>
+    `;
+    
+    document.getElementById('summaryCards').innerHTML = summaryHTML;
+}
+
+function animateValue(id, start, end, duration) {
+    const obj = document.getElementById(id);
+    let startTime = null;
+    
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const value = Math.floor(easeOut * (end - start) + start);
+        obj.textContent = value.toLocaleString();
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    }
+    window.requestAnimationFrame(step);
 }
 </script>
 {% endblock %}

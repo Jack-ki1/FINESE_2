@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="alert alert-info">MLOps module coming soon - model registry, experiment tracking, and deployment tools.</div>
+
+<div class="metric-grid mb-4">
+    <div class="metric-card">
+        <div class="metric-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+        </div>
+        <div class="metric-label">Models Registered</div>
+        <div class="metric-value" id="modelCount">0</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+        </div>
+        <div class="metric-label">Experiments Run</div>
+        <div class="metric-value" id="experimentCount">0</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        </div>
+        <div class="metric-label">Deployments Active</div>
+        <div class="metric-value">0</div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Model Registry</div>
+    <div class="card-body p-0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Model ID</th>
+                    <th>Name</th>
+                    <th>Version</th>
+                    <th>Algorithm</th>
+                    <th>Accuracy</th>
+                    <th>Created</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="modelsTable">
+                <tr><td colspan="7" class="text-center text-muted py-4">No models registered yet. Train a model in ML Studio first!</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Experiment Tracking</div>
+    <div class="card-body p-0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Experiment ID</th>
+                    <th>Name</th>
+                    <th>Parameters</th>
+                    <th>Metrics</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="experimentsTable">
+                <tr><td colspan="6" class="text-center text-muted py-4">No experiments tracked yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Deployment Preparation</div>
+    <div class="card-body">
+        <div class="row gap-3">
+            <div class="col-4">
+                <button class="btn btn-primary w-100" onclick="generateAPI()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 18l6-6-6-6"/>
+                        <path d="M8 6l-6 6 6 6"/>
+                    </svg>
+                    Generate API Code
+                </button>
+            </div>
+            <div class="col-4">
+                <button class="btn btn-success w-100" onclick="exportDockerfile()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                    Export Dockerfile
+                </button>
+            </div>
+            <div class="col-4">
+                <button class="btn btn-secondary w-100" onclick="exportRequirements()" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    </svg>
+                    Requirements (Soon)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadDatasetInfo();
+    loadMLOpsData();
+});
+
+async function loadMLOpsData() {
+    try {
+        const [modelsRes, expRes] = await Promise.all([
+            fetch('/mlops/api/models'),
+            fetch('/mlops/api/experiments')
+        ]);
+        
+        const models = await modelsRes.json();
+        const experiments = await expRes.json();
+        
+        document.getElementById('modelCount').textContent = models.length || 0;
+        document.getElementById('experimentCount').textContent = experiments.length || 0;
+        
+        // Display models
+        if (models && models.length > 0) {
+            document.getElementById('modelsTable').innerHTML = models.map(m => `
+                <tr>
+                    <td><code>${m.id.substring(0, 8)}</code></td>
+                    <td><strong>${m.name}</strong></td>
+                    <td><span class="badge badge-primary">${m.version}</span></td>
+                    <td>${m.algorithm}</td>
+                    <td>${(m.accuracy * 100).toFixed(1)}%</td>
+                    <td>${new Date(m.created_at).toLocaleDateString()}</td>
+                    <td><span class="badge badge-success">Active</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        // Display experiments
+        if (experiments && experiments.length > 0) {
+            document.getElementById('experimentsTable').innerHTML = experiments.map(e => `
+                <tr>
+                    <td><code>${e.id.substring(0, 8)}</code></td>
+                    <td><strong>${e.name}</strong></td>
+                    <td><code style="font-size: 11px;">${JSON.stringify(e.params || {}).substring(0, 50)}</code></td>
+                    <td><code style="font-size: 11px;">${JSON.stringify(e.metrics || {}).substring(0, 50)}</code></td>
+                    <td>${e.duration || 'N/A'}</td>
+                    <td><span class="badge badge-${e.status === 'completed' ? 'success' : 'warning'}">${e.status}</span></td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        console.error('Failed to load MLOps data:', e);
+    }
+}
+
+function generateAPI() {
+    showToast('API code generation coming soon!', 'info');
+}
+
+function exportDockerfile() {
+    showToast('Dockerfile export coming soon!', 'info');
+}
+
+function exportRequirements() {
+    showToast('Requirements export coming soon!', 'info');
+}
+</script>
+{% endblock %}

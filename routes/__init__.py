@@ -6,3 +6,4 @@ from .chatbot import bp as chatbot_bp
 from .ml import bp as ml_bp
 from .sql import bp as sql_bp
 from .export import bp as export_bp
+from .mlops import bp as mlops_bp

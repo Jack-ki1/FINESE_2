@@ -1,8 +1,182 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="row g-3">
-    <div class="col-md-4"><div class="card p-3 text-center"><h5>CSV</h5><a href="/export/api/download/csv" class="btn btn-outline-primary">Download</a></div></div>
-    <div class="col-md-4"><div class="card p-3 text-center"><h5>Excel</h5><a href="/export/api/download/excel" class="btn btn-outline-primary">Download</a></div></div>
-    <div class="col-md-4"><div class="card p-3 text-center"><h5>JSON</h5><a href="/export/api/download/json" class="btn btn-outline-primary">Download</a></div></div>
+<div class="alert alert-info" id="noDataAlert">Load a dataset to enable export options.</div>
+
+<div id="exportDashboard" style="display:none;" class="animate-fade-in">
+    <h5 class="mb-3 section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export Center
+    </h5>
+    
+    <!-- Data Formats -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Data Formats
+        </div>
+        <div class="card-body">
+            <div class="metric-grid">
+                <button class="metric-card quick-viz-btn" onclick="downloadFormat('csv')">
+                    <div class="metric-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div class="metric-label">CSV</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Universal format</div>
+                </button>
+                
+                <button class="metric-card quick-viz-btn" onclick="downloadFormat('excel')">
+                    <div class="metric-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M9 9l6 6m0-6l-6 6"/>
+                        </svg>
+                    </div>
+                    <div class="metric-label">Excel</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">.xlsx format</div>
+                </button>
+                
+                <button class="metric-card quick-viz-btn" onclick="downloadFormat('json')">
+                    <div class="metric-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div class="metric-label">JSON</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">API-ready</div>
+                </button>
+                
+                <button class="metric-card quick-viz-btn" onclick="downloadFormat('parquet')" disabled>
+                    <div class="metric-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                    </div>
+                    <div class="metric-label">Parquet</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Coming soon</div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Generation -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            </svg>
+            Report Generation
+        </div>
+        <div class="card-body">
+            <div class="row gap-3">
+                <div class="col-4">
+                    <button class="btn btn-success w-100" onclick="generatePDF()" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        </svg>
+                        PDF Report
+                        <small class="d-block mt-1" style="font-size: 11px;">Professional report</small>
+                    </button>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-success w-100" onclick="generateNotebook()" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                        </svg>
+                        Jupyter Notebook
+                        <small class="d-block mt-1" style="font-size: 11px;">Executable code</small>
+                    </button>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-success w-100" onclick="generateSQLDump()" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                        </svg>
+                        SQL Dump
+                        <small class="d-block mt-1" style="font-size: 11px;">Database import</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Settings -->
+    <div class="card">
+        <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Export Settings
+        </div>
+        <div class="card-body">
+            <div class="row gap-3">
+                <div class="col-6">
+                    <div class="form-group">
+                        <label class="form-label">Filename Prefix</label>
+                        <input type="text" class="form-control" id="filenamePrefix" placeholder="dataset_export">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-group">
+                        <label class="form-label">Include Headers</label>
+                        <select class="form-control" id="includeHeaders">
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadDatasetInfo();
+    checkDatasetLoaded();
+});
+
+async function checkDatasetLoaded() {
+    const res = await fetch('/api/data/info');
+    const data = await res.json();
+    if (data.loaded) {
+        document.getElementById('noDataAlert').style.display = 'none';
+        document.getElementById('exportDashboard').style.display = 'block';
+    }
+}
+
+function downloadFormat(format) {
+    showToast(`Downloading as ${format.toUpperCase()}...`, 'info');
+    window.location.href = `/export/api/download/${format}`;
+}
+
+function generatePDF() {
+    showToast('PDF generation coming in next update!', 'warning');
+}
+
+function generateNotebook() {
+    showToast('Jupyter export coming in next update!', 'warning');
+}
+
+function generateSQLDump() {
+    showToast('SQL dump generation coming in next update!', 'warning');
+}
+</script>
 {% endblock %}

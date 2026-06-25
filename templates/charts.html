@@ -1,38 +1,447 @@
 {% extends "base.html" %}
 {% block content %}
 <div id="chartsContent">
-    <div class="alert alert-info" id="noDataAlert">Load a dataset to build charts.</div>
-    <div id="chartsDashboard" style="display:none;">
-        <div class="row g-3 mb-4">
-            <div class="col-md-3"><label class="form-label">Chart Type</label><select class="form-select" id="chartType"><option value="bar">Bar</option><option value="line">Line</option><option value="scatter">Scatter</option><option value="histogram">Histogram</option><option value="box">Box</option></select></div>
-            <div class="col-md-3"><label class="form-label">X Axis</label><select class="form-select" id="xCol"></select></div>
-            <div class="col-md-3"><label class="form-label">Y Axis</label><select class="form-select" id="yCol"></select></div>
-            <div class="col-md-3"><label class="form-label">Color (optional)</label><select class="form-select" id="colorCol"><option value="">None</option></select></div>
+    <div class="alert alert-info" id="noDataAlert">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Load a dataset to start visualizing.
+    </div>
+    
+    <div id="chartsDashboard" style="display:none;" class="animate-fade-in">
+        <!-- KPI Cards -->
+        <div class="metric-grid mb-4" id="kpiCards"></div>
+        
+        <!-- Chart Builder Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18"/>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                </svg>
+                Chart Builder
+            </div>
+            <div class="card-body">
+                <div class="row gap-3">
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Chart Type</label>
+                            <select class="form-control" id="chartType">
+                                <option value="bar">📊 Bar Chart</option>
+                                <option value="line">📈 Line Chart</option>
+                                <option value="scatter">⚪ Scatter Plot</option>
+                                <option value="histogram">📶 Histogram</option>
+                                <option value="box">📦 Box Plot</option>
+                                <option value="violin">🎻 Violin Plot</option>
+                                <option value="heatmap">🔥 Heatmap</option>
+                                <option value="pie">🥧 Pie Chart</option>
+                                <option value="area">🌊 Area Chart</option>
+                                <option value="bubble">🫧 Bubble Chart</option>
+                                <option value="density">📉 Density Plot</option>
+                                <option value="treemap">🗺️ Treemap</option>
+                                <option value="sunburst">☀️ Sunburst</option>
+                                <option value="funnel">🔽 Funnel Chart</option>
+                                <option value="radar">🕸️ Radar Chart</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">X Axis</label>
+                            <select class="form-control" id="xAxis"></select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Y Axis</label>
+                            <select class="form-control" id="yAxis"></select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Color By (Optional)</label>
+                            <select class="form-control" id="colorBy">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row gap-3 mt-3">
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Size (for bubble)</label>
+                            <select class="form-control" id="sizeCol">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Facet Column</label>
+                            <select class="form-control" id="facetCol">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Aggregation</label>
+                            <select class="form-control" id="aggregation">
+                                <option value="none">None</option>
+                                <option value="mean">Mean</option>
+                                <option value="sum">Sum</option>
+                                <option value="count">Count</option>
+                                <option value="median">Median</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Sort By</label>
+                            <select class="form-control" id="sortBy">
+                                <option value="none">None</option>
+                                <option value="asc">Ascending</option>
+                                <option value="desc">Descending</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" onclick="buildChart()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Generate Chart
+                    </button>
+                    <button class="btn btn-success" onclick="autoViz()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                        </svg>
+                        Auto-Viz ✨
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadChart()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download PNG
+                    </button>
+                </div>
+            </div>
         </div>
-        <button class="btn btn-primary mb-4" onclick="buildChart()">Build Chart</button>
-        <div id="chartPlot" style="height: 500px;"></div>
+        
+        <!-- Quick Charts Gallery -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Quick Visualizations
+            </div>
+            <div class="card-body">
+                <div class="metric-grid">
+                    <button class="metric-card quick-viz-btn" onclick="quickViz('correlation')">
+                        <div class="metric-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 12h8M12 8v8"/>
+                            </svg>
+                        </div>
+                        <div class="metric-label">Correlation Matrix</div>
+                        <div style="font-size: 11px; color: var(--text-tertiary);">Numeric relationships</div>
+                    </button>
+                    
+                    <button class="metric-card quick-viz-btn" onclick="quickViz('distribution')">
+                        <div class="metric-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                                <path d="M3 3v18h18"/>
+                                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                            </svg>
+                        </div>
+                        <div class="metric-label">Distribution View</div>
+                        <div style="font-size: 11px; color: var(--text-tertiary);">All numeric columns</div>
+                    </button>
+                    
+                    <button class="metric-card quick-viz-btn" onclick="quickViz('missing')">
+                        <div class="metric-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                        </div>
+                        <div class="metric-label">Missing Values Map</div>
+                        <div style="font-size: 11px; color: var(--text-tertiary);">Null pattern analysis</div>
+                    </button>
+                    
+                    <button class="metric-card quick-viz-btn" onclick="quickViz('summary')">
+                        <div class="metric-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10"/>
+                                <line x1="12" y1="20" x2="12" y2="4"/>
+                                <line x1="6" y1="20" x2="6" y2="14"/>
+                            </svg>
+                        </div>
+                        <div class="metric-label">Summary Dashboard</div>
+                        <div style="font-size: 11px; color: var(--text-tertiary);">Key metrics overview</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart Display Area -->
+        <div class="card" id="chartCard" style="display:none;">
+            <div class="card-header">
+                <span id="chartTitle">Visualization</span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-ghost" onclick="toggleFullscreen()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="chartContainer" style="height: 600px;"></div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); initChartControls(); });
-async function initChartControls() {
-    const res = await fetch('/api/data/info');
+let currentColumns = [];
+let currentDtypes = {};
+
+document.addEventListener('DOMContentLoaded', () => { 
+    loadDatasetInfo(); 
+    checkAndLoadColumns(); 
+});
+
+async function checkAndLoadColumns() {
+    const infoRes = await fetch('/api/data/info');
+    const infoData = await infoRes.json();
+    
+    if (!infoData.loaded) {
+        document.getElementById('noDataAlert').style.display = 'block';
+        document.getElementById('chartsDashboard').style.display = 'none';
+        return;
+    }
+    
+    const res = await fetch('/review/api/profile');
     const data = await res.json();
-    if (!data.loaded) return;
+    
+    currentColumns = Object.keys(data.dtypes);
+    currentDtypes = data.dtypes;
+    
+    // Populate dropdowns
+    const xSelect = document.getElementById('xAxis');
+    const ySelect = document.getElementById('yAxis');
+    const colorSelect = document.getElementById('colorBy');
+    const sizeSelect = document.getElementById('sizeCol');
+    const facetSelect = document.getElementById('facetCol');
+    
+    const optionsHTML = currentColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+    
+    xSelect.innerHTML = '<option value="">Select column...</option>' + optionsHTML;
+    ySelect.innerHTML = '<option value="">Select column...</option>' + optionsHTML;
+    colorSelect.innerHTML = '<option value="">None</option>' + optionsHTML;
+    sizeSelect.innerHTML = '<option value="">None</option>' + optionsHTML;
+    facetSelect.innerHTML = '<option value="">None</option>' + optionsHTML;
+    
+    // Load KPIs
+    loadKPIs(data);
+    
     document.getElementById('noDataAlert').style.display = 'none';
     document.getElementById('chartsDashboard').style.display = 'block';
-    const populate = (sel) => { sel.innerHTML = ''; data.columns.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); }); };
-    populate(document.getElementById('xCol')); populate(document.getElementById('yCol'));
-    const colorSel = document.getElementById('colorCol'); colorSel.innerHTML = '<option value="">None</option>'; data.columns.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; colorSel.appendChild(opt); });
 }
+
+async function loadKPIs(profileData) {
+    try {
+        const numericCols = Object.entries(profileData.dtypes)
+            .filter(([col, dtype]) => dtype.includes('int') || dtype.includes('float'))
+            .map(([col]) => col);
+        
+        const categoricalCols = Object.entries(profileData.dtypes)
+            .filter(([col, dtype]) => dtype === 'object')
+            .map(([col]) => col);
+        
+        const kpiHTML = `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Total Columns</div>
+                <div class="metric-value">${profileData.columns}</div>
+            </div>
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Numeric Columns</div>
+                <div class="metric-value">${numericCols.length}</div>
+            </div>
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Categorical</div>
+                <div class="metric-value">${categoricalCols.length}</div>
+            </div>
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Null Values</div>
+                <div class="metric-value">${profileData.nulls}</div>
+            </div>
+        `;
+        
+        document.getElementById('kpiCards').innerHTML = kpiHTML;
+    } catch (e) {
+        console.error('Failed to load KPIs:', e);
+    }
+}
+
 async function buildChart() {
-    const payload = {type: document.getElementById('chartType').value, x: document.getElementById('xCol').value, y: document.getElementById('yCol').value, color: document.getElementById('colorCol').value || null};
-    const res = await fetch('/charts/api/build', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
-    const data = await res.json();
-    if (data.error) return alert(data.error);
-    Plotly.newPlot('chartPlot', JSON.parse(data.graph_json));
+    const chartType = document.getElementById('chartType').value;
+    const xCol = document.getElementById('xAxis').value;
+    const yCol = document.getElementById('yAxis').value;
+    const colorCol = document.getElementById('colorBy').value;
+    const sizeCol = document.getElementById('sizeCol').value;
+    const facetCol = document.getElementById('facetCol').value;
+    const aggregation = document.getElementById('aggregation').value;
+    const sortBy = document.getElementById('sortBy').value;
+    
+    if (!xCol && !yCol) {
+        showToast('Please select at least one axis', 'warning');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/charts/api/build', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                chart_type: chartType,
+                x: xCol,
+                y: yCol,
+                color: colorCol,
+                size: sizeCol,
+                facet: facetCol,
+                aggregation: aggregation,
+                sort: sortBy
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        displayChart(data.chart, `${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart`);
+    } catch (e) {
+        showToast('Failed to build chart', 'error');
+    }
+}
+
+async function autoViz() {
+    showToast('Analyzing data for best visualizations...', 'info');
+    
+    try {
+        const res = await fetch('/charts/api/auto_viz');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Show the recommended chart
+        displayChart(data.chart, `Auto-Viz: ${data.recommendation}`);
+        showToast(`Recommended: ${data.recommendation}`, 'success');
+    } catch (e) {
+        showToast('Auto-viz failed', 'error');
+    }
+}
+
+async function quickViz(type) {
+    showToast(`Generating ${type} visualization...`, 'info');
+    
+    try {
+        const res = await fetch(`/charts/api/quick/${type}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        displayChart(data.chart, type.charAt(0).toUpperCase() + type.slice(1));
+    } catch (e) {
+        showToast('Quick viz failed', 'error');
+    }
+}
+
+function displayChart(chartJSON, title) {
+    document.getElementById('chartCard').style.display = 'block';
+    document.getElementById('chartTitle').textContent = title;
+    
+    const config = typeof chartJSON === 'string' ? JSON.parse(chartJSON) : chartJSON;
+    
+    Plotly.newPlot('chartContainer', config.data, config.layout, {
+        responsive: true,
+        displayModeBar: true,
+        modeBarButtonsToRemove: ['sendDataToCloud'],
+        displaylogo: false
+    });
+    
+    // Smooth scroll to chart
+    document.getElementById('chartCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function downloadChart() {
+    Plotly.downloadImage('chartContainer', {
+        format: 'png',
+        width: 1200,
+        height: 800,
+        filename: 'chart_export'
+    });
+    showToast('Chart downloaded!', 'success');
+}
+
+function toggleFullscreen() {
+    const container = document.getElementById('chartContainer');
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => {
+            showToast('Fullscreen not supported', 'error');
+        });
+    } else {
+        document.exitFullscreen();
+    }
 }
 </script>
 {% endblock %}

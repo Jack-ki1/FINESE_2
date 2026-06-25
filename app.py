@@ -4,7 +4,10 @@ from flask_session import Session
 from datetime import timedelta
 import state
 from core.dataset_store import DatasetStore
-from routes import data_bp, review_bp, cleaning_bp, charts_bp, chatbot_bp, ml_bp, sql_bp, export_bp
+from routes import (
+    data_bp, review_bp, cleaning_bp, charts_bp, 
+    chatbot_bp, ml_bp, sql_bp, export_bp, mlops_bp
+)
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
@@ -16,6 +19,8 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB uploads
 Session(app)
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 os.makedirs('static/uploads', exist_ok=True)
+os.makedirs('static/exports', exist_ok=True)
+os.makedirs('static/reports', exist_ok=True)
 
 # Initialize dataset store
 app.dataset_store = DatasetStore(base_path='static/uploads')
@@ -29,6 +34,7 @@ app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
 app.register_blueprint(ml_bp, url_prefix='/ml')
 app.register_blueprint(sql_bp, url_prefix='/sql')
 app.register_blueprint(export_bp, url_prefix='/export')
+app.register_blueprint(mlops_bp, url_prefix='/mlops')
 
 @app.before_request
 def init_session():
