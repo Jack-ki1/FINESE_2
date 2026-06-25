@@ -58,6 +58,18 @@
                             <input type="number" class="form-control" id="randomState" value="42">
                         </div>
                     </div>
+                    <div class="col-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableAutoML">
+                            <label class="form-check-label" for="enableAutoML">🤖 Enable AutoML (Optuna)</label>
+                        </div>
+                    </div>
+                    <div class="col-4" id="nTrialsDiv" style="display:none;">
+                        <div class="form-group">
+                            <label class="form-label">Number of Trials</label>
+                            <input type="number" class="form-control" id="nTrials" value="20" min="5" max="100">
+                        </div>
+                    </div>
                     <div class="col-6">
                         <button class="btn btn-primary btn-lg w-100" onclick="trainModel()" id="trainBtn">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -88,6 +100,9 @@
         
         <!-- Results Dashboard -->
         <div id="resultsDashboard" style="display:none;">
+            <!-- AutoML Results -->
+            <div id="automlResults"></div>
+                
             <!-- Metrics Cards -->
             <div class="metric-grid mb-4" id="metricsCards"></div>
             
@@ -119,6 +134,34 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Model Explainability (SHAP) -->
+        <div class="card mb-4" id="explainabilityCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Model Explainability (SHAP)
+            </div>
+            <div class="card-body">
+                <div class="row gap-3 mb-3">
+                    <div class="col-6">
+                        <button class="btn btn-primary w-100" onclick="generateSHAPSummary()">
+                            📊 Global Feature Importance
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-success w-100" onclick="generateSHAPDependence()">
+                            🔍 Feature Dependence Plot
+                        </button>
+                    </div>
+                </div>
+                <div id="shapPlots"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}
@@ -204,6 +247,11 @@
 document.addEventListener('DOMContentLoaded', () => { 
     loadDatasetInfo(); 
     checkAndPopulateColumns(); 
+    
+    // Toggle AutoML options
+    document.getElementById('enableAutoML').addEventListener('change', function() {
+        document.getElementById('nTrialsDiv').style.display = this.checked ? 'block' : 'none';
+    });
 });
 
 // Algorithm options mapping for different task types
@@ -406,83 +454,46 @@ function updateAlgorithmOptions() {
 
 async function trainModel() {
     const target = document.getElementById('targetCol').value;
-    const task = document.getElementById('taskType').value;
-    const algo = document.getElementById('algorithm').value;
+    const taskType = document.getElementById('taskType').value;
+    const algorithm = document.getElementById('algorithm').value;
     const testSize = parseInt(document.getElementById('testSize').value) / 100;
     const randomState = parseInt(document.getElementById('randomState').value);
+    const enableAutoML = document.getElementById('enableAutoML').checked;
+    const nTrials = parseInt(document.getElementById('nTrials').value);
     
     if (!target) {
-        // For unsupervised tasks, target column is not required
-        const taskType = document.getElementById('taskType').value;
-        if (taskType === 'clustering' || taskType === 'dimensionality' || 
-            taskType === 'anomaly' || taskType === 'association') {
-            // Continue without target
-        } else {
-            showToast('Please select a target column', 'warning');
-            return;
-        }
+        showToast('Please select a target column', 'warning');
+        return;
     }
-    
-    // Show progress card
-    document.getElementById('progressCard').style.display = 'block';
-    document.getElementById('resultsDashboard').style.display = 'none';
     
     const trainBtn = document.getElementById('trainBtn');
     trainBtn.disabled = true;
-    trainBtn.innerHTML = '<span class="loading-pulse">Training...</span>';
-    
-    updateProgress(10, 'Preparing data...');
+    trainBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Training...';
     
     try {
         const res = await fetch('/ml/api/train', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                target: target,
-                task: task,
-                algorithm: algo,
+                target,
+                task: taskType,
+                algorithm,
                 test_size: testSize,
-                random_state: randomState
+                random_state: randomState,
+                automl: enableAutoML,
+                n_trials: nTrials
             })
         });
         
         const data = await res.json();
+        session_ml_job_id = data.job_id;
         
-        if (data.error) {
-            showToast(data.error, 'error');
-            trainBtn.disabled = false;
-            trainBtn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-                Train Model
-            `;
-            return;
-        }
-        
-        updateProgress(100, 'Training complete! ✨');
-        
-        // Display results after a brief delay
-        setTimeout(() => {
-            displayResults(data);
-            trainBtn.disabled = false;
-            trainBtn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-                Train Again
-            `;
-        }, 500);
+        pollJobStatus(data.job_id);
         
     } catch (e) {
-        showToast('Training failed', 'error');
+        showToast('Training failed to start', 'error');
         trainBtn.disabled = false;
-        trainBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            Train Model
-        `;
+        trainBtn.innerHTML = '🚀 Train Model';
     }
 }
 
@@ -494,8 +505,69 @@ function updateProgress(percent, status) {
     text.textContent = status;
 }
 
+async function pollJobStatus(jobId) {
+    console.log('ML: Polling job status for', jobId);
+    
+    const pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/ml/api/status/${jobId}`);
+            const jobData = await res.json();
+            
+            console.log('ML: Job status:', jobData.status, 'Progress:', jobData.progress);
+            
+            if (jobData.progress !== undefined) {
+                updateProgress(jobData.progress, jobData.status || 'Processing...');
+            }
+            
+            if (jobData.status === 'completed') {
+                clearInterval(pollInterval);
+                console.log('ML: Training completed!', jobData.result);
+                
+                // Re-enable train button
+                const trainBtn = document.getElementById('trainBtn');
+                trainBtn.disabled = false;
+                trainBtn.innerHTML = '🚀 Train Model';
+                
+                // Display results
+                displayResults(jobData.result);
+                
+                showToast('Model training completed successfully!', 'success');
+                
+            } else if (jobData.status === 'failed') {
+                clearInterval(pollInterval);
+                console.error('ML: Training failed:', jobData.error);
+                
+                const trainBtn = document.getElementById('trainBtn');
+                trainBtn.disabled = false;
+                trainBtn.innerHTML = '🚀 Train Model';
+                
+                showToast(`Training failed: ${jobData.error}`, 'error');
+            }
+            
+        } catch (err) {
+            console.error('ML: Error polling status:', err);
+        }
+    }, 1000); // Poll every second
+}
+
 function displayResults(data) {
     document.getElementById('resultsDashboard').style.display = 'block';
+    
+    // Show AutoML info if used
+    const automlResultsDiv = document.getElementById('automlResults');
+    automlResultsDiv.innerHTML = ''; // Clear previous content
+    
+    if (data.automl_used && data.best_params) {
+        const automlHTML = `
+            <div class="alert alert-success mb-3 animate-fade-in">
+                <strong>🤖 AutoML Optimization Complete!</strong>
+                <p class="mb-1 mt-2"><strong>Best Parameters:</strong></p>
+                <pre style="background:#F1F5F9;padding:8px;border-radius:4px;font-size:12px;max-height:200px;overflow:auto;">${JSON.stringify(data.best_params, null, 2)}</pre>
+                <p class="mb-0 mt-2"><strong>Best Score:</strong> ${(data.best_score * 100).toFixed(2)}%</p>
+            </div>
+        `;
+        automlResultsDiv.innerHTML = automlHTML;
+    }
     
     // Display metrics cards
     const metricsHTML = Object.entries(data.metrics).map(([key, value]) => {
@@ -650,5 +722,81 @@ function showToast(message, type) {
         toastEl.style.opacity = '0';
     }, 3000);
 }
+
+async function generateSHAPSummary() {
+    const jobId = session_ml_job_id;
+    if (!jobId) {
+        showToast('Please train a model first', 'warning');
+        return;
+    }
+    
+    showToast('Generating SHAP summary plot...', 'info');
+    
+    try {
+        const res = await fetch(`/ml/api/shap/summary/${jobId}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        document.getElementById('explainabilityCard').style.display = 'block';
+        const shapDiv = document.createElement('div');
+        shapDiv.innerHTML = `<h6 class="mb-3">SHAP Summary Plot</h6><div id="shapSummary" style="height: 500px;"></div>`;
+        document.getElementById('shapPlots').appendChild(shapDiv);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('shapSummary', fig.data, fig.layout, {responsive: true});
+        
+        document.getElementById('explainabilityCard').scrollIntoView({ behavior: 'smooth' });
+        showToast('SHAP summary generated!', 'success');
+    } catch (e) {
+        showToast('Failed to generate SHAP plot', 'error');
+    }
+}
+
+async function generateSHAPDependence() {
+    const jobId = session_ml_job_id;
+    if (!jobId) {
+        showToast('Please train a model first', 'warning');
+        return;
+    }
+    
+    // Get feature importance to select top feature
+    const statusRes = await fetch(`/ml/api/status/${jobId}`);
+    const jobData = await statusRes.json();
+    
+    if (!jobData.result || !jobData.result.feature_importance) {
+        showToast('No feature importance available', 'warning');
+        return;
+    }
+    
+    const topFeature = Object.keys(jobData.result.feature_importance)[0];
+    
+    showToast(`Generating SHAP dependence for ${topFeature}...`, 'info');
+    
+    try {
+        const res = await fetch(`/ml/api/shap/dependence/${jobId}?feature=${topFeature}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        const shapDiv = document.createElement('div');
+        shapDiv.innerHTML = `<h6 class="mb-3 mt-4">SHAP Dependence Plot (${topFeature})</h6><div id="shapDependence" style="height: 500px;"></div>`;
+        document.getElementById('shapPlots').appendChild(shapDiv);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('shapDependence', fig.data, fig.layout, {responsive: true});
+        
+        showToast('SHAP dependence plot generated!', 'success');
+    } catch (e) {
+        showToast('Failed to generate SHAP plot', 'error');
+    }
+}
+
 </script>
 {% endblock %}

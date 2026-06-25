@@ -408,3 +408,39 @@ def custom_transform():
     current_app.dataset_store.delete(dataset_id)
     
     return jsonify({'success': True, 'shape': list(df.shape)})
+
+@bp.route('/api/missingness_matrix', methods=['GET'])
+def missingness_matrix():
+    """Generate missing data visualization heatmap"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    df, _ = current_app.dataset_store.load(dataset_id)
+    
+    # Create binary matrix (1 = missing, 0 = present)
+    missing_binary = df.isnull().astype(int)
+    
+    import plotly.graph_objects as go
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=missing_binary.values,
+        x=missing_binary.columns,
+        y=[f'Row {i}' for i in range(len(missing_binary))],
+        colorscale=[[0, '#10B981'], [1, '#EF4444']],  # Green to Red
+        showscale=True,
+        hovertemplate='Column: %{x}<br>Row: %{y}<br>Missing: %{z}<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        title='Missing Data Matrix (Red = Missing)',
+        xaxis_title='Columns',
+        yaxis_title='Rows',
+        template='plotly_white',
+        height=500,
+        width=1200
+    )
+    
+    import json
+    import plotly.utils
+    return jsonify({'chart': json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)})

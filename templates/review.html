@@ -165,6 +165,38 @@
             </div>
         </div>
         
+        <!-- Statistical Tests Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18"/>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                </svg>
+                Statistical Analysis
+            </div>
+            <div class="card-body">
+                <div class="row gap-3 mb-3">
+                    <div class="col-4">
+                        <button class="btn btn-primary w-100" onclick="runNormalityTest()">
+                            📊 Normality Test
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-success w-100" onclick="runCorrelationTest()">
+                            🔗 Correlation Analysis
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-warning w-100" onclick="generateStatSummary()">
+                            📋 Full Summary
+                        </button>
+                    </div>
+                </div>
+
+                <div id="statResults"></div>
+            </div>
+        </div>
+
         <!-- Statistical Summary for Numeric Columns -->
         <div class="card mb-4" id="statsCard" style="display:none;">
             <div class="card-header">
@@ -498,5 +530,98 @@ function displayStatsTable(numericSummary) {
         defaultColDef: { resizable: true, sortable: true }
     });
 }
+
+async function runNormalityTest() {
+    try {
+        const res = await fetch('/review/api/statistics/normality');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        let html = '<h6 class="mb-3">Normality Test Results (Shapiro-Wilk)</h6><table class="table table-sm"><thead><tr><th>Column</th><th>Statistic</th><th>P-value</th><th>Normal?</th></tr></thead><tbody>';
+        
+        data.results.forEach(r => {
+            const isNormal = r.p_value > 0.05;
+            html += `
+                <tr>
+                    <td><strong>${r.column}</strong></td>
+                    <td>${r.statistic.toFixed(4)}</td>
+                    <td>${r.p_value.toFixed(4)}</td>
+                    <td><span class="badge ${isNormal ? 'badge-success' : 'badge-warning'}">${isNormal ? 'Yes' : 'No'}</span></td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        document.getElementById('statResults').innerHTML = html;
+        showToast('Normality tests complete', 'success');
+    } catch (e) {
+        showToast('Normality test failed', 'error');
+    }
+}
+
+async function runCorrelationTest() {
+    try {
+        const res = await fetch('/review/api/statistics/correlation');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Display correlation matrix as heatmap
+        const div = document.createElement('div');
+        div.innerHTML = '<h6 class="mb-3 mt-4">Correlation Matrix Heatmap</h6><div id="corrHeatmap" style="height: 500px;"></div>';
+        document.getElementById('statResults').appendChild(div);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('corrHeatmap', fig.data, fig.layout, {responsive: true});
+        
+        showToast('Correlation analysis complete', 'success');
+    } catch (e) {
+        showToast('Correlation analysis failed', 'error');
+    }
+}
+
+async function generateStatSummary() {
+    try {
+        const res = await fetch('/review/api/statistics/summary');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        let html = '<h6 class="mb-3 mt-4">Comprehensive Statistical Summary</h6>';
+        html += '<table class="table table-sm"><thead><tr><th>Column</th><th>Mean</th><th>Median</th><th>Std</th><th>Skewness</th><th>Kurtosis</th><th>Min</th><th>Max</th></tr></thead><tbody>';
+        
+        data.summary.forEach(s => {
+            html += `
+                <tr>
+                    <td><strong>${s.column}</strong></td>
+                    <td>${s.mean?.toFixed(2) || 'N/A'}</td>
+                    <td>${s.median?.toFixed(2) || 'N/A'}</td>
+                    <td>${s.std?.toFixed(2) || 'N/A'}</td>
+                    <td>${s.skewness?.toFixed(2) || 'N/A'}</td>
+                    <td>${s.kurtosis?.toFixed(2) || 'N/A'}</td>
+                    <td>${s.min?.toFixed(2) || 'N/A'}</td>
+                    <td>${s.max?.toFixed(2) || 'N/A'}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        document.getElementById('statResults').innerHTML = html;
+        showToast('Statistical summary generated', 'success');
+    } catch (e) {
+        showToast('Summary generation failed', 'error');
+    }
+}
+
 </script>
 {% endblock %}

@@ -1,5 +1,191 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.chat-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#chatInterface {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-header svg {
+    margin-right: 8px;
+    vertical-align: text-bottom;
+}
+
+#quickQuestions {
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+#quickQuestions:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#quickQuestions:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.chat-history {
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 400px;
+    max-height: 60vh;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.chat-message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.chat-message.user {
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chat-message.user .message-avatar {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.chat-message.assistant .message-avatar {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.message-content {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    line-height: 1.6;
+}
+
+.chat-message.user .message-content {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.chat-message.assistant .message-content {
+    background: white;
+    color: #1f2937;
+}
+
+.message-content strong {
+    font-weight: 600;
+}
+
+.message-content code {
+    background: rgba(0,0,0,0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.chat-message.user .message-content code {
+    background: rgba(255,255,255,0.2);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.empty-state svg {
+    opacity: 0.3;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #374151;
+    margin-bottom: 10px;
+}
+
+.chat-input-bar {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.chat-input-bar input {
+    flex: 1;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+}
+
+.chat-input-bar input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.chat-input-bar button {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.chat-input-bar button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.spinner-border {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 8px;
+}
+
+optgroup {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+option {
+    padding: 8px;
+}
+</style>
+
 <div class="chat-container">
     <div class="alert alert-info" id="noDataAlert">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -8,9 +194,170 @@
             <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
         Load a dataset to start chatting with your data.
+        <button class="btn btn-sm btn-link" onclick="checkDatasetStatus()" style="margin-left: 10px;">🔄 Refresh Status</button>
     </div>
     
     <div id="chatInterface" style="display:none;" class="animate-fade-in">
+        <!-- API Key Configuration -->
+        <div class="card mb-3" id="apiKeyCard">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                AI Provider Configuration
+            </div>
+            <div class="card-body">
+                <div class="row gap-3">
+                    <div class="col-4">
+                        <label class="form-label">AI Provider</label>
+                        <select class="form-select" id="aiProvider">
+                            <option value="openai">🤖 OpenAI (GPT)</option>
+                            <option value="anthropic">🧠 Anthropic (Claude)</option>
+                            <option value="gemini">💎 Google Gemini</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-control" id="apiKeyInput" placeholder="Enter your API key...">
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-success w-100" onclick="saveApiKey()">Save</button>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">🔒 Your API key is stored securely in session and never shared</small>
+            </div>
+        </div>
+        
+        <!-- Quick Actions Dropdown -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Quick Questions (50+ Ready-to-Use)
+            </div>
+            <div class="card-body p-2">
+                <select class="form-select" id="quickQuestions" onchange="if(this.value) sendQuickQuery(this.value); this.value='';">
+                    <option value="">🤔 Select a question to ask...</option>
+                    
+                    <!-- Dataset Overview (1-10) -->
+                    <optgroup label="📊 Dataset Overview">
+                        <option value="rows_cols">How many rows and columns?</option>
+                        <option value="dataset_size">What's the dataset size?</option>
+                        <option value="memory_usage">How much memory does it use?</option>
+                        <option value="column_count">Total number of columns?</option>
+                        <option value="row_count">Total number of rows?</option>
+                        <option value="cell_count">How many total cells?</option>
+                        <option value="aspect_ratio">What's the data shape?</option>
+                        <option value="dimensions">Dataset dimensions?</option>
+                        <option value="overview">Give me a dataset overview</option>
+                        <option value="summary_brief">Brief summary please</option>
+                    </optgroup>
+                    
+                    <!-- Data Quality (11-20) -->
+                    <optgroup label="⚠️ Data Quality">
+                        <option value="missing">Show missing values analysis</option>
+                        <option value="null_count">How many null values?</option>
+                        <option value="missing_percentage">What percentage is missing?</option>
+                        <option value="complete_columns">Which columns are complete?</option>
+                        <option value="incomplete_columns">Which columns have missing data?</option>
+                        <option value="duplicates">Are there duplicate rows?</option>
+                        <option value="duplicate_count">How many duplicates?</option>
+                        <option value="data_quality">Overall data quality score?</option>
+                        <option value="cleanliness">How clean is the data?</option>
+                        <option value="issues">Any data quality issues?</option>
+                    </optgroup>
+                    
+                    <!-- Column Information (21-30) -->
+                    <optgroup label="🔍 Column Information">
+                        <option value="dtypes">What are the column data types?</option>
+                        <option value="column_names">List all column names</option>
+                        <option value="numeric_columns">Which columns are numeric?</option>
+                        <option value="categorical_columns">Which columns are categorical?</option>
+                        <option value="text_columns">Which columns contain text?</option>
+                        <option value="date_columns">Any date/time columns?</option>
+                        <option value="unique_values">Show unique value counts</option>
+                        <option value="column_details">Detailed column information</option>
+                        <option value="schema">What's the data schema?</option>
+                        <option value="structure">Data structure overview</option>
+                    </optgroup>
+                    
+                    <!-- Statistical Analysis (31-40) -->
+                    <optgroup label="📈 Statistical Analysis">
+                        <option value="summary">Give me a statistical summary</option>
+                        <option value="mean_values">What are the mean values?</option>
+                        <option value="median_values">What are the median values?</option>
+                        <option value="std_deviation">Standard deviations?</option>
+                        <option value="min_max">Min and max values?</option>
+                        <option value="quartiles">Show quartile information</option>
+                        <option value="distribution">Data distribution overview</option>
+                        <option value="central_tendency">Central tendency measures?</option>
+                        <option value="variability">Data variability analysis?</option>
+                        <option value="descriptive_stats">Descriptive statistics?</option>
+                    </optgroup>
+                    
+                    <!-- Correlations & Relationships (41-50) -->
+                    <optgroup label="🔗 Correlations & Relationships">
+                        <option value="correlations">Show top correlations</option>
+                        <option value="strong_correlations">Strongest correlations?</option>
+                        <option value="weak_correlations">Weakest correlations?</option>
+                        <option value="positive_correlations">Positive correlations?</option>
+                        <option value="negative_correlations">Negative correlations?</option>
+                        <option value="feature_relationships">Feature relationships?</option>
+                        <option value="dependencies">Column dependencies?</option>
+                        <option value="associations">Variable associations?</option>
+                        <option value="linear_relationships">Linear relationships?</option>
+                        <option value="correlation_matrix">Correlation matrix info?</option>
+                    </optgroup>
+                    
+                    <!-- Outliers & Anomalies (51-60) -->
+                    <optgroup label="🎯 Outliers & Anomalies">
+                        <option value="outliers">Detect outliers in numeric columns</option>
+                        <option value="outlier_count">How many outliers?</option>
+                        <option value="anomalies">Any anomalies detected?</option>
+                        <option value="extreme_values">Extreme values present?</option>
+                        <option value="unusual_data">Unusual data points?</option>
+                        <option value="outlier_percentage">Outlier percentage?</option>
+                        <option value="boxplot_analysis">Boxplot analysis?</option>
+                        <option value="iqr_method">IQR method results?</option>
+                        <option value="zscore_analysis">Z-score analysis?</option>
+                        <option value="anomaly_detection">Run anomaly detection</option>
+                    </optgroup>
+                    
+                    <!-- Data Distribution (61-70) -->
+                    <optgroup label="📊 Data Distribution">
+                        <option value="histogram_info">Histogram insights?</option>
+                        <option value="skewness">Data skewness analysis?</option>
+                        <option value="kurtosis">Kurtosis values?</option>
+                        <option value="normality">Is data normally distributed?</option>
+                        <option value="distribution_shape">Distribution shapes?</option>
+                        <option value="frequency">Frequency distributions?</option>
+                        <option value="value_counts">Value count analysis?</option>
+                        <option value="percentiles">Percentile breakdown?</option>
+                        <option value="range_analysis">Range analysis?</option>
+                        <option value="spread">Data spread information?</option>
+                    </optgroup>
+                    
+                    <!-- Recommendations (71-80) -->
+                    <optgroup label="💡 Recommendations">
+                        <option value="cleaning_suggestions">Data cleaning suggestions?</option>
+                        <option value="preprocessing_steps">Recommended preprocessing?</option>
+                        <option value="feature_engineering">Feature engineering ideas?</option>
+                        <option value="visualization_tips">Visualization recommendations?</option>
+                        <option value="model_suggestions">ML model suggestions?</option>
+                        <option value="next_steps">What should I do next?</option>
+                        <option value="best_practices">Best practices for this data?</option>
+                        <option value="improvements">How to improve data quality?</option>
+                        <option value="optimization">Optimization tips?</option>
+                        <option value="analysis_plan">Suggested analysis plan?</option>
+                    </optgroup>
+                </select>
+            </div>
+        </div>
+
         <!-- Chat History -->
         <div class="chat-history" id="chatHistory">
             <div class="empty-state">
@@ -19,17 +366,13 @@
                     <path d="M8 10h.01M12 10h.01M16 10h.01"/>
                 </svg>
                 <h3>Start a conversation</h3>
-                <p>Ask questions about your data or use commands like <code>/correlate</code>, <code>/clean suggest</code>, <code>/model recommend</code></p>
+                <p>Ask questions about your data or use quick action buttons above</p>
             </div>
         </div>
         
         <!-- Chat Input Bar -->
         <div class="chat-input-bar">
-            <select class="form-control" style="max-width: 150px;" id="modelSelect">
-                <option value="openai">🤖 OpenAI</option>
-                <option value="gemini">💎 Gemini</option>
-            </select>
-            <input type="text" class="form-control flex-grow-1" id="chatInput" placeholder="Ask about your data... (Try /commands)">
+            <input type="text" class="form-control flex-grow-1" id="chatInput" placeholder="Ask about your data..." onkeypress="if(event.key==='Enter') sendMessage()">
             <button class="btn btn-primary" onclick="sendMessage()" id="sendBtn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="22" y1="2" x2="11" y2="13"/>
@@ -40,4 +383,249 @@
         </div>
     </div>
 </div>
+
+<script>
+let apiKeySet = false;
+
+function saveApiKey() {
+    const provider = document.getElementById('aiProvider').value;
+    const apiKey = document.getElementById('apiKeyInput').value;
+    
+    if (!apiKey) {
+        showToast('Please enter an API key', 'warning');
+        return;
+    }
+    
+    fetch('/chatbot/api/configure', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({provider, api_key: apiKey})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            apiKeySet = true;
+            showToast('API key saved securely!', 'success');
+            document.getElementById('apiKeyCard').style.display = 'none';
+        } else {
+            showToast('Failed to save API key', 'error');
+        }
+    });
+}
+
+function sendQuickQuery(queryType) {
+    const queries = {
+        // Dataset Overview (1-10)
+        'rows_cols': 'How many rows and columns are in the dataset?',
+        'dataset_size': 'What is the total size of this dataset?',
+        'memory_usage': 'How much memory does this dataset use?',
+        'column_count': 'What is the total number of columns?',
+        'row_count': 'What is the total number of rows?',
+        'cell_count': 'How many total cells are in the dataset?',
+        'aspect_ratio': 'What is the aspect ratio of the data?',
+        'dimensions': 'What are the dimensions of the dataset?',
+        'overview': 'Give me a complete overview of this dataset',
+        'summary_brief': 'Provide a brief summary of the data',
+        
+        // Data Quality (11-20)
+        'missing': 'Show me a detailed missing values analysis',
+        'null_count': 'How many null or NaN values exist?',
+        'missing_percentage': 'What percentage of the data is missing?',
+        'complete_columns': 'Which columns have no missing values?',
+        'incomplete_columns': 'Which columns have missing data and how much?',
+        'duplicates': 'Are there any duplicate rows in the dataset?',
+        'duplicate_count': 'How many duplicate rows exist?',
+        'data_quality': 'What is the overall data quality score?',
+        'cleanliness': 'How clean is this dataset?',
+        'issues': 'What data quality issues should I be aware of?',
+        
+        // Column Information (21-30)
+        'dtypes': 'What are all the column data types?',
+        'column_names': 'List all column names in the dataset',
+        'numeric_columns': 'Which columns contain numeric data?',
+        'categorical_columns': 'Which columns are categorical?',
+        'text_columns': 'Which columns contain text or string data?',
+        'date_columns': 'Are there any date or time columns?',
+        'unique_values': 'Show unique value counts for each column',
+        'column_details': 'Give me detailed information about all columns',
+        'schema': 'What is the schema of this dataset?',
+        'structure': 'Describe the structure of the data',
+        
+        // Statistical Analysis (31-40)
+        'summary': 'Provide a comprehensive statistical summary',
+        'mean_values': 'What are the mean values for numeric columns?',
+        'median_values': 'What are the median values?',
+        'std_deviation': 'What are the standard deviations?',
+        'min_max': 'Show minimum and maximum values for all numeric columns',
+        'quartiles': 'Display quartile information (Q1, Q2, Q3)',
+        'distribution': 'Describe the distribution of the data',
+        'central_tendency': 'What are the measures of central tendency?',
+        'variability': 'Analyze the variability in the data',
+        'descriptive_stats': 'Show descriptive statistics table',
+        
+        // Correlations & Relationships (41-50)
+        'correlations': 'Show me the top correlations between variables',
+        'strong_correlations': 'What are the strongest correlations?',
+        'weak_correlations': 'Which variables have weak correlations?',
+        'positive_correlations': 'Show positive correlations',
+        'negative_correlations': 'Show negative correlations',
+        'feature_relationships': 'What are the key feature relationships?',
+        'dependencies': 'Are there dependencies between columns?',
+        'associations': 'What associations exist between variables?',
+        'linear_relationships': 'Describe linear relationships in the data',
+        'correlation_matrix': 'Tell me about the correlation matrix',
+        
+        // Outliers & Anomalies (51-60)
+        'outliers': 'Detect outliers using IQR method',
+        'outlier_count': 'How many outliers are present?',
+        'anomalies': 'Are there any anomalies in the data?',
+        'extreme_values': 'What extreme values exist?',
+        'unusual_data': 'Identify unusual data points',
+        'outlier_percentage': 'What percentage of data are outliers?',
+        'boxplot_analysis': 'Perform boxplot analysis',
+        'iqr_method': 'Show IQR method results',
+        'zscore_analysis': 'Run z-score analysis for outliers',
+        'anomaly_detection': 'Run comprehensive anomaly detection',
+        
+        // Data Distribution (61-70)
+        'histogram_info': 'What do histograms reveal about the data?',
+        'skewness': 'Analyze data skewness for all columns',
+        'kurtosis': 'What are the kurtosis values?',
+        'normality': 'Is the data normally distributed? Run normality tests',
+        'distribution_shape': 'Describe the shape of distributions',
+        'frequency': 'Show frequency distributions',
+        'value_counts': 'Perform value count analysis',
+        'percentiles': 'Show percentile breakdown (10th, 25th, 50th, 75th, 90th)',
+        'range_analysis': 'Perform range analysis on numeric columns',
+        'spread': 'Describe the spread of the data',
+        
+        // Recommendations (71-80)
+        'cleaning_suggestions': 'What data cleaning steps do you recommend?',
+        'preprocessing_steps': 'Suggest preprocessing steps for ML',
+        'feature_engineering': 'What feature engineering ideas do you have?',
+        'visualization_tips': 'Recommend visualizations for this data',
+        'model_suggestions': 'Which ML models would work best?',
+        'next_steps': 'What should I analyze next?',
+        'best_practices': 'What are best practices for this type of data?',
+        'improvements': 'How can I improve data quality?',
+        'optimization': 'Any optimization tips for analysis?',
+        'analysis_plan': 'Suggest a comprehensive analysis plan'
+    };
+    
+    if (queries[queryType]) {
+        document.getElementById('chatInput').value = queries[queryType];
+        sendMessage();
+    }
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessageToChat('user', message);
+    input.value = '';
+    
+    // Show loading
+    const loadingId = addMessageToChat('assistant', '<span class="spinner-border spinner-border-sm"></span> Thinking...');
+    
+    try {
+        const res = await fetch('/chatbot/api/ask', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message})
+        });
+        
+        const data = await res.json();
+        
+        // Remove loading and add response
+        document.getElementById(loadingId).remove();
+        addMessageToChat('assistant', data.reply);
+        
+    } catch (e) {
+        document.getElementById(loadingId).remove();
+        addMessageToChat('assistant', '❌ Error: Failed to get response');
+    }
+}
+
+function addMessageToChat(role, content) {
+    const chatHistory = document.getElementById('chatHistory');
+    
+    // Remove empty state if exists
+    const emptyState = chatHistory.querySelector('.empty-state');
+    if (emptyState) emptyState.remove();
+    
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${role}`;
+    msgDiv.id = 'msg-' + Date.now();
+    
+    const avatar = role === 'user' ? '👤' : '🤖';
+    msgDiv.innerHTML = `
+        <div class="message-avatar">${avatar}</div>
+        <div class="message-content">${content}</div>
+    `;
+    
+    chatHistory.appendChild(msgDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    
+    return msgDiv.id;
+}
+
+function checkDatasetStatus() {
+    console.log('Chatbot: Manual status check triggered...');
+    
+    fetch('/api/data/info')
+        .then(res => res.json())
+        .then(data => {
+            console.log('Chatbot: Status check result:', data);
+            
+            if (data && data.loaded === true) {
+                console.log('✅ Dataset is loaded! Showing chat interface...');
+                document.getElementById('noDataAlert').style.display = 'none';
+                document.getElementById('chatInterface').style.display = 'block';
+                showToast('Dataset detected! Chat interface activated.', 'success');
+            } else {
+                console.log('❌ No dataset loaded yet.');
+                document.getElementById('noDataAlert').style.display = 'block';
+                document.getElementById('chatInterface').style.display = 'none';
+                showToast('No dataset loaded. Please upload a dataset first.', 'warning');
+            }
+        })
+        .catch(err => {
+            console.error('Chatbot: Status check failed:', err);
+            showToast('Failed to check dataset status', 'error');
+        });
+}
+
+// Check if dataset is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Chatbot: Checking if dataset is loaded...');
+    
+    // Use the standard /api/data/info endpoint that all other tabs use
+    fetch('/api/data/info')
+        .then(res => {
+            console.log('Chatbot: Info endpoint response status:', res.status);
+            return res.json();
+        })
+        .then(data => {
+            console.log('Chatbot: Info data received:', data);
+            
+            // If loaded is true, dataset is available
+            if (data && data.loaded === true) {
+                console.log('Chatbot: Dataset detected! Name:', data.name, 'Shape:', data.shape);
+                document.getElementById('noDataAlert').style.display = 'none';
+                document.getElementById('chatInterface').style.display = 'block';
+            } else {
+                console.log('Chatbot: No dataset loaded (loaded =', data.loaded, ')');
+            }
+        })
+        .catch(err => {
+            console.error('Chatbot: Error checking dataset status:', err.message);
+            console.log('Chatbot: Keeping alert visible - no dataset loaded');
+        });
+});
+
+</script>
 {% endblock %}

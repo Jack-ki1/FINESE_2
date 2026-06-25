@@ -196,6 +196,62 @@
             </div>
         </div>
         
+        <!-- Multi-Plot Builder -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Multi-Plot Builder
+                </div>
+                <button class="btn btn-sm btn-success" onclick="addPlotBuilder()">
+                    ➕ Add Plot
+                </button>
+            </div>
+            <div class="card-body" id="multiPlotContainer">
+                <p class="text-muted text-center">Click "➕ Add Plot" to start building multiple charts</p>
+            </div>
+            <div class="card-footer" id="multiPlotActions" style="display:none;">
+                <div class="row gap-3">
+                    <div class="col-3">
+                        <label class="form-label">Number of Plots</label>
+                        <input type="number" class="form-control" id="totalPlotsCount" value="1" min="1" max="10" readonly>
+                    </div>
+                    <div class="col-9">
+                        <button class="btn btn-primary w-100" onclick="generateAllPlots()">
+                            🚀 Generate All Plots
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Number of Plots Selector -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Summary Dashboard Configuration
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-12">
+                        <button class="btn btn-primary w-100" onclick="generateSummaryDashboard()">
+                            📊 Generate Summary Dashboard (20 Diverse Visualizations)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Chart Display Area -->
         <div class="card" id="chartCard" style="display:none;">
             <div class="card-header">
@@ -203,7 +259,7 @@
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-ghost" onclick="toggleFullscreen()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         </svg>
                     </button>
                 </div>
@@ -221,6 +277,7 @@
 <script>
 let currentColumns = [];
 let currentDtypes = {};
+let plotBuilderCount = 0;
 
 document.addEventListener('DOMContentLoaded', () => { 
     loadDatasetInfo(); 
@@ -406,6 +463,85 @@ async function quickViz(type) {
     }
 }
 
+async function generateSummaryDashboard() {
+    showToast('Generating 20 diverse visualizations...', 'info');
+    
+    try {
+        const res = await fetch('/charts/api/quick_summary', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Clear previous charts
+        document.getElementById('chartContainer').innerHTML = '';
+        
+        // Create scrollable container
+        const dashboardDiv = document.createElement('div');
+        dashboardDiv.style.maxHeight = '80vh';
+        dashboardDiv.style.overflowY = 'auto';
+        dashboardDiv.style.padding = '10px';
+        
+        // Display each plot in a grid
+        if (data.plots && Array.isArray(data.plots)) {
+            console.log(`Displaying ${data.plots.length} plots`);
+            
+            data.plots.forEach((plotData, idx) => {
+                // Create row every 2 plots
+                if (idx % 2 === 0) {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'row mb-3';
+                    rowDiv.id = `summaryRow_${Math.floor(idx / 2)}`;
+                    dashboardDiv.appendChild(rowDiv);
+                }
+                
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-6';
+                
+                const plotCard = document.createElement('div');
+                plotCard.className = 'card mb-3';
+                plotCard.innerHTML = `
+                    <div class="card-body p-2">
+                        <div id="summaryPlot_${idx}" style="height: 400px;"></div>
+                    </div>
+                `;
+                
+                colDiv.appendChild(plotCard);
+                
+                const rowDiv = document.getElementById(`summaryRow_${Math.floor(idx / 2)}`);
+                if (rowDiv) {
+                    rowDiv.appendChild(colDiv);
+                }
+                
+                // Render the plot
+                try {
+                    const fig = JSON.parse(plotData);
+                    Plotly.newPlot(`summaryPlot_${idx}`, fig.data, fig.layout, {responsive: true});
+                } catch (err) {
+                    console.error(`Error rendering plot ${idx}:`, err);
+                }
+            });
+        }
+        
+        document.getElementById('chartContainer').appendChild(dashboardDiv);
+        showToast(`${data.count || 20} diverse visualizations generated!`, 'success');
+        
+        // Scroll to dashboard
+        dashboardDiv.scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (e) {
+        console.error('Summary dashboard error:', e);
+        showToast('Failed to generate dashboard', 'error');
+    }
+}
+
 function displayChart(chartJSON, title) {
     document.getElementById('chartCard').style.display = 'block';
     document.getElementById('chartTitle').textContent = title;
@@ -443,5 +579,223 @@ function toggleFullscreen() {
         document.exitFullscreen();
     }
 }
+
+function addPlotBuilder() {
+    plotBuilderCount++;
+    const container = document.getElementById('multiPlotContainer');
+    
+    // Remove placeholder text on first addition
+    if (plotBuilderCount === 1) {
+        container.innerHTML = '';
+        document.getElementById('multiPlotActions').style.display = 'block';
+    }
+    
+    const plotDiv = document.createElement('div');
+    plotDiv.className = 'card mb-3 border-primary';
+    plotDiv.id = `plotBuilder_${plotBuilderCount}`;
+    plotDiv.innerHTML = `
+        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <strong>Plot #${plotBuilderCount}</strong>
+            <button class="btn btn-sm btn-danger" onclick="removePlotBuilder(${plotBuilderCount})">❌ Remove</button>
+        </div>
+        <div class="card-body">
+            <div class="row gap-3">
+                <div class="col-4">
+                    <label class="form-label">Chart Type</label>
+                    <select class="form-select plot-type" data-plot="${plotBuilderCount}">
+                        <option value="bar">📊 Bar Chart</option>
+                        <option value="line">📈 Line Chart</option>
+                        <option value="scatter">🔍 Scatter Plot</option>
+                        <option value="histogram">📉 Histogram</option>
+                        <option value="box">📦 Box Plot</option>
+                        <option value="violin">🎻 Violin Plot</option>
+                        <option value="pie">🥧 Pie Chart</option>
+                        <option value="heatmap">🔥 Heatmap</option>
+                        <option value="area">📉 Area Chart</option>
+                        <option value="bubble">⚪ Bubble Chart</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label">X Axis</label>
+                    <select class="form-select plot-x" data-plot="${plotBuilderCount}">
+                        <option value="">Select column...</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Y Axis</label>
+                    <select class="form-select plot-y" data-plot="${plotBuilderCount}">
+                        <option value="">Select column...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row gap-3 mt-3">
+                <div class="col-4">
+                    <label class="form-label">Color By (Optional)</label>
+                    <select class="form-select plot-color" data-plot="${plotBuilderCount}">
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Size (for bubble)</label>
+                    <select class="form-select plot-size" data-plot="${plotBuilderCount}">
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Group By</label>
+                    <select class="form-select plot-groupby" data-plot="${plotBuilderCount}">
+                        <option value="">None</option>
+                        <option value="mean">Mean</option>
+                        <option value="sum">Sum</option>
+                        <option value="count">Count</option>
+                        <option value="median">Median</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(plotDiv);
+    updateTotalPlotsCount();
+    populatePlotSelectors(plotBuilderCount);
+}
+
+function removePlotBuilder(id) {
+    const plotDiv = document.getElementById(`plotBuilder_${id}`);
+    if (plotDiv) {
+        plotDiv.remove();
+        plotBuilderCount--;
+        updateTotalPlotsCount();
+        
+        if (plotBuilderCount === 0) {
+            document.getElementById('multiPlotContainer').innerHTML = '<p class="text-muted text-center">Click "➕ Add Plot" to start building multiple charts</p>';
+            document.getElementById('multiPlotActions').style.display = 'none';
+        }
+    }
+}
+
+function updateTotalPlotsCount() {
+    document.getElementById('totalPlotsCount').value = plotBuilderCount;
+}
+
+function populatePlotSelectors(plotId) {
+    fetch('/charts/api/columns')
+        .then(res => res.json())
+        .then(data => {
+            const xSelect = document.querySelector(`.plot-x[data-plot="${plotId}"]`);
+            const ySelect = document.querySelector(`.plot-y[data-plot="${plotId}"]`);
+            const colorSelect = document.querySelector(`.plot-color[data-plot="${plotId}"]`);
+            const sizeSelect = document.querySelector(`.plot-size[data-plot="${plotId}"]`);
+            
+            [xSelect, ySelect, colorSelect, sizeSelect].forEach(select => {
+                if (!select) return;
+                const currentValue = select.value;
+                select.innerHTML = select.classList.contains('plot-x') || select.classList.contains('plot-y') 
+                    ? '<option value="">Select column...</option>'
+                    : '<option value="">None</option>';
+                
+                data.columns.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    select.appendChild(option);
+                });
+                
+                if (currentValue) select.value = currentValue;
+            });
+        });
+}
+
+async function generateAllPlots() {
+    if (plotBuilderCount === 0) {
+        showToast('Please add at least one plot', 'warning');
+        return;
+    }
+    
+    showToast(`Generating ${plotBuilderCount} plots...`, 'info');
+    
+    const plots = [];
+    
+    // Collect all plot configurations
+    for (let i = 1; i <= plotBuilderCount; i++) {
+        const plotDiv = document.getElementById(`plotBuilder_${i}`);
+        if (!plotDiv) continue;
+        
+        const config = {
+            chart_type: plotDiv.querySelector('.plot-type').value,
+            x: plotDiv.querySelector('.plot-x').value,
+            y: plotDiv.querySelector('.plot-y').value,
+            color: plotDiv.querySelector('.plot-color').value,
+            size: plotDiv.querySelector('.plot-size').value,
+            group_by: plotDiv.querySelector('.plot-groupby').value
+        };
+        
+        plots.push(config);
+    }
+    
+    try {
+        const res = await fetch('/charts/api/build_multiple', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({plots})
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Clear previous charts
+        document.getElementById('chartContainer').innerHTML = '';
+        
+        // Create scrollable container
+        const dashboardDiv = document.createElement('div');
+        dashboardDiv.style.maxHeight = '80vh';
+        dashboardDiv.style.overflowY = 'auto';
+        dashboardDiv.style.padding = '10px';
+        
+        // Display each plot
+        data.results.forEach((result, idx) => {
+            if (idx % 2 === 0 && idx > 0) {
+                // Add spacing between rows
+            }
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'row mb-3';
+            
+            const colDiv = document.createElement('div');
+            colDiv.className = 'col-12';
+            
+            const plotCard = document.createElement('div');
+            plotCard.className = 'card';
+            plotCard.innerHTML = `
+                <div class="card-header">
+                    <strong>Plot ${idx + 1}: ${result.config.chart_type}</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div id="multiPlot_${idx}" style="height: 500px;"></div>
+                </div>
+            `;
+            
+            colDiv.appendChild(plotCard);
+            rowDiv.appendChild(colDiv);
+            dashboardDiv.appendChild(rowDiv);
+            
+            // Render the plot
+            const fig = JSON.parse(result.chart);
+            Plotly.newPlot(`multiPlot_${idx}`, fig.data, fig.layout, {responsive: true});
+        });
+        
+        document.getElementById('chartContainer').appendChild(dashboardDiv);
+        showToast(`${data.results.length} plots generated successfully!`, 'success');
+        
+    } catch (e) {
+        showToast('Failed to generate plots', 'error');
+        console.error(e);
+    }
+}
+
 </script>
 {% endblock %}
