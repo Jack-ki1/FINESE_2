@@ -1,2 +1,46 @@
-# Hugging Face Space configuration
-type: streamlit
+# =============================================================================
+# FINESE 2 - Hugging Face Spaces Configuration
+# AI-Powered Data Intelligence Platform (Flask)
+# =============================================================================
+# Documentation: https://huggingface.co/docs/hub/spaces-sdks-docker
+# =============================================================================
+
+title: FINESE 2 - Smart Data Explorer Pro
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 5000
+
+# Hardware configuration (optional - upgrade if needed)
+# hardware: cpu-basic  # Options: cpu-basic, cpu-upgrade, t4-small, t4-medium, a10g-small, a10g-large
+
+# Tags for discoverability
+tags:
+  - data-science
+  - machine-learning
+  - flask
+  - data-analysis
+  - visualization
+  - ai
+  - pandas
+  - scikit-learn
+  - plotly
+  - dashboard
+
+# Custom domain (optional)
+# custom_domain: finesse2.example.com
+
+# Environment variables (add secrets via HF UI, not here)
+# env:
+#   - name: OPENAI_API_KEY
+#     value: null  # Set via HF Space Secrets
+#   - name: GOOGLE_API_KEY
+#     value: null  # Set via HF Space Secrets
+
+# Persistent storage (if needed for uploads/models)
+# storage:
+#   - path: /app/static/uploads
+#     size: 1GB
+#   - path: /app/models
+#     size: 500MB

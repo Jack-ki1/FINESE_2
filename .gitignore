@@ -1,4 +1,11 @@
 # =============================================================================
+# FINESE 2 - AI-Powered Data Intelligence Platform (Flask)
+# =============================================================================
+# Comprehensive .gitignore for Flask-based data science application
+# Last updated: 2026-06-26
+# =============================================================================
+
+# =============================================================================
 # Python
 # =============================================================================
 # Byte-compiled / optimized / DLL files
@@ -36,6 +43,7 @@ venv/
 env/
 ENV/
 .venv/
+.env.*/
 
 # =============================================================================
 # IDEs & Editors
@@ -50,6 +58,7 @@ ENV/
 .settings/
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
 
 # =============================================================================
 # Operating System Files
@@ -71,6 +80,7 @@ logs/
 debug.log
 error.log
 access.log
+*.log.*
 
 # =============================================================================
 # Testing & Coverage
@@ -83,6 +93,8 @@ htmlcov/
 coverage.xml
 *.cover
 .hypothesis/
+.mypy_cache/
+.ropeproject/
 
 # =============================================================================
 # Jupyter Notebooks
@@ -99,19 +111,21 @@ coverage.xml
 .env.prod
 .env.test
 *.env.*
+!requirements.txt
 
 # =============================================================================
 # Flask-Specific
 # =============================================================================
-# Server-side session files
+# Server-side session files (auto-generated at runtime)
 flask_session/
+
+# Flask instance folder (for production configs)
 instance/
+
+# Flask web assets cache
 .webassets-cache
 
-# =============================================================================
-# Data Files (Untracked by Default)
-# =============================================================================
-# Uploaded datasets and temporary files
+# Flask upload directory (user-uploaded datasets)
 static/uploads/*.csv
 static/uploads/*.xlsx
 static/uploads/*.xls
@@ -121,40 +135,57 @@ static/uploads/*.h5
 static/uploads/*.pkl
 static/uploads/*.joblib
 static/uploads/*.pickle
+static/uploads/*.feather
 
-# Keep .gitkeep to preserve directory structure
+# Keep .gitkeep to preserve directory structure in git
 !static/uploads/.gitkeep
 
 # =============================================================================
-# Streamlit Legacy (from v1 - can be removed if not needed)
+# Exported Files & Reports (Generated at Runtime)
 # =============================================================================
-.streamlit/
+static/exports/*
+!static/exports/.gitkeep
+
+static/reports/*
+!static/reports/.gitkeep
+
+# =============================================================================
+# Machine Learning Models & Artifacts
+# =============================================================================
+# Serialized models and checkpoints
+models/*.pkl
+models/*.joblib
+models/*.bin
+models/*.pt
+models/*.pth
+models/*.ckpt
+models/*.onnx
+models/*.h5
+models/*.model
+models/*.weights
+
+# Keep models directory structure
+!models/.gitkeep
+
+# ML training artifacts
+checkpoints/
+artifacts/
+tensorboard_logs/
+wandb/
 
 # =============================================================================
 # Cache Directories
 # =============================================================================
 .cache/
-.mypy_cache/
-.ropeproject/
-
-# =============================================================================
-# Machine Learning Models & Artifacts
-# =============================================================================
-*.bin
-*.pt
-*.pth
-*.ckpt
-*.onnx
-*.h5
-models/
-checkpoints/
-artifacts/
+pip-cache/
+pip-download-cache/
 
 # =============================================================================
 # Documentation Build
 # =============================================================================
 docs/_build/
 site/
+_build/
 
 # =============================================================================
 # Temporary Files
@@ -164,9 +195,97 @@ site/
 *.bak
 *.backup
 *~
+*.swp
+*.swo
 
-# =============================================================================
-# OS-Specific Temporary Files
-# =============================================================================
+# OS-specific temporary files
 $RECYCLE.BIN/
 System Volume Information/
+
+# =============================================================================
+# Database Files (if using SQLite or local databases)
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# =============================================================================
+# Docker
+# =============================================================================
+.docker/
+docker-compose.override.yml
+
+# =============================================================================
+# Streamlit Legacy (Removed in Flask Migration)
+# =============================================================================
+# These are from the old Streamlit version - safe to ignore
+.streamlit/
+streamlit/
+
+# =============================================================================
+# Data Science Specific
+# =============================================================================
+# DVC (Data Version Control)
+.dvc/
+dvc.lock
+
+# MLflow
+mlruns/
+
+# Weights & Biases
+wandb/
+
+# Optuna study storage
+optuna.db
+study.db
+
+# =============================================================================
+# Security & Credentials
+# =============================================================================
+# API keys, tokens, credentials
+credentials.json
+service-account.json
+*.pem
+*.key
+secrets/
+keys/
+
+# =============================================================================
+# Build Outputs
+# =============================================================================
+# Compiled assets
+static/dist/
+static/build/
+
+# Webpack
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =============================================================================
+# IDE-Specific Configurations
+# =============================================================================
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# PyCharm
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/vcs.xml
+.idea/modules.xml
+
+# =============================================================================
+# Performance Profiling
+# =============================================================================
+*.prof
+profile/
+cprofile/
+
+# =============================================================================
+# End of .gitignore
+# =============================================================================

@@ -108,7 +108,13 @@
                             🔍 Missing Data Matrix
                         </button>
                     </div>
+                    <div class="col-8">
+                        <button class="btn btn-primary w-100" onclick="runDataQuality()">
+                            🧪 Data Quality Score & Recommendations
+                        </button>
+                    </div>
                 </div>
+
                 
                 <button class="btn btn-success btn-lg w-100" onclick="executeAutoClean()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -659,7 +665,115 @@ function animateValue(id, start, end, duration) {
     window.requestAnimationFrame(step);
 }
 
+async function runDataQuality() {
+    try {
+        const res = await fetch('/cleaning/api/data-quality', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+            showToast(data.error || 'Data quality assessment failed', 'error');
+            return;
+        }
+
+        // Create or update a visualization card
+        let card = document.getElementById('dataQualityCard');
+        if (!card) {
+            card = document.createElement('div');
+            card.id = 'dataQualityCard';
+            card.className = 'card mt-4';
+            document.getElementById('cleaningDashboard').appendChild(card);
+        }
+
+        const score = data.quality_score ?? 0;
+        const breakdown = data.score_breakdown || {};
+
+        const scoreColor = score >= 85 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+
+        const highWarnCols = Object.keys((data.outliers && data.outliers.columns) ? data.outliers.columns : {}).slice(0, 10);
+        const missingCols = Object.keys((data.missingness_summary && data.missingness_summary.columns_with_missing) ? data.missing_suggestions || {} : {});
+
+        card.innerHTML = `
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2l10 6-10 6L2 8l10-6z"/>
+                    <path d="M2 8v8l10 6 10-6V8"/>
+                </svg>
+                Data Quality Assessment
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div class="text-muted" style="font-size:13px;">Overall Quality Score</div>
+                        <div style="font-size:40px; font-weight:800; color:${scoreColor};">${score}/100</div>
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size:13px;">Score Breakdown (penalties)</div>
+                        <div style="font-size:12px; line-height:1.6;">
+                            <div>Missing penalty: ${Number(breakdown.missing_penalty || 0).toFixed(1)}</div>
+                            <div>Outlier penalty: ${Number(breakdown.outlier_penalty || 0).toFixed(1)}</div>
+                            <div>Duplicate penalty: ${Number(breakdown.duplicate_penalty || 0).toFixed(1)}</div>
+                            <div>Type penalty: ${Number(breakdown.type_penalty || 0).toFixed(1)}</div>
+                            <div>Redundancy penalty: ${Number(breakdown.redundancy_penalty || 0).toFixed(1)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row gap-3 mt-3">
+                    <div class="col-6">
+                        <div class="text-muted" style="font-size:13px;">Top Missing Value Recommendations</div>
+                        <div style="font-size:12px; max-height:160px; overflow:auto;">
+                            ${Object.keys(data.missing_suggestions || {}).slice(0, 12).map(col => {
+                                const rec = data.missing_suggestions[col] || {};
+                                return `<div><strong>${col}:</strong> ${rec.recommended || '—'} </div>`;
+                            }).join('') || '<div class="text-muted">No missing values detected.</div>'}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted" style="font-size:13px;">Outlier Flags (sample)</div>
+                        <div style="font-size:12px; max-height:160px; overflow:auto;">
+                            ${highWarnCols.length ? highWarnCols.map(c => {
+                                const info = data.outliers.columns[c] || {};
+                                return `<div><strong>${c}:</strong> ~${Number(info.outlier_rate_pct || 0).toFixed(2)}% outliers</div>`;
+                            }).join('') : '<div class="text-muted">No outliers detected (per ensemble vote).</div>'}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row gap-3 mt-3">
+                    <div class="col-6">
+                        <div class="text-muted" style="font-size:13px;">Type Validation Suggestions</div>
+                        <div style="font-size:12px; max-height:160px; overflow:auto;">
+                            ${Object.keys(data.type_corrections || {}).length ? '' : ''}
+                            ${Array.isArray(data.type_corrections) && data.type_corrections.length ? data.type_corrections.slice(0, 10).map(tc => {
+                                return `<div><strong>${tc.column}:</strong> ${tc.suggested_action}</div>`;
+                            }).join('') : '<div class="text-muted">No type issues flagged.</div>'}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted" style="font-size:13px;">Duplicate / Redundancy Notes</div>
+                        <div style="font-size:12px; line-height:1.6;">
+                            <div>Exact duplicate rows: ${Number(data.duplicates?.exact_duplicate_rows || 0).toLocaleString()}</div>
+                            <div>Fuzzy duplicate candidates: ${Array.isArray(data.duplicates?.fuzzy_duplicate_candidates) ? data.duplicates.fuzzy_duplicate_candidates.length : 0}</div>
+                            <div>Redundant columns (corr>=0.9): ${Array.isArray(data.redundancy?.redundant_columns) ? data.redundancy.redundant_columns.length : 0}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        card.scrollIntoView({behavior:'smooth'});
+        showToast('Data quality assessment complete', 'success');
+    } catch (e) {
+        showToast('Data quality assessment failed', 'error');
+    }
+}
+
 async function showMissingnessMatrix() {
+
     try {
         const res = await fetch('/cleaning/api/missingness_matrix');
         const data = await res.json();

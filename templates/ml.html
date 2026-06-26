@@ -1,7 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
 <div id="mlContent">
-    <div class="alert alert-info" id="noDataAlert">Load a dataset to start machine learning.</div>
+    <div class="alert alert-info" id="noDataAlert">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>📊 Load a dataset to start machine learning.</span>
+            <button onclick="checkAndPopulateColumns()" class="btn btn-sm btn-primary" style="margin-left: 10px;">
+                🔄 Refresh
+            </button>
+        </div>
+        <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
+            Tip: Upload a dataset using the upload zone in the sidebar, then return to ML Studio.
+        </p>
+    </div>
     
     <div id="mlDashboard" style="display:none;" class="animate-fade-in">
         <!-- Model Training Card -->
@@ -58,19 +68,34 @@
                             <input type="number" class="form-control" id="randomState" value="42">
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableCV" checked>
+                            <label class="form-check-label" for="enableCV">✅ Cross-Validation</label>
+                        </div>
+                    </div>
+                    <div class="col-3" id="cvFoldsDiv">
+                        <div class="form-group">
+                            <label class="form-label">CV Folds</label>
+                            <input type="number" class="form-control" id="cvFolds" value="5" min="2" max="10">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row gap-3 mt-3">
+                    <div class="col-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="enableAutoML">
                             <label class="form-check-label" for="enableAutoML">🤖 Enable AutoML (Optuna)</label>
                         </div>
                     </div>
-                    <div class="col-4" id="nTrialsDiv" style="display:none;">
+                    <div class="col-3" id="nTrialsDiv" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">Number of Trials</label>
-                            <input type="number" class="form-control" id="nTrials" value="20" min="5" max="100">
+                            <input type="number" class="form-control" id="nTrials" value="50" min="10" max="200">
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-3">
                         <button class="btn btn-primary btn-lg w-100" onclick="trainModel()" id="trainBtn">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="5 3 19 12 5 21 5 3"/>
@@ -78,7 +103,30 @@
                             Train Model
                         </button>
                     </div>
+                    <div class="col-3">
+                        <button class="btn btn-success btn-lg w-100" onclick="showModelComparison()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3v18h18"/>
+                                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                            </svg>
+                            Compare Models
+                        </button>
+                    </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Model Comparison Section -->
+        <div class="card mb-4" id="comparisonCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18"/>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                </svg>
+                Model Comparison Dashboard
+            </div>
+            <div class="card-body">
+                <div id="comparisonResults"></div>
             </div>
         </div>
         
@@ -135,6 +183,52 @@
             </div>
         </div>
         
+        <!-- Data Quality Assessment -->
+        <div class="card mb-4" id="dataQualityCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                </svg>
+                Data Quality (0-100)
+            </div>
+            <div class="card-body">
+                <div class="row gap-3 mb-3 align-items-center">
+                    <div class="col-4">
+                        <button class="btn btn-outline-primary w-100" onclick="runDataQuality()">
+                            ⚙️ Assess Data Quality
+                        </button>
+                    </div>
+                    <div class="col-8">
+                        <div class="alert alert-info mb-0" id="dataQualityStatus">
+                            Click “Assess Data Quality” to generate report.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="dataQualitySummary" style="display:none;">
+                    <div class="alert alert-success mb-3" id="dataQualityScore">
+                        Quality score: -
+                    </div>
+
+                    <div class="row gap-3">
+                        <div class="col-6">
+                            <h6 class="mb-2">Missingness Summary</h6>
+                            <pre id="dqMissingSummary" style="background:#F1F5F9;padding:10px;border-radius:6px;max-height:220px;overflow:auto;">{}</pre>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="mb-2">Top Outlier Flags</h6>
+                            <pre id="dqOutlierSummary" style="background:#F1F5F9;padding:10px;border-radius:6px;max-height:220px;overflow:auto;">{}</pre>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6 class="mb-2">Actionable Recommendations</h6>
+                        <div id="dqRecommendations" class="d-flex flex-column gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Model Explainability (SHAP) -->
         <div class="card mb-4" id="explainabilityCard" style="display:none;">
             <div class="card-header">
@@ -143,22 +237,78 @@
                     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
-                Model Explainability (SHAP)
+                Model Explainability & Diagnostics
             </div>
             <div class="card-body">
                 <div class="row gap-3 mb-3">
-                    <div class="col-6">
+                    <div class="col-3">
                         <button class="btn btn-primary w-100" onclick="generateSHAPSummary()">
-                            📊 Global Feature Importance
+                            📊 SHAP Summary
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-success w-100" onclick="generateSHAPDependence()">
+                            🔍 SHAP Dependence
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-info w-100" onclick="generateSHAPWaterfall()">
+                            🌊 SHAP Waterfall
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-warning w-100" onclick="generatePermutationImportance()">
+                            🎯 Permutation Importance
+                        </button>
+                    </div>
+                </div>
+                <div class="row gap-3 mb-3">
+                    <div class="col-6">
+                        <button class="btn btn-secondary w-100" onclick="generateLearningCurve()">
+                            📈 Learning Curve
                         </button>
                     </div>
                     <div class="col-6">
-                        <button class="btn btn-success w-100" onclick="generateSHAPDependence()">
-                            🔍 Feature Dependence Plot
+                        <button class="btn btn-dark w-100" onclick="generateValidationCurve()">
+                            📉 Validation Curve
                         </button>
                     </div>
                 </div>
                 <div id="shapPlots"></div>
+            </div>
+        </div>
+        
+        <!-- Prediction Interface -->
+        <div class="card mb-4" id="predictionCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Make Predictions
+            </div>
+            <div class="card-body">
+                <div class="row gap-3 mb-3">
+                    <div class="col-4">
+                        <div class="form-group">
+                            <label class="form-label">Select Model</label>
+                            <select class="form-control" id="predictModelSelect"></select>
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <button class="btn btn-primary w-100" onclick="loadModelFeatures()">
+                            Load Model Features
+                        </button>
+                    </div>
+                </div>
+                <div id="predictionForm" style="display:none;">
+                    <div id="featureInputs" class="row gap-3"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-success btn-lg w-100" onclick="makePrediction()">
+                            🔮 Make Prediction
+                        </button>
+                    </div>
+                    <div id="predictionResult" class="mt-3"></div>
+                </div>
             </div>
         </div>
 
@@ -244,120 +394,8 @@
 {% block scripts %}
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => { 
-    loadDatasetInfo(); 
-    checkAndPopulateColumns(); 
-    
-    // Toggle AutoML options
-    document.getElementById('enableAutoML').addEventListener('change', function() {
-        document.getElementById('nTrialsDiv').style.display = this.checked ? 'block' : 'none';
-    });
-});
-
-// Algorithm options mapping for different task types
-const algorithmOptions = {
-    classification: [
-        { value: "rf", label: "🌲 Random Forest" },
-        { value: "gb", label: "🚀 Gradient Boosting" },
-        { value: "lr", label: "📏 Logistic Regression" },
-        { value: "svm", label: "⚡ SVM" },
-        { value: "knn", label: "🎯 KNN" }
-    ],
-    regression: [
-        { value: "rf", label: "🌲 Random Forest" },
-        { value: "gb", label: "🚀 Gradient Boosting" },
-        { value: "lr", label: "📏 Linear Regression" },
-        { value: "svm", label: "⚡ SVM Regression" },
-        { value: "knn", label: "🎯 KNN Regression" }
-    ],
-    clustering: [
-        { value: "kmeans", label: "🔵 K-Means" },
-        { value: "dbscan", label: "🔴 DBSCAN" },
-        { value: "hierarchical", label: "🌳 Hierarchical" },
-        { value: "gaussian", label: "⚪ Gaussian Mixture" }
-    ],
-    dimensionality: [
-        { value: "pca", label: "📉 PCA" },
-        { value: "tsne", label: "🌐 t-SNE" },
-        { value: "umap", label: "🌀 UMAP" },
-        { value: "lda", label: "📚 LDA" }
-    ],
-    anomaly: [
-        { value: "isolation", label: "🔍 Isolation Forest" },
-        { value: "lof", label: "🌊 Local Outlier Factor" },
-        { value: "oneclass", label: "⭕ One-Class SVM" },
-        { value: "autoencoder", label: "⚙️ Autoencoder" }
-    ],
-    association: [
-        { value: "apriori", label: "🔗 Apriori" },
-        { value: "fpgrowth", label: "⚡ FP-Growth" }
-    ],
-    neural_classification: [
-        { value: "mlp", label: "🧠 MLP Classifier" },
-        { value: "cnn", label: ".Conv Neural Network" },
-        { value: "transformer", label: "🔄 Transformer" }
-    ],
-    neural_regression: [
-        { value: "mlp", label: "🧠 MLP Regressor" },
-        { value: "cnn", label: ".Conv Neural Network" },
-        { value: "lstm", label: "🔁 LSTM" }
-    ]
-};
 
 // Update algorithm options based on selected task type
-function updateAlgorithmOptions() {
-    const taskType = document.getElementById('taskType').value;
-    const algorithmSelect = document.getElementById('algorithm');
-    
-    // Clear existing options
-    algorithmSelect.innerHTML = '';
-    
-    // Add new options based on task type
-    if (taskType && algorithmOptions[taskType]) {
-        algorithmOptions[taskType].forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.value;
-            optionElement.textContent = option.label;
-            algorithmSelect.appendChild(optionElement);
-        });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => { 
-    loadDatasetInfo(); 
-    checkAndPopulateColumns(); 
-    
-    // Initialize algorithm options on page load
-    const taskType = document.getElementById('taskType').value;
-    if (taskType) {
-        updateAlgorithmOptions();
-    }
-});
-
-async function checkAndPopulateColumns() {
-    const infoRes = await fetch('/api/data/info');
-    const infoData = await infoRes.json();
-    
-    if (!infoData.loaded) {
-        document.getElementById('noDataAlert').style.display = 'block';
-        document.getElementById('mlDashboard').style.display = 'none';
-        return;
-    }
-    
-    const res = await fetch('/review/api/profile');
-    const data = await res.json();
-    
-    const targetSelect = document.getElementById('targetCol');
-    targetSelect.innerHTML = '<option value="">Select target...</option>' + 
-        Object.keys(data.dtypes).map(col => `<option value="${col}">${col}</option>`).join('');
-    
-    // Initialize algorithm options
-    updateAlgorithmOptions();
-    
-    document.getElementById('noDataAlert').style.display = 'none';
-    document.getElementById('mlDashboard').style.display = 'block';
-}
-
 function updateAlgorithmOptions() {
     const taskType = document.getElementById('taskType').value;
     const algoSelect = document.getElementById('algorithm');
@@ -365,7 +403,11 @@ function updateAlgorithmOptions() {
     const algorithms = {
         'classification': [
             {value: 'rf', label: '🌲 Random Forest Classifier'},
-            {value: 'gb', label: '🚀 Gradient Boosting (XGBoost)'},
+            {value: 'et', label: '🌳 Extra Trees Classifier'},
+            {value: 'gb', label: '🚀 Gradient Boosting Classifier'},
+            {value: 'xgboost', label: '⚡ XGBoost (Extreme Gradient Boosting)'},
+            {value: 'lightgbm', label: '💡 LightGBM (Light Gradient Boosting Machine)'},
+            {value: 'catboost', label: '🐱 CatBoost (Categorical Boosting)'},
             {value: 'lr', label: '📏 Logistic Regression'},
             {value: 'svm', label: '⚡ Support Vector Machine'},
             {value: 'knn', label: '🎯 K-Nearest Neighbors'},
@@ -373,19 +415,25 @@ function updateAlgorithmOptions() {
             {value: 'nb', label: '🔮 Naive Bayes'},
             {value: 'ada', label: '📊 AdaBoost'},
             {value: 'lda', label: '📐 Linear Discriminant Analysis'},
-            {value: 'qda', label: '📐 Quadratic Discriminant Analysis'}
+            {value: 'qda', label: '📐 Quadratic Discriminant Analysis'},
+            {value: 'mlp_class', label: '🧠 Neural Network (MLP)'}
         ],
         'regression': [
             {value: 'rf_reg', label: '🌲 Random Forest Regressor'},
+            {value: 'et_reg', label: '🌳 Extra Trees Regressor'},
             {value: 'gb_reg', label: '🚀 Gradient Boosting Regressor'},
+            {value: 'xgboost_reg', label: '⚡ XGBoost Regressor'},
+            {value: 'lightgbm_reg', label: '💡 LightGBM Regressor'},
+            {value: 'catboost_reg', label: '🐱 CatBoost Regressor'},
             {value: 'lr_reg', label: '📏 Linear Regression'},
             {value: 'ridge', label: '📐 Ridge Regression'},
             {value: 'lasso', label: '📐 Lasso Regression'},
-            {value: 'svr', label: '⚡ SVR (Support Vector Regression)'},
+            {value: 'elastic', label: '🔄 Elastic Net'},
+            {value: 'huber', label: '🛡️ Huber Regressor (Robust)'},
+            {value: 'svr', label: '🎯 SVR (Support Vector Regression)'},
             {value: 'knn_reg', label: '🎯 KNN Regressor'},
             {value: 'dt_reg', label: '🌳 Decision Tree Regressor'},
-            {value: 'elastic', label: '📐 Elastic Net'},
-            {value: 'poly', label: '📈 Polynomial Regression'}
+            {value: 'mlp_reg', label: '🧠 Neural Network (MLP)'}
         ],
         'clustering': [
             {value: 'kmeans', label: '🎯 K-Means Clustering'},
@@ -452,6 +500,53 @@ function updateAlgorithmOptions() {
     ).join('');
 }
 
+async function checkAndPopulateColumns() {
+    try {
+        const infoRes = await fetch('/api/data/info');
+        const infoData = await infoRes.json();
+        
+        console.log('Dataset info:', infoData);
+        
+        if (!infoData.loaded) {
+            console.warn('No dataset loaded in session');
+            document.getElementById('noDataAlert').style.display = 'block';
+            document.getElementById('mlDashboard').style.display = 'none';
+            return false;
+        }
+        
+        const res = await fetch('/review/api/profile');
+        const data = await res.json();
+        
+        console.log('Profile data:', data);
+        
+        if (data.error) {
+            console.error('Error loading profile:', data.error);
+            document.getElementById('noDataAlert').textContent = 'Error loading dataset: ' + data.error;
+            document.getElementById('noDataAlert').style.display = 'block';
+            document.getElementById('mlDashboard').style.display = 'none';
+            return false;
+        }
+        
+        const targetSelect = document.getElementById('targetCol');
+        targetSelect.innerHTML = '<option value="">Select target...</option>' + 
+            Object.keys(data.dtypes).map(col => `<option value="${col}">${col}</option>`).join('');
+        
+        // Initialize algorithm options
+        updateAlgorithmOptions();
+        
+        document.getElementById('noDataAlert').style.display = 'none';
+        document.getElementById('mlDashboard').style.display = 'block';
+        return true;
+    } catch (error) {
+        console.error('Error in checkAndPopulateColumns:', error);
+        document.getElementById('noDataAlert').textContent = 'Error: ' + error.message;
+        document.getElementById('noDataAlert').style.display = 'block';
+        document.getElementById('mlDashboard').style.display = 'none';
+        return false;
+    }
+}
+
+
 async function trainModel() {
     const target = document.getElementById('targetCol').value;
     const taskType = document.getElementById('taskType').value;
@@ -460,6 +555,13 @@ async function trainModel() {
     const randomState = parseInt(document.getElementById('randomState').value);
     const enableAutoML = document.getElementById('enableAutoML').checked;
     const nTrials = parseInt(document.getElementById('nTrials').value);
+    const enableCV = document.getElementById('enableCV').checked;
+    const cvFolds = parseInt(document.getElementById('cvFolds').value);
+    
+    // New user options
+    const scalingMethod = document.getElementById('scalingMethod').value;
+    const encodingMethod = document.getElementById('encodingMethod').value;
+    const handleMissing = document.getElementById('handleMissing').value;
     
     if (!target) {
         showToast('Please select a target column', 'warning');
@@ -481,12 +583,21 @@ async function trainModel() {
                 test_size: testSize,
                 random_state: randomState,
                 automl: enableAutoML,
-                n_trials: nTrials
+                n_trials: nTrials,
+                cross_validation: enableCV,
+                cv_folds: cvFolds,
+                scaling: scalingMethod,
+                encoding: encodingMethod,
+                handle_missing: handleMissing
             })
         });
         
         const data = await res.json();
-        session_ml_job_id = data.job_id;
+        window.session_ml_job_id = data.job_id;
+        
+        // Show progress card
+        document.getElementById('progressCard').style.display = 'block';
+        updateProgress(0, 'Initializing training...');
         
         pollJobStatus(data.job_id);
         
@@ -494,6 +605,7 @@ async function trainModel() {
         showToast('Training failed to start', 'error');
         trainBtn.disabled = false;
         trainBtn.innerHTML = '🚀 Train Model';
+        document.getElementById('progressCard').style.display = 'none';
     }
 }
 
@@ -553,6 +665,15 @@ async function pollJobStatus(jobId) {
 function displayResults(data) {
     document.getElementById('resultsDashboard').style.display = 'block';
     
+    // Show prediction card button
+    const predBtnHTML = `
+        <div class="mt-3">
+            <button class="btn btn-info btn-lg w-100" onclick="loadPredictionInterface()">
+                🔮 Open Prediction Interface
+            </button>
+        </div>
+    `;
+    
     // Show AutoML info if used
     const automlResultsDiv = document.getElementById('automlResults');
     automlResultsDiv.innerHTML = ''; // Clear previous content
@@ -569,14 +690,34 @@ function displayResults(data) {
         automlResultsDiv.innerHTML = automlHTML;
     }
     
+    // Display cross-validation scores if available
+    if (data.cv_scores) {
+        const cvHTML = `
+            <div class="alert alert-info mb-3">
+                <strong>✅ Cross-Validation Results:</strong>
+                <p class="mb-1 mt-2">Scores: ${data.cv_scores.map(s => s.toFixed(4)).join(', ')}</p>
+                <p class="mb-0">Mean: ${(data.cv_scores.reduce((a,b) => a+b, 0) / data.cv_scores.length).toFixed(4)} ± ${(Math.sqrt(data.cv_scores.reduce((sq, n) => sq + Math.pow(n - (data.cv_scores.reduce((a,b) => a+b, 0) / data.cv_scores.length), 2)) / data.cv_scores.length)).toFixed(4)}</p>
+            </div>
+        `;
+        automlResultsDiv.innerHTML += cvHTML;
+    }
+    
     // Display metrics cards
     const metricsHTML = Object.entries(data.metrics).map(([key, value]) => {
+        // Skip non-numeric or complex objects
+        if (typeof value === 'object') return '';
+        
         const metricName = key.replace('_', ' ').toUpperCase();
         const icon = key.includes('accuracy') ? '🎯' : 
                     key.includes('precision') ? '📍' :
                     key.includes('recall') ? '🔍' :
                     key.includes('f1') ? '⭐' :
-                    key.includes('r2') || key.includes('mse') || key.includes('mae') ? '📈' : '📊';
+                    key.includes('r2') || key.includes('mse') || key.includes('mae') ? '📈' :
+                    key.includes('roc') ? '📊' : '📉';
+        
+        const displayValue = typeof value === 'number' ? 
+            (value > 1 || value < -1 ? value.toFixed(4) : (value * 100).toFixed(1) + '%') : 
+            value;
         
         return `
             <div class="metric-card metric-card-animated">
@@ -584,12 +725,12 @@ function displayResults(data) {
                     <span style="font-size: 24px;">${icon}</span>
                 </div>
                 <div class="metric-label">${metricName}</div>
-                <div class="metric-value">${typeof value === 'number' ? (value * 100).toFixed(1) + '%' : value}</div>
+                <div class="metric-value">${displayValue}</div>
             </div>
         `;
     }).join('');
     
-    document.getElementById('metricsCards').innerHTML = metricsHTML;
+    document.getElementById('metricsCards').innerHTML = metricsHTML + predBtnHTML;
     
     // Display feature importance
     if (data.feature_importance) {
@@ -797,6 +938,494 @@ async function generateSHAPDependence() {
         showToast('Failed to generate SHAP plot', 'error');
     }
 }
+
+// Toggle CV folds visibility
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('enableCV').addEventListener('change', function() {
+        document.getElementById('cvFoldsDiv').style.display = this.checked ? 'block' : 'none';
+    });
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => { 
+    console.log('ML Studio: Page loaded, initializing...');
+    loadDatasetInfo(); 
+    
+    // Retry checking dataset a few times in case of timing issues
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    function attemptLoad() {
+        checkAndPopulateColumns().then((success) => {
+            if (!success && retryCount < maxRetries) {
+                retryCount++;
+                console.log(`ML Studio: Retrying dataset check (${retryCount}/${maxRetries})...`);
+                setTimeout(attemptLoad, 1000 * retryCount);
+            } else if (success) {
+                console.log('ML Studio: Dataset loaded successfully!');
+            }
+        });
+    }
+    
+    attemptLoad();
+    
+    // Initialize algorithm options on page load
+    const taskType = document.getElementById('taskType');
+    if (taskType && taskType.value) {
+        updateAlgorithmOptions();
+    }
+});
+
+// Model Comparison Function
+async function showModelComparison() {
+    try {
+        const res = await fetch('/ml/api/models/list');
+        const data = await res.json();
+        
+        if (!data.models || data.models.length === 0) {
+            showToast('No trained models available for comparison', 'warning');
+            return;
+        }
+        
+        // Create selection interface
+        const comparisonCard = document.getElementById('comparisonCard');
+        comparisonCard.style.display = 'block';
+        
+        const modelOptions = data.models.map(m => 
+            `<option value="${m.model_id}">${m.algorithm} (${m.task}) - ${new Date(m.trained_at).toLocaleString()}</option>`
+        ).join('');
+        
+        const html = `
+            <div class="row gap-3 mb-3">
+                <div class="col-8">
+                    <label class="form-label">Select Models to Compare (hold Ctrl/Cmd for multiple)</label>
+                    <select class="form-control" id="compareModelSelect" multiple size="5">
+                        ${modelOptions}
+                    </select>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-primary w-100" onclick="compareSelectedModels()">
+                        📊 Compare Selected Models
+                    </button>
+                </div>
+            </div>
+            <div id="comparisonResults"></div>
+        `;
+        
+        document.getElementById('comparisonResults').innerHTML = html;
+        comparisonCard.scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (e) {
+        showToast('Failed to load models', 'error');
+    }
+}
+
+async function compareSelectedModels() {
+    const select = document.getElementById('compareModelSelect');
+    const selectedModels = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedModels.length < 2) {
+        showToast('Please select at least 2 models to compare', 'warning');
+        return;
+    }
+    
+    showToast('Comparing models...', 'info');
+    
+    try {
+        const res = await fetch('/ml/api/models/compare', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ model_ids: selectedModels })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        displayComparisonResults(data);
+        
+    } catch (e) {
+        showToast('Comparison failed', 'error');
+    }
+}
+
+function displayComparisonResults(data) {
+    const { comparison, best_model, best_metric } = data;
+    
+    let html = `
+        <div class="alert alert-success">
+            <strong>🏆 Best Model:</strong> ${best_model} (by ${best_metric})
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Model ID</th>
+                        <th>Algorithm</th>
+                        <th>Task</th>
+                        <th>Training Time (s)</th>
+                        <th>AutoML</th>
+    `;
+    
+    // Add metric columns dynamically
+    if (comparison.length > 0) {
+        const metrics = Object.keys(comparison[0].metrics || {});
+        metrics.forEach(metric => {
+            html += `<th>${metric.replace('_', ' ').toUpperCase()}</th>`;
+        });
+    }
+    
+    html += `</tr></thead><tbody>`;
+    
+    comparison.forEach(model => {
+        const isBest = model.model_id === best_model;
+        html += `
+            <tr style="${isBest ? 'background-color: #d4edda;' : ''}">
+                <td><code>${model.model_id.substring(0, 8)}...</code></td>
+                <td>${model.algorithm}</td>
+                <td>${model.task}</td>
+                <td>${model.training_time?.toFixed(2) || 'N/A'}</td>
+                <td>${model.automl_used ? '✅' : '❌'}</td>
+        `;
+        
+        Object.values(model.metrics || {}).forEach(value => {
+            html += `<td>${typeof value === 'number' ? value.toFixed(4) : value}</td>`;
+        });
+        
+        html += `</tr>`;
+    });
+    
+    html += `</tbody></table></div>`;
+    
+    document.getElementById('comparisonResults').innerHTML = html;
+    showToast('Model comparison complete!', 'success');
+}
+
+// Prediction Interface Functions
+async function loadPredictionInterface() {
+    try {
+        const res = await fetch('/ml/api/models/list');
+        const data = await res.json();
+        
+        if (!data.models || data.models.length === 0) {
+            showToast('No trained models available', 'warning');
+            return;
+        }
+        
+        const predictionCard = document.getElementById('predictionCard');
+        predictionCard.style.display = 'block';
+        
+        const modelOptions = data.models.map(m => 
+            `<option value="${m.model_id}">${m.algorithm} - ${new Date(m.trained_at).toLocaleDateString()}</option>`
+        ).join('');
+        
+        document.getElementById('predictModelSelect').innerHTML = modelOptions;
+        predictionCard.scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (e) {
+        showToast('Failed to load models', 'error');
+    }
+}
+
+async function loadModelFeatures() {
+    const modelId = document.getElementById('predictModelSelect').value;
+    
+    if (!modelId) {
+        showToast('Please select a model first', 'warning');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/ml/api/status/${modelId}`);
+        const jobData = await res.json();
+        
+        if (!jobData.result) {
+            showToast('Model data not found', 'error');
+            return;
+        }
+        
+        const nFeatures = jobData.result.n_features || 0;
+        const featureNames = Object.keys(jobData.result.feature_importance || {});
+        
+        let html = '';
+        for (let i = 0; i < nFeatures; i++) {
+            const fname = featureNames[i] || `Feature ${i+1}`;
+            html += `
+                <div class="col-3 mb-2">
+                    <label class="form-label">${fname}</label>
+                    <input type="number" class="form-control predict-feature" data-feature="${fname}" step="any">
+                </div>
+            `;
+        }
+        
+        document.getElementById('featureInputs').innerHTML = html;
+        document.getElementById('predictionForm').style.display = 'block';
+        
+    } catch (e) {
+        showToast('Failed to load model features', 'error');
+    }
+}
+
+async function makePrediction() {
+    const modelId = document.getElementById('predictModelSelect').value;
+    const inputs = document.querySelectorAll('.predict_feature');
+    
+    const features = {};
+    inputs.forEach(input => {
+        features[input.dataset.feature] = parseFloat(input.value) || 0;
+    });
+    
+    try {
+        const res = await fetch('/ml/api/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                model_id: modelId,
+                features: features
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        let resultHTML = `
+            <div class="alert alert-success">
+                <h5>🔮 Prediction Result</h5>
+                <p><strong>Prediction:</strong> ${data.prediction}</p>
+        `;
+        
+        if (data.probabilities) {
+            resultHTML += `<p><strong>Probabilities:</strong></p><ul>`;
+            data.probabilities.forEach((prob, idx) => {
+                resultHTML += `<li>Class ${idx}: ${(prob * 100).toFixed(2)}%</li>`;
+            });
+            resultHTML += `</ul>`;
+        }
+        
+        resultHTML += `</div>`;
+        
+        document.getElementById('predictionResult').innerHTML = resultHTML;
+        showToast('Prediction successful!', 'success');
+        
+    } catch (e) {
+        showToast('Prediction failed', 'error');
+    }
+}
+
+// Advanced Visualization Functions
+async function generateSHAPWaterfall() {
+    const jobId = session_ml_job_id;
+    if (!jobId) {
+        showToast('Please train a model first', 'warning');
+        return;
+    }
+    
+    const sampleIdx = prompt('Enter sample index (0-99):', '0');
+    if (sampleIdx === null) return;
+    
+    showToast('Generating SHAP waterfall plot...', 'info');
+    
+    try {
+        const res = await fetch(`/ml/api/shap/waterfall/${jobId}?sample=${sampleIdx}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        document.getElementById('explainabilityCard').style.display = 'block';
+        const shapDiv = document.createElement('div');
+        shapDiv.innerHTML = `<h6 class="mb-3 mt-4">SHAP Waterfall Plot (Sample ${sampleIdx})</h6><div id="shapWaterfall" style="height: 500px;"></div>`;
+        document.getElementById('shapPlots').appendChild(shapDiv);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('shapWaterfall', fig.data, fig.layout, {responsive: true});
+        
+        showToast('SHAP waterfall generated!', 'success');
+    } catch (e) {
+        showToast('Failed to generate waterfall plot', 'error');
+    }
+}
+
+async function generatePermutationImportance() {
+    const jobId = session_ml_job_id;
+    if (!jobId) {
+        showToast('Please train a model first', 'warning');
+        return;
+    }
+    
+    showToast('Calculating permutation importance...', 'info');
+    
+    try {
+        const res = await fetch(`/ml/api/feature/importance/permutation/${jobId}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        document.getElementById('explainabilityCard').style.display = 'block';
+        const permDiv = document.createElement('div');
+        permDiv.innerHTML = `<h6 class="mb-3 mt-4">Permutation Feature Importance</h6><div id="permImportance" style="height: 500px;"></div>`;
+        document.getElementById('shapPlots').appendChild(permDiv);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('permImportance', fig.data, fig.layout, {responsive: true});
+        
+        showToast('Permutation importance calculated!', 'success');
+    } catch (e) {
+        showToast('Failed to calculate permutation importance', 'error');
+    }
+}
+
+async function generateLearningCurve() {
+    const jobId = session_ml_job_id;
+    if (!jobId) {
+        showToast('Please train a model first', 'warning');
+        return;
+    }
+    
+    showToast('Generating learning curve...', 'info');
+    
+    try {
+        const res = await fetch(`/ml/api/learning_curve/${jobId}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        document.getElementById('explainabilityCard').style.display = 'block';
+        const lcDiv = document.createElement('div');
+        lcDiv.innerHTML = `<h6 class="mb-3 mt-4">Learning Curve (Bias-Variance Analysis)</h6><div id="learningCurve" style="height: 500px;"></div>`;
+        document.getElementById('shapPlots').appendChild(lcDiv);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('learningCurve', fig.data, fig.layout, {responsive: true});
+        
+        showToast('Learning curve generated!', 'success');
+    } catch (e) {
+        showToast('Failed to generate learning curve', 'error');
+    }
+}
+
+async function generateValidationCurve() {
+    const jobId = session_ml_job_id;
+    if (!jobId) {
+        showToast('Please train a model first', 'warning');
+        return;
+    }
+    
+    const paramName = prompt('Enter parameter name (max_depth, n_estimators, etc.):', 'max_depth');
+    if (!paramName) return;
+    
+    showToast(`Generating validation curve for ${paramName}...`, 'info');
+    
+    try {
+        const res = await fetch(`/ml/api/validation_curve/${jobId}?param=${paramName}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        document.getElementById('explainabilityCard').style.display = 'block';
+        const vcDiv = document.createElement('div');
+        vcDiv.innerHTML = `<h6 class="mb-3 mt-4">Validation Curve (${paramName})</h6><div id="validationCurve" style="height: 500px;"></div>`;
+        document.getElementById('shapPlots').appendChild(vcDiv);
+        
+        const fig = JSON.parse(data.chart);
+        Plotly.newPlot('validationCurve', fig.data, fig.layout, {responsive: true});
+        
+        showToast('Validation curve generated!', 'success');
+    } catch (e) {
+        showToast('Failed to generate validation curve', 'error');
+    }
+}
+
+async function runDataQuality() {
+    try {
+        showToast('Assessing data quality...', 'info');
+
+        const res = await fetch('/ml/api/data-quality', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+            showToast(data.error || 'Data quality assessment failed', 'error');
+            return;
+        }
+
+        document.getElementById('dataQualityCard').style.display = 'block';
+        document.getElementById('dataQualitySummary').style.display = 'block';
+
+        document.getElementById('dataQualityScore').textContent = `Quality score: ${data.quality_score}/100`;
+
+        // Missingness summary
+        document.getElementById('dqMissingSummary').textContent = JSON.stringify(data.missingness_summary || {}, null, 2);
+
+        // Outlier summary (compact)
+        const outliers = data.outliers || {};
+        const flagged = outliers.flagged_columns || 0;
+        const cols = Object.keys(outliers.columns || {});
+        const topFlags = cols.slice(0, 10).map(c => {
+            const rate = outliers.columns[c]?.outlier_rate_pct;
+            return `${c}: ${rate ? rate.toFixed(2) : 0}%`;
+        });
+        document.getElementById('dqOutlierSummary').textContent = `Flagged columns: ${flagged}\n` + topFlags.join('\n');
+
+        // Recommendations
+        const dqRec = document.getElementById('dqRecommendations');
+        dqRec.innerHTML = '';
+
+
+        const recs = [];
+        const miss = data.missingness_summary?.mean_missing_pct || 0;
+        if (miss > 5) recs.push('High missingness detected. Consider median/mode imputation or targeted row dropping.');
+
+        if (flagged > 0) recs.push('Outlier-like anomalies detected. Consider clipping to percentile/IQR bounds or reviewing distributions.');
+
+        const exactDup = data.duplicates?.exact_duplicate_rows || 0;
+        if (exactDup > 0) recs.push(`Duplicates detected (${exactDup} exact rows). Consider de-duplication or entity resolution.`);
+
+        const typeFixes = (data.type_corrections || []).length;
+        if (typeFixes > 0) recs.push(`Type validation suggests fixes in ${typeFixes} columns (e.g., numeric/date coercion).`);
+
+        if ((data.redundancy?.redundant_columns || []).length > 0) recs.push('Correlation redundancy detected. Consider removing/reducing highly correlated features.');
+
+        if (recs.length === 0) recs.push('No major data quality issues detected. Model-ready dataset looks promising.');
+
+        recs.forEach(r => {
+            const el = document.createElement('div');
+            el.className = 'p-2 border rounded';
+            el.innerHTML = `<div style="font-size:13px; color:#111827;">${r}</div>`;
+            dqRec.appendChild(el);
+        });
+
+        showToast('Data quality report ready!', 'success');
+
+    } catch (e) {
+        showToast('Data quality assessment failed', 'error');
+    }
+}
+
+// NOTE: Data Quality JSON rendering removed due to previous JS parse errors.
+// Function kept to avoid breaking UI.
+
 
 </script>
 {% endblock %}

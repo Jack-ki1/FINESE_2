@@ -67,6 +67,12 @@ try:
 except Exception:
     OPTUNA_AVAILABLE = False
 
+# ml_utils.py — ML utilities migrated to services/ml_service.py
+# This file is kept only for backward compatibility with existing imports.
+# Import from services.ml_service instead.
+
+from services.ml_service import *  # noqa: F401, F403
+
 def model_key_to_estimator(model_key: str, problem_type: str):
     """Convert model key string to estimator instance."""
     models = {

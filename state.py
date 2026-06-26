@@ -58,6 +58,11 @@ SESSION_DEFAULTS = {
     "model_cost": None,
 }
 
+# DEPRECATED: Streamlit session state — replaced by Flask session and core/dataset_store.py
+# This file is kept only to preserve import paths during migration.
+# DO NOT USE - Use flask.session or core/dataset_store.py instead.
+
+# Flask-compatible state constants (for reference only)
 DEFAULT_STATE = {
     'dataset_id': None,
     'dataset_name': None,

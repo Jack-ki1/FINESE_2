@@ -1,9 +1,14 @@
 from flask import Blueprint, render_template, session, jsonify, request, current_app
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.utils
+import plotly.io as pio
 import json
 import numpy as np
+
+
+
 
 bp = Blueprint('charts', __name__)
 
@@ -109,8 +114,99 @@ def build_chart():
                 fig = px.line_polar(df, r=y, theta=x, color=color, template='plotly_white', line_close=True)
             else:
                 return jsonify({'error': 'X and Y required for radar chart'}), 400
+
+        # --- New advanced chart types (lightweight implementations) ---
+        elif chart_type == 'ecdf':
+            # ECDF for a single numeric column (x)
+            if x:
+                s = df[x].dropna()
+                if s.empty:
+                    return jsonify({'error': 'No valid values for ECDF'}), 400
+                xs = np.sort(s.values)
+                ys = np.arange(1, len(xs) + 1) / len(xs)
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=xs, y=ys, mode='lines', name=x, line=dict(color='rgb(99, 102, 241)')))
+                fig.update_layout(template='plotly_white', title=f'ECDF: {x}', height=600)
+            else:
+                return jsonify({'error': 'X required for ecdf'}), 400
+
+        elif chart_type == 'ridge':
+            # Ridge-ish plot using multiple KDE curves stacked via y-offsets
+            # x: numeric column; y: category column to facet by; color optional
+            if x and y:
+                cats = df[y].dropna().astype(str).value_counts().head(8).index.tolist()
+                fig = go.Figure()
+                for i, cat in enumerate(cats):
+                    sub = df[df[y].astype(str) == cat]
+                    vals = sub[x].dropna().values
+                    if len(vals) < 10:
+                        continue
+                    # Use histogram as an approximation to density
+                    hist = np.histogram(vals, bins=40, density=True)
+                    bin_centers = 0.5 * (hist[1][:-1] + hist[1][1:])
+                    dens = hist[0]
+                    fig.add_trace(go.Scatter(x=bin_centers, y=dens + i, mode='lines', name=str(cat)))
+                fig.update_layout(template='plotly_white', title=f'Ridge (approx KDE): {x} by {y}', height=600, showlegend=True)
+            else:
+                return jsonify({'error': 'X and Y required for ridge'}), 400
+
+        elif chart_type == 'parallel_coords':
+            # Parallel coordinates for multiple numeric columns. x should be list-like or first numeric column; use y as optional group.
+            # Expect: x = comma-separated numeric columns; if not provided, take first 4 numeric.
+            num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            if not num_cols:
+                return jsonify({'error': 'No numeric columns available for parallel coords'}), 400
+            use_cols = num_cols[:4]
+            if x and isinstance(x, str) and ',' in x:
+                use_cols = [c.strip() for c in x.split(',') if c.strip() in num_cols][:6] or use_cols
+            fig = px.parallel_coordinates(df[use_cols + ([color] if color and color in df.columns else [])], dimensions=use_cols, color=color if color in df.columns else None, template='plotly_white')
+
+        elif chart_type == 'correlation_network':
+            # Correlation network graph among numeric columns with threshold.
+            # x: correlation threshold (optional as string/float); y: optional comma list of columns
+            num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            if len(num_cols) < 2:
+                return jsonify({'error': 'Need at least 2 numeric columns for correlation network'}), 400
+            threshold = 0.7
+            try:
+                if x is not None:
+                    threshold = float(x)
+            except Exception:
+                pass
+            corr = df[num_cols].corr().abs()
+            edges = []
+            for i in range(len(num_cols)):
+                for j in range(i + 1, len(num_cols)):
+                    if pd.notna(corr.iloc[i, j]) and corr.iloc[i, j] >= threshold:
+                        edges.append((num_cols[i], num_cols[j], float(corr.iloc[i, j])))
+            if not edges:
+                fig = go.Figure()
+                fig.update_layout(template='plotly_white', title='Correlation Network: no edges above threshold', height=600)
+            else:
+                # Circular layout (deterministic)
+                nodes = sorted(list({a for a, b, w in edges} | {b for a, b, w in edges}))
+                N = len(nodes)
+                angle = np.linspace(0, 2 * np.pi, N, endpoint=False)
+                pos = {nodes[i]: (float(np.cos(angle[i])), float(np.sin(angle[i]))) for i in range(N)}
+                edge_traces = []
+                for a, b, w in edges[:200]:
+                    xa, ya = pos[a]
+                    xb, yb = pos[b]
+                    edge_traces.append(go.Scatter(x=[xa, xb], y=[ya, yb], mode='lines', line=dict(width=2 * w, color='rgba(99,102,241,0.6)'), hoverinfo='skip'))
+                node_trace = go.Scatter(
+                    x=[pos[n][0] for n in nodes], y=[pos[n][1] for n in nodes],
+                    mode='markers+text',
+                    text=nodes,
+                    textposition='bottom center',
+                    marker=dict(size=12, color='rgb(99, 102, 241)'),
+                    hovertemplate='Node: %{text}<extra></extra>'
+                )
+                fig = go.Figure(data=edge_traces + [node_trace])
+                fig.update_layout(template='plotly_white', title=f'Correlation Network (|r| >= {threshold})', height=600, xaxis_visible=False, yaxis_visible=False)
+
         else: 
             fig = px.bar(df, x=x, y=y, template='plotly_white')
+
         
         # Apply faceting if specified
         if facet and facet in df.columns:

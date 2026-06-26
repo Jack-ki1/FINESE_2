@@ -1,8 +1,8 @@
 import os
 from flask import Flask, render_template, session
 from flask_session import Session
-from datetime import timedelta
 import state
+from config import Config
 from core.dataset_store import DatasetStore
 from routes import (
     data_bp, review_bp, cleaning_bp, charts_bp, 
@@ -10,20 +10,17 @@ from routes import (
 )
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'flask_session')
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB uploads
+app.config.from_object(Config())
 
 Session(app)
-os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
-os.makedirs('static/uploads', exist_ok=True)
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('static/exports', exist_ok=True)
 os.makedirs('static/reports', exist_ok=True)
+os.makedirs('models', exist_ok=True)
+os.makedirs(str(app.config['SESSION_FILE_DIR']), exist_ok=True)
 
 # Initialize dataset store
-app.dataset_store = DatasetStore(base_path='static/uploads')
+app.dataset_store = DatasetStore(base_path=str(app.config['UPLOAD_FOLDER']))
 
 # Register blueprints
 app.register_blueprint(data_bp)
@@ -43,6 +40,13 @@ def init_session():
             session[key] = val
         session['initialized'] = True
         session.permanent = True
+
+@app.context_processor
+def inject_dataset():
+    """Inject current dataset info into all templates."""
+    from core.dataset_store import get_current_dataset
+    ds = get_current_dataset()
+    return {"current_dataset": ds}
 
 @app.route('/')
 def index():

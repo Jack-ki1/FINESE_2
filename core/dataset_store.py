@@ -2,6 +2,7 @@ import os
 import uuid
 import pickle
 import pandas as pd
+from typing import Optional, Tuple
 
 class DatasetStore:
     def __init__(self, base_path='static/uploads'):
@@ -34,3 +35,31 @@ class DatasetStore:
 
     def exists(self, dataset_id):
         return os.path.exists(self._path(dataset_id))
+
+
+# Global current dataset tracking (Flask session alternative)
+_current_dataset_id: Optional[str] = None
+_current_dataset_info: Optional[dict] = None
+
+
+def set_current_dataset(dataset_id: str, name: str = None, shape: tuple = None) -> None:
+    """Set the current active dataset."""
+    global _current_dataset_id, _current_dataset_info
+    _current_dataset_id = dataset_id
+    _current_dataset_info = {
+        'id': dataset_id,
+        'name': name,
+        'shape': list(shape) if shape else None
+    }
+
+
+def get_current_dataset() -> Optional[dict]:
+    """Get info about the current active dataset."""
+    return _current_dataset_info
+
+
+def clear_current_dataset() -> None:
+    """Clear the current dataset."""
+    global _current_dataset_id, _current_dataset_info
+    _current_dataset_id = None
+    _current_dataset_info = None

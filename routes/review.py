@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, jsonify, current_app
+from flask import Blueprint, render_template, session, jsonify, current_app, request
 import pandas as pd
 import numpy as np
 from scipy import stats

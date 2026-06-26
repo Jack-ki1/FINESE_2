@@ -377,3 +377,20 @@ Future enhancements planned:
 [Report Bug](https://github.com/your-username/finese2/issues) · [Request Feature](https://github.com/your-username/finese2/issues)
 
 </div>
+
+
+DELETE THESE:
+├── tabs/                          (entire directory)
+├── access_layer.py
+├── data_store.py
+├── state.py
+├── theme.py
+├── test_architecture.py
+├── test_imports.py
+├── utils/ui_utils.py
+└── utils/health_utils.py
+
+OPTIONAL (review first):
+├── models/                        (empty directory)
+├── flask_session/                 (runtime sessions)
+└── static/uploads/*.pkl          (cached datasets)

@@ -38,6 +38,10 @@ def upload():
     session['dataset_id'] = dataset_id
     session['dataset_name'] = file.filename
     session['cleaning_log'] = []
+    
+    # Update global dataset tracker for context processor
+    from core.dataset_store import set_current_dataset
+    set_current_dataset(dataset_id, file.filename, df.shape)
 
     return jsonify({
         'dataset_id': dataset_id,
@@ -51,8 +55,17 @@ def upload():
 def info():
     dataset_id = session.get('dataset_id')
     if not dataset_id or not current_app.dataset_store.exists(dataset_id):
+        # Clear the global tracker if dataset doesn't exist
+        from core.dataset_store import clear_current_dataset
+        clear_current_dataset()
         return jsonify({'loaded': False})
+    
     df, name = current_app.dataset_store.load(dataset_id)
+    
+    # Update global tracker with current dataset info
+    from core.dataset_store import set_current_dataset
+    set_current_dataset(dataset_id, name, df.shape)
+    
     return jsonify({
         'loaded': True,
         'name': name,
