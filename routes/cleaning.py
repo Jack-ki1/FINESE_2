@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, session, jsonify, request, current_app
+from flask import Blueprint, render_template, session, jsonify, request, current_app, send_file
 import pandas as pd
 import numpy as np
 from scipy import stats
 import difflib
+import io
 
 
 bp = Blueprint('cleaning', __name__)
@@ -117,13 +118,13 @@ def auto_clean():
         for col in numeric_cols:
             if df[col].isnull().any():
                 if strategy == 'mean':
-                    df[col].fillna(df[col].mean(), inplace=True)
+                    df[col] = df[col].fillna(df[col].mean())
                 elif strategy == 'median':
-                    df[col].fillna(df[col].median(), inplace=True)
+                    df[col] = df[col].fillna(df[col].median())
                 elif strategy == 'mode':
-                    df[col].fillna(df[col].mode()[0], inplace=True)
+                    df[col] = df[col].fillna(df[col].mode()[0])
                 elif strategy == 'zero':
-                    df[col].fillna(0, inplace=True)
+                    df[col] = df[col].fillna(0)
                 elif strategy == 'drop':
                     df = df.dropna(subset=[col])
                 operations_applied += 1
@@ -131,12 +132,28 @@ def auto_clean():
         for col in categorical_cols:
             if df[col].isnull().any():
                 if strategy == 'mode':
-                    df[col].fillna(df[col].mode()[0], inplace=True)
+                    df[col] = df[col].fillna(df[col].mode()[0])
                 elif strategy == 'drop':
                     df = df.dropna(subset=[col])
                 else:
-                    df[col].fillna('Unknown', inplace=True)
+                    df[col] = df[col].fillna('Unknown')
                 operations_applied += 1
+        
+        # Advanced imputation strategies for all numeric columns at once
+        if strategy == 'knn':
+            from sklearn.impute import KNNImputer
+            imputer = KNNImputer(n_neighbors=5)
+            numeric_cols_list = df.select_dtypes(include=[np.number]).columns.tolist()
+            df[numeric_cols_list] = imputer.fit_transform(df[numeric_cols_list])
+            operations_applied += 1
+
+        elif strategy == 'mice':
+            from sklearn.experimental import enable_iterative_imputer
+            from sklearn.impute import IterativeImputer
+            imputer = IterativeImputer(random_state=42, max_iter=10)
+            numeric_cols_list = df.select_dtypes(include=[np.number]).columns.tolist()
+            df[numeric_cols_list] = imputer.fit_transform(df[numeric_cols_list])
+            operations_applied += 1
     
     # Fix data types
     if options.get('fix_types'):
@@ -552,7 +569,12 @@ def data_quality():
     # --- Quality score (0-100) ---
     # Lower missingness/outliers/duplicates/type issues/redundancy => higher score
     missing_penalty = min(40, missingness_summary['mean_missing_pct'] * 0.8)
-    outlier_penalty = min(30, (sum(v['outlier_rate_pct'] for v in outlier_report['columns'].values()) / max(1, len(outlier_report['columns'])) ) if outlier_report['columns'] else 0)
+    
+    if outlier_report['columns']:
+        outlier_penalty = min(30, sum(v['outlier_rate_pct'] for v in outlier_report['columns'].values()) / max(1, len(outlier_report['columns'])))
+    else:
+        outlier_penalty = 0
+    
     duplicate_penalty = min(20, (exact_dup_rows / max(1, len(df))) * 100)
     type_penalty = min(15, len(type_corrections) * 5)
     redundancy_penalty = min(15, len(redundancy['redundant_columns']) * 2)
@@ -718,3 +740,245 @@ def missingness_matrix():
     import json
     import plotly.utils
     return jsonify({'chart': json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)})
+
+@bp.route('/api/column_ops', methods=['POST'])
+def column_ops():
+    """Column operations: rename, drop, reorder, add constant."""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+
+    df, name = current_app.dataset_store.load(dataset_id)
+    
+    # Save version before modification
+    current_app.dataset_store.save_version(df, name, dataset_id, 'Before column operation')
+    
+    data = request.json
+    op = data.get('op')
+
+    if op == 'rename':
+        old_name = data['old_name']
+        new_name = data['new_name'].strip()
+        if not new_name or new_name in df.columns:
+            return jsonify({'error': 'Invalid or duplicate column name'}), 400
+        df = df.rename(columns={old_name: new_name})
+
+    elif op == 'drop':
+        cols = data.get('columns', [])
+        df = df.drop(columns=[c for c in cols if c in df.columns])
+
+    elif op == 'reorder':
+        new_order = data.get('order', [])
+        valid = [c for c in new_order if c in df.columns]
+        remaining = [c for c in df.columns if c not in valid]
+        df = df[valid + remaining]
+
+    elif op == 'add_constant':
+        col_name = data.get('name', 'new_col')
+        value = data.get('value', '')
+        df[col_name] = value
+
+    new_id = current_app.dataset_store.save(df, name)
+    session['dataset_id'] = new_id
+    current_app.dataset_store.delete(dataset_id)
+    return jsonify({'success': True, 'columns': list(df.columns), 'shape': list(df.shape)})
+
+@bp.route('/api/text_ops', methods=['POST'])
+def text_ops():
+    """String/regex operations on text columns."""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+
+    df, name = current_app.dataset_store.load(dataset_id)
+    
+    # Save version before modification
+    current_app.dataset_store.save_version(df, name, dataset_id, 'Before text operation')
+    
+    data = request.json
+    col = data.get('column')
+    op = data.get('op')
+
+    if col not in df.columns:
+        return jsonify({'error': 'Column not found'}), 400
+
+    import re
+    if op == 'strip':
+        df[col] = df[col].astype(str).str.strip()
+    elif op == 'lower':
+        df[col] = df[col].astype(str).str.lower()
+    elif op == 'upper':
+        df[col] = df[col].astype(str).str.upper()
+    elif op == 'regex_replace':
+        pattern = data.get('pattern', '')
+        replacement = data.get('replacement', '')
+        try:
+            re.compile(pattern)
+        except re.error as e:
+            return jsonify({'error': f'Invalid regex: {e}'}), 400
+        df[col] = df[col].astype(str).str.replace(pattern, replacement, regex=True)
+    elif op == 'extract':
+        pattern = data.get('pattern', '')
+        new_col = data.get('new_col', f'{col}_extracted')
+        try:
+            re.compile(pattern)
+        except re.error as e:
+            return jsonify({'error': f'Invalid regex: {e}'}), 400
+        df[new_col] = df[col].astype(str).str.extract(f'({pattern})', expand=False)
+    elif op == 'split':
+        delimiter = data.get('delimiter', ',')
+        max_splits = data.get('max_splits', 2)
+        split_df = df[col].astype(str).str.split(delimiter, n=max_splits, expand=True)
+        for i, part_col in enumerate(split_df.columns):
+            df[f'{col}_part{i+1}'] = split_df[part_col]
+    elif op == 'remove_whitespace':
+        df[col] = df[col].astype(str).str.replace(r'\s+', ' ', regex=True).str.strip()
+
+    new_id = current_app.dataset_store.save(df, name)
+    session['dataset_id'] = new_id
+    current_app.dataset_store.delete(dataset_id)
+    return jsonify({'success': True, 'preview': df[[col]].head(5).to_dict(orient='records')})
+
+@bp.route('/api/bin_column', methods=['POST'])
+def bin_column():
+    """Binning/Discretization for continuous columns."""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+
+    df, name = current_app.dataset_store.load(dataset_id)
+    
+    # Save version before modification
+    current_app.dataset_store.save_version(df, name, dataset_id, 'Before binning')
+    
+    data = request.json
+    col = data.get('column')
+    method = data.get('method', 'equal_width')  # equal_width | quantile | custom
+    n_bins = int(data.get('n_bins', 5))
+    labels = data.get('labels')  # optional list of label strings
+    new_col = data.get('new_col', f'{col}_binned')
+
+    if col not in df.columns:
+        return jsonify({'error': 'Column not found'}), 400
+
+    if method == 'equal_width':
+        df[new_col] = pd.cut(df[col], bins=n_bins, labels=labels)
+    elif method == 'quantile':
+        df[new_col] = pd.qcut(df[col], q=n_bins, labels=labels, duplicates='drop')
+    elif method == 'custom':
+        edges = sorted(data.get('edges', []))
+        if len(edges) < 2:
+            return jsonify({'error': 'Provide at least 2 bin edges'}), 400
+        df[new_col] = pd.cut(df[col], bins=edges, labels=labels)
+    else:
+        return jsonify({'error': 'Unknown binning method'}), 400
+
+    df[new_col] = df[new_col].astype(str)
+    new_id = current_app.dataset_store.save(df, name)
+    session['dataset_id'] = new_id
+    current_app.dataset_store.delete(dataset_id)
+    return jsonify({
+        'success': True,
+        'new_column': new_col,
+        'distribution': df[new_col].value_counts().to_dict()
+    })
+
+@bp.route('/api/encode', methods=['POST'])
+def encode_column():
+    """Categorical encoding: label, one-hot, ordinal."""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+
+    df, name = current_app.dataset_store.load(dataset_id)
+    
+    # Save version before modification
+    current_app.dataset_store.save_version(df, name, dataset_id, 'Before encoding')
+    
+    data = request.json
+    col = data.get('column')
+    method = data.get('method', 'label')  # label | onehot | ordinal
+    ordinal_order = data.get('ordinal_order', [])
+
+    if col not in df.columns:
+        return jsonify({'error': 'Column not found'}), 400
+
+    from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
+    added_cols = []
+
+    if method == 'label':
+        le = LabelEncoder()
+        df[f'{col}_encoded'] = le.fit_transform(df[col].astype(str))
+        added_cols.append(f'{col}_encoded')
+
+    elif method == 'onehot':
+        dummies = pd.get_dummies(df[col], prefix=col, dtype=int)
+        df = pd.concat([df, dummies], axis=1)
+        added_cols.extend(dummies.columns.tolist())
+
+    elif method == 'ordinal':
+        if not ordinal_order:
+            return jsonify({'error': 'ordinal_order required for ordinal encoding'}), 400
+        oe = OrdinalEncoder(categories=[ordinal_order])
+        df[f'{col}_ordinal'] = oe.fit_transform(df[[col]].astype(str))
+        added_cols.append(f'{col}_ordinal')
+
+    new_id = current_app.dataset_store.save(df, name)
+    session['dataset_id'] = new_id
+    current_app.dataset_store.delete(dataset_id)
+    return jsonify({'success': True, 'added_columns': added_cols, 'shape': list(df.shape)})
+
+@bp.route('/api/export_recipe', methods=['GET'])
+def export_recipe():
+    """Export cleaning recipe as Python script."""
+    log = session.get('cleaning_log', [])
+    lines = [
+        "import pandas as pd",
+        "import numpy as np",
+        "",
+        "df = pd.read_csv('your_file.csv')  # Replace with your file",
+        "",
+        "# ── FINESE_2 Cleaning Recipe ──────────────────────────────────",
+    ]
+    for entry in log:
+        lines.append(f"# {entry}")
+    lines += ["", "# Save cleaned dataset", "df.to_csv('cleaned_data.csv', index=False)"]
+
+    script = '\n'.join(lines)
+    buf = io.BytesIO(script.encode('utf-8'))
+    buf.seek(0)
+    from flask import send_file
+    return send_file(buf, mimetype='text/x-python',
+                     download_name='cleaning_recipe.py', as_attachment=True)
+
+@bp.route('/api/undo', methods=['POST'])
+def undo_last_operation():
+    """Undo the last cleaning operation by restoring previous version."""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+
+    # Get version history
+    history = current_app.dataset_store.get_version_history(dataset_id)
+    if not history:
+        return jsonify({'error': 'No versions to undo'}), 400
+
+    # Get latest version
+    latest_version = history[-1]
+    version_id = latest_version['version_id']
+    
+    # Restore version
+    df, name = current_app.dataset_store.restore_version(version_id, dataset_id)
+    if df is None:
+        return jsonify({'error': 'Failed to restore version'}), 400
+
+    # Save restored version as new dataset
+    new_id = current_app.dataset_store.save(df, name)
+    session['dataset_id'] = new_id
+    current_app.dataset_store.delete(dataset_id)
+    
+    return jsonify({
+        'success': True,
+        'restored_version': latest_version['note'],
+        'timestamp': latest_version['timestamp']
+    })

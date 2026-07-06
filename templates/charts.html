@@ -44,6 +44,10 @@
                                 <option value="sunburst">☀️ Sunburst</option>
                                 <option value="funnel">🔽 Funnel Chart</option>
                                 <option value="radar">🕸️ Radar Chart</option>
+                                <option value="waterfall">💧 Waterfall Chart</option>
+                                <option value="sankey">🔄 Sankey Diagram</option>
+                                <option value="scatter_3d">🎲 3D Scatter</option>
+                                <option value="timeline">📅 Timeline/Gantt</option>
                             </select>
                         </div>
                     </div>
@@ -266,6 +270,25 @@
             </div>
             <div class="card-body p-0">
                 <div id="chartContainer" style="height: 600px;"></div>
+            </div>
+            <div class="card-footer">
+                <div class="row gap-2">
+                    <div class="col-4">
+                        <button class="btn btn-outline-primary w-100" onclick="exportChart('png')">
+                            📥 Export as PNG
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-outline-success w-100" onclick="exportChart('svg')">
+                            📥 Export as SVG
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-outline-info w-100" onclick="exportChart('html')">
+                            📥 Export as HTML
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -567,6 +590,52 @@ function downloadChart() {
         filename: 'chart_export'
     });
     showToast('Chart downloaded!', 'success');
+}
+
+// Export chart in different formats (PNG, SVG, HTML)
+async function exportChart(format) {
+    try {
+        // Get current chart JSON from Plotly
+        const chartJSON = document.getElementById('chartContainer').data 
+            ? JSON.stringify(Plotly.PlotSchema.getGraphDiv(document.getElementById('chartContainer')))
+            : null;
+        
+        if (!chartJSON) {
+            showToast('No chart to export', 'warning');
+            return;
+        }
+        
+        showToast(`Exporting as ${format.toUpperCase()}...`, 'info');
+        
+        const res = await fetch('/charts/api/export_chart', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                chart_json: chartJSON,
+                format: format
+            })
+        });
+        
+        if (!res.ok) {
+            throw new Error('Export failed');
+        }
+        
+        // Download the file
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chart.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showToast(`✅ Chart exported as ${format.toUpperCase()}!`, 'success');
+    } catch (e) {
+        console.error('Export error:', e);
+        showToast('Export failed. Try using the Download PNG button instead.', 'error');
+    }
 }
 
 function toggleFullscreen() {

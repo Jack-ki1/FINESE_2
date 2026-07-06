@@ -172,7 +172,7 @@ def ask():
                     context = f"Dataset has {len(df)} rows, {len(df.columns)} columns"
                     
                     response = client.messages.create(
-                        model="claude-3-haiku-20240307",
+                        model="claude-haiku-4-5-20251001",
                         max_tokens=200,
                         system=f"Data analyst assistant. Context: {context}",
                         messages=[{"role": "user", "content": msg}]
@@ -183,7 +183,7 @@ def ask():
                     import google.generativeai as genai
                     genai.configure(api_key=api_key)
                     
-                    model = genai.GenerativeModel('gemini-pro')
+                    model = genai.GenerativeModel('gemini-2.0-flash')
                     context = f"Dataset: {len(df)} rows, {len(df.columns)} columns"
                     
                     response = model.generate_content(f"{context}\n\nQuestion: {msg}")

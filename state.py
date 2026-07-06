@@ -1,4 +1,3 @@
-import streamlit as st
 from dataclasses import dataclass, field
 from typing import Optional
 import pandas as pd
@@ -57,12 +56,11 @@ SESSION_DEFAULTS = {
     "business_goal": "General purpose (balanced)",
     "model_cost": None,
 }
+"""
+Flask session defaults. Streamlit code removed.
+Use flask.session or core/dataset_store.py for state.
+"""
 
-# DEPRECATED: Streamlit session state — replaced by Flask session and core/dataset_store.py
-# This file is kept only to preserve import paths during migration.
-# DO NOT USE - Use flask.session or core/dataset_store.py instead.
-
-# Flask-compatible state constants (for reference only)
 DEFAULT_STATE = {
     'dataset_id': None,
     'dataset_name': None,
@@ -74,8 +72,3 @@ DEFAULT_STATE = {
     'ml_job_id': None,
     'last_chart_config': {},
 }
-
-def init_session():
-    for key, default in SESSION_DEFAULTS.items():
-        if key not in st.session_state:
-            st.session_state[key] = default

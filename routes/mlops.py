@@ -4,17 +4,24 @@ import numpy as np
 import pandas as pd
 import json
 import plotly.express as px
-import wandb
 import os
 import pandas as pd
 from datetime import datetime
 import math
+from core.model_registry import register as register_model_in_registry, list_models as list_models_from_registry
+from core.experiment_tracker import log_experiment as log_exp_to_db, list_experiments as list_exp_from_db
+
+#safely import wandb
+try:
+    import wandb
+    _WANDB_AVAILABLE = True
+except ImportError:
+    _WANDB_AVAILABLE = False
 
 
 bp = Blueprint('mlops', __name__)
 
-# In-memory model registry (in production, use database)
-model_registry = {}
+# Use centralized model registry from core.model_registry
 experiment_logs = []
 
 @bp.route('/')
@@ -24,32 +31,31 @@ def mlops_page():
 @bp.route('/api/models', methods=['GET'])
 def list_models():
     """List all registered models"""
-    return jsonify({'models': list(model_registry.values())})
+    models = list_models_from_registry()
+    return jsonify({'models': models})
 
 @bp.route('/api/register', methods=['POST'])
 def register_model():
     """Register a trained model"""
     data = request.json
-    model_id = str(uuid.uuid4())
     
-    model_info = {
-        'id': model_id,
-        'name': data.get('name', f'Model_{len(model_registry)+1}'),
-        'type': data.get('type', 'unknown'),
-        'metrics': data.get('metrics', {}),
-        'hyperparameters': data.get('hyperparameters', {}),
-        'created_at': datetime.now().isoformat(),
-        'status': 'registered',
-        'version': data.get('version', '1.0')
-    }
+    model_id = register_model_in_registry(
+        name=data.get('name', f'Model_{len(list_models_from_registry())+1}'),
+        model_type=data.get('type', 'unknown'),
+        metrics=data.get('metrics', {}),
+        hyperparams=data.get('hyperparameters', {}),
+        version=data.get('version', '1.0')
+    )
     
-    model_registry[model_id] = model_info
+    # Get the registered model info
+    from core.model_registry import get_model
+    model_info = get_model(model_id)
+    
     return jsonify({'model_id': model_id, 'model': model_info})
 
 
 @bp.route('/api/log_experiment', methods=['POST'])
 def log_experiment():
-
     """Log a new experiment.
 
     Body:
@@ -57,24 +63,28 @@ def log_experiment():
       - params: dict
       - metrics: dict
       - status: str
+      - tags: list (optional)
 
     Optional integrations:
       - MLflow: set env MLflow tracking URI via MLFLOW_TRACKING_URI
       - Weights & Biases: set env WANDB_PROJECT
     """
     data = request.json or {}
-    exp_id = str(uuid.uuid4())
-
-    experiment = {
-        'id': exp_id,
-        'name': data.get('name', f'Experiment_{len(experiment_logs)+1}'),
-        'params': data.get('params', {}),
-        'metrics': data.get('metrics', {}),
-        'status': data.get('status', 'completed'),
-        'timestamp': datetime.now().isoformat()
-    }
-
-    # Always store in-memory
+    
+    # Log to SQLite database (persistent)
+    exp_id = log_exp_to_db(
+        name=data.get('name', f'Experiment_{len(list_exp_from_db())+1}'),
+        params=data.get('params', {}),
+        metrics=data.get('metrics', {}),
+        status=data.get('status', 'completed'),
+        tags=data.get('tags', [])
+    )
+    
+    # Get the logged experiment
+    experiments = list_exp_from_db(limit=1)
+    experiment = experiments[0] if experiments else None
+    
+    # Also keep in-memory for backward compatibility
     experiment_logs.append(experiment)
 
     # Optional MLflow/W&B logging (best-effort)
@@ -114,7 +124,9 @@ def log_experiment():
 @bp.route('/api/experiments', methods=['GET'])
 def list_experiments():
     """List all experiments"""
-    return jsonify({'experiments': experiment_logs})
+    # Use persistent SQLite tracker
+    experiments = list_exp_from_db()
+    return jsonify({'experiments': experiments})
 
 @bp.route('/api/feature-store/register', methods=['POST'])
 def feature_store_register():
@@ -200,96 +212,112 @@ def feature_store_compute():
 
     return jsonify({'features': {k: (v.fillna(np.nan).tolist()[:1000] if v is not None else None) for k, v in out.items()}, 'note': 'Returned first 1000 values per feature for payload size'})
 
-@bp.route('/api/drift检测', methods=['POST'])
-def detect_drift():
-    """Detect data drift between (optional) baseline and current data.
 
-    Body (optional JSON):
-      - baseline_stats: {"columns": {col: {"sample": [...]} }} or {"columns": {col: {"values": [...]}}]
-        If not provided, falls back to distribution-stat heuristic and KS test where possible.
 
-    """
-
+@bp.route('/api/detect_drift', methods=['POST'])
+def detect_drift_v2():
+    """Compare current dataset distribution against a stored baseline."""
     dataset_id = session.get('dataset_id')
     if not dataset_id:
         return jsonify({'error': 'No dataset loaded'}), 400
 
+    data = request.json or {}
+    model_id = data.get('model_id')
+    baseline = data.get('baseline_stats')  # Pre-stored stats from training time
+
+    if not baseline:
+        return jsonify({'error': 'No baseline stats provided'}), 400
+
     df, _ = current_app.dataset_store.load(dataset_id)
-    body = request.json or {}
-    baseline_stats = body.get('baseline_stats')
+    from scipy import stats
 
-    drift_report = {
-        'overall_drift': False,
-        'column_drifts': {},
-        'recommendations': []
-    }
+    drift_report = []
+    for col, stats_baseline in baseline.items():
+        if col not in df.columns:
+            continue
+        col_data = df[col].dropna()
+        if col_data.dtype in ['object', 'category']:
+            continue
 
-    numeric_cols = df.select_dtypes(include='number').columns.tolist()
+        # KS test against baseline distribution
+        baseline_mean = stats_baseline.get('mean', 0)
+        baseline_std = stats_baseline.get('std', 1)
+        # Generate baseline sample from stored stats
+        baseline_sample = np.random.normal(baseline_mean, baseline_std, 1000)
+        ks_stat, p_value = stats.ks_2samp(baseline_sample, col_data.values)
 
-    # Try KS-test when baseline samples are provided
-    if isinstance(baseline_stats, dict):
-        baseline_cols = baseline_stats.get('columns', {}) or baseline_stats.get('cols', {})
-        from scipy.stats import ks_2samp
+        drift_report.append({
+            'column': col,
+            'ks_statistic': float(ks_stat),
+            'p_value': float(p_value),
+            'drift_detected': bool(p_value < 0.05),
+            'severity': 'High' if p_value < 0.01 else ('Medium' if p_value < 0.05 else 'None'),
+            'current_mean': float(col_data.mean()),
+            'baseline_mean': baseline_mean,
+            'mean_shift': float(abs(col_data.mean() - baseline_mean))
+        })
 
-        for col in numeric_cols:
-            current_series = df[col].dropna().astype(float)
-            if current_series.shape[0] < 30:
-                continue
+    drift_report.sort(key=lambda x: x['ks_statistic'], reverse=True)
+    return jsonify({
+        'drift_report': drift_report,
+        'drift_columns': [d['column'] for d in drift_report if d['drift_detected']],
+        'overall_drift': any(d['drift_detected'] for d in drift_report)
+    })
 
-            base_obj = baseline_cols.get(col, {})
-            base_values = base_obj.get('sample') or base_obj.get('values')
 
-            if not isinstance(base_values, list) or len(base_values) < 30:
-                continue
+@bp.route('/api/pipeline_dag', methods=['GET'])
+def pipeline_dag():
+    """Return a visual DAG of the current processing pipeline."""
+    dataset_id = session.get('dataset_id')
+    cleaning_log = session.get('cleaning_log', [])
 
-            base_arr = pd.Series(base_values).dropna().astype(float)
-            if base_arr.shape[0] < 30:
-                continue
+    nodes = [{'id': 'raw_data', 'label': '📁 Raw Data', 'type': 'input'}]
+    edges = []
+    prev_id = 'raw_data'
 
-            # subsample for speed
-            if len(base_arr) > 2000:
-                base_arr = base_arr.sample(2000, random_state=42)
-            if len(current_series) > 2000:
-                current_series = current_series.sample(2000, random_state=42)
+    for i, step in enumerate(cleaning_log):
+        node_id = f'step_{i}'
+        nodes.append({'id': node_id, 'label': step, 'type': 'transform'})
+        edges.append({'from': prev_id, 'to': node_id})
+        prev_id = node_id
 
-            res = ks_2samp(base_arr.values, current_series.values, alternative='two-sided', mode='auto')
-            # res.pvalue small => drift
-            if res.pvalue <= 0.05:
-                drift_report['column_drifts'][col] = {
-                    'drift_detected': True,
-                    'test': 'ks_2samp',
-                    'ks_statistic': float(res.statistic),
-                    'p_value': float(res.pvalue),
-                    'current_mean': float(current_series.mean()),
-                    'baseline_mean': float(base_arr.mean()),
-                }
-                drift_report['overall_drift'] = True
+    if prev_id != 'raw_data':
+        nodes.append({'id': 'clean_data', 'label': '✅ Cleaned Data', 'type': 'output'})
+        edges.append({'from': prev_id, 'to': 'clean_data'})
 
-    # Fallback heuristic when baseline not provided or KS didn't flag
-    if not drift_report['overall_drift']:
-        for col in numeric_cols:
-            mean_val = df[col].mean()
-            std_val = df[col].std()
-            if pd.isna(mean_val) or pd.isna(std_val):
-                continue
+    return jsonify({'nodes': nodes, 'edges': edges})
 
-            # Simple heuristic: std very high relative to mean
-            if std_val > abs(mean_val) * 2:
-                drift_report['column_drifts'][col] = {
-                    'drift_detected': True,
-                    'test': 'mean/std heuristic',
-                    'mean': float(mean_val),
-                    'std': float(std_val),
-                    'severity': 'high' if std_val > abs(mean_val) * 3 else 'medium'
-                }
-                drift_report['overall_drift'] = True
 
-    if drift_report['overall_drift']:
-        drift_report['recommendations'].append(
-            "Data drift detected. Consider retraining your model with recent data."
-        )
+@bp.route('/api/ab_test', methods=['POST'])
+def ab_test():
+    """Statistical comparison of two registered models."""
+    data = request.json or {}
+    model_a_id = data.get('model_a')
+    model_b_id = data.get('model_b')
+    metric = data.get('metric', 'accuracy')
 
-    return jsonify(drift_report)
+    exps = list_exp_from_db()
+    model_a = next((e for e in exps if e['id'] == model_a_id), None)
+    model_b = next((e for e in exps if e['id'] == model_b_id), None)
+
+    if not model_a or not model_b:
+        return jsonify({'error': 'One or both model experiments not found'}), 404
+
+    metrics_a = json.loads(model_a['metrics']) if isinstance(model_a['metrics'], str) else model_a['metrics']
+    metrics_b = json.loads(model_b['metrics']) if isinstance(model_b['metrics'], str) else model_b['metrics']
+
+    score_a = metrics_a.get(metric, 0)
+    score_b = metrics_b.get(metric, 0)
+    winner = 'A' if score_a > score_b else ('B' if score_b > score_a else 'Tie')
+    improvement = abs(score_a - score_b) / max(score_a, score_b, 1e-9) * 100
+
+    return jsonify({
+        'model_a': {'id': model_a_id, 'name': model_a['name'], 'score': score_a},
+        'model_b': {'id': model_b_id, 'name': model_b['name'], 'score': score_b},
+        'metric': metric,
+        'winner': winner,
+        'improvement_pct': round(improvement, 2)
+    })
 
 
 @bp.route('/api/generate_api', methods=['POST'])

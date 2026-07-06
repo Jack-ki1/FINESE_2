@@ -193,6 +193,52 @@
                     </div>
                 </div>
 
+                <!-- Hypothesis Test with Column Selectors -->
+                <div class="card mb-3 border-secondary">
+                    <div class="card-header bg-light">
+                        <strong>🧪 Hypothesis Testing</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Test Type</label>
+                                <select class="form-select" id="hypTestType">
+                                    <option value="1">T-Test (Compare 2 groups)</option>
+                                    <option value="2">ANOVA (Compare 3+ groups)</option>
+                                    <option value="3">Chi-Square (Categorical)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Column 1</label>
+                                <select class="form-select" id="hypCol1"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Column 2 / Group</label>
+                                <select class="form-select" id="hypCol2"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-info w-100" onclick="runHypothesisTest()">
+                                    Run Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auto Insights Button -->
+                <div class="mb-3">
+                    <button class="btn btn-purple w-100" onclick="loadAutoInsights()">
+                        💡 Auto-Discover Insights
+                    </button>
+                </div>
+
+                <!-- AI EDA Report Button -->
+                <div class="mb-3">
+                    <button class="btn btn-gradient w-100" onclick="generateAIReport()">
+                        🤖 Generate AI EDA Report
+                    </button>
+                </div>
+
                 <div id="statResults"></div>
             </div>
         </div>
@@ -248,6 +294,7 @@
 
 {% block scripts %}
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => { loadDatasetInfo(); loadProfile(); });
 
@@ -622,6 +669,173 @@ async function generateStatSummary() {
         showToast('Summary generation failed', 'error');
     }
 }
+
+// Load column selectors for hypothesis tests
+async function loadHypothesisColumns() {
+    try {
+        const res = await fetch('/review/api/profile');
+        const data = await res.json();
+        
+        const numericCols = [];
+        const categoricalCols = [];
+        
+        Object.entries(data.dtypes).forEach(([col, dtype]) => {
+            if (dtype.includes('int') || dtype.includes('float')) {
+                numericCols.push(col);
+            } else if (dtype.includes('object') || dtype.includes('category')) {
+                categoricalCols.push(col);
+            }
+        });
+        
+        const col1Select = document.getElementById('hypCol1');
+        const col2Select = document.getElementById('hypCol2');
+        
+        // Populate with numeric columns by default
+        col1Select.innerHTML = numericCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        col2Select.innerHTML = numericCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        // Update on test type change
+        document.getElementById('hypTestType').addEventListener('change', (e) => {
+            const testType = e.target.value;
+            if (testType === '3') {
+                // Chi-square needs categorical columns
+                col1Select.innerHTML = categoricalCols.map(c => `<option value="${c}">${c}</option>`).join('');
+                col2Select.innerHTML = categoricalCols.map(c => `<option value="${c}">${c}</option>`).join('');
+            } else {
+                // T-test and ANOVA need numeric columns
+                col1Select.innerHTML = numericCols.map(c => `<option value="${c}">${c}</option>`).join('');
+                col2Select.innerHTML = numericCols.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+        });
+        
+    } catch (e) {
+        console.error('Failed to load hypothesis columns:', e);
+    }
+}
+
+// Run hypothesis test with user-selected columns
+async function runHypothesisTest() {
+    try {
+        const testType = document.getElementById('hypTestType').value;
+        const col1 = document.getElementById('hypCol1').value;
+        const col2 = document.getElementById('hypCol2').value;
+        
+        const res = await fetch('/review/api/statistics/hypothesis', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                test_type: testType,
+                col1: col1,
+                col2: col2
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        let html = `<h6 class="mb-3 mt-4">${data.test_name} Results</h6>`;
+        html += `<p><strong>Columns:</strong> ${data.columns.join(', ')}</p>`;
+        html += `<table class="table table-sm"><thead><tr><th>Statistic</th><th>P-value</th><th>Significant?</th></tr></thead><tbody>`;
+        html += `
+            <tr>
+                <td>${data.statistic.toFixed(4)}</td>
+                <td>${data.p_value.toFixed(6)}</td>
+                <td><span class="badge ${data.significant ? 'badge-success' : 'badge-warning'}">${data.significant ? 'Yes (p < 0.05)' : 'No (p ≥ 0.05)'}</span></td>
+            </tr>
+        `;
+        html += '</tbody></table>';
+        
+        document.getElementById('statResults').innerHTML = html;
+        showToast('Hypothesis test complete', 'success');
+    } catch (e) {
+        showToast('Hypothesis test failed', 'error');
+    }
+}
+
+// Load auto-insights
+async function loadAutoInsights() {
+    try {
+        const res = await fetch('/review/api/auto_insights');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        if (data.insights.length === 0) {
+            showToast('No significant insights found', 'info');
+            return;
+        }
+        
+        let html = '<div class="card mb-3 border-purple"><div class="card-header bg-purple-light"><strong>💡 Auto-Discovered Insights</strong></div><div class="card-body">';
+        
+        data.insights.forEach(insight => {
+            const alertClass = insight.type === 'warning' ? 'alert-warning' : 'alert-info';
+            html += `
+                <div class="alert ${alertClass} mb-2">
+                    <strong>${insight.icon} ${insight.title}</strong>
+                    <p class="mb-1">${insight.detail}</p>
+                    <small class="text-muted">${insight.action}</small>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+        document.getElementById('statResults').innerHTML = html;
+        showToast(`Found ${data.total} insights`, 'success');
+    } catch (e) {
+        showToast('Failed to load insights', 'error');
+    }
+}
+
+// Generate AI EDA Report
+async function generateAIReport() {
+    try {
+        showToast('Generating AI report... This may take a moment.', 'info');
+        
+        const res = await fetch('/review/api/ai_eda_report', {
+            method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Display markdown report in a modal or new section
+        const div = document.createElement('div');
+        div.className = 'card mb-3 border-gradient';
+        div.innerHTML = `
+            <div class="card-header bg-gradient-primary text-white">
+                <strong>🤖 AI-Generated EDA Report</strong>
+            </div>
+            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                <div class="markdown-content">${marked.parse(data.report)}</div>
+            </div>
+        `;
+        
+        document.getElementById('statResults').innerHTML = '';
+        document.getElementById('statResults').appendChild(div);
+        showToast('AI report generated successfully!', 'success');
+    } catch (e) {
+        showToast('Failed to generate AI report', 'error');
+    }
+}
+
+// Call loadHypothesisColumns after profile loads
+document.addEventListener('DOMContentLoaded', () => { 
+    loadDatasetInfo(); 
+    loadProfile().then(() => {
+        loadHypothesisColumns();
+    });
+});
 
 </script>
 {% endblock %}

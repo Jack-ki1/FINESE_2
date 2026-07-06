@@ -1,6 +1,8 @@
 import os
 from flask import Flask, render_template, session
 from flask_session import Session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import state
 from config import Config
 from core.dataset_store import DatasetStore
@@ -13,6 +15,15 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config.from_object(Config())
 
 Session(app)
+
+# Initialize rate limiter
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per minute"],
+    storage_uri="memory://"
+)
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('static/exports', exist_ok=True)
 os.makedirs('static/reports', exist_ok=True)

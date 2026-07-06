@@ -76,6 +76,8 @@
                                 <option value="median">Fill with Median</option>
                                 <option value="mode">Fill with Mode</option>
                                 <option value="zero">Fill with Zero</option>
+                                <option value="knn">KNN Imputation (Advanced)</option>
+                                <option value="mice">MICE Imputation (Advanced)</option>
                             </select>
                         </div>
                     </div>
@@ -113,6 +115,20 @@
                             🧪 Data Quality Score & Recommendations
                         </button>
                     </div>
+                </div>
+
+                <!-- Undo Button -->
+                <div class="mb-3">
+                    <button class="btn btn-warning w-100" onclick="undoLastOperation()">
+                        ↩️ Undo Last Operation
+                    </button>
+                </div>
+
+                <!-- Export Recipe Button -->
+                <div class="mb-3">
+                    <button class="btn btn-success w-100" onclick="exportRecipe()">
+                        📥 Download Cleaning Recipe (Python Script)
+                    </button>
                 </div>
 
                 
@@ -199,6 +215,110 @@
                     </div>
                     <div class="col-3">
                         <button class="btn btn-primary w-100" onclick="applyCustomTransform()">Apply Transform</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Column Operations Panel -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+                Advanced Column Operations
+            </div>
+            <div class="card-body">
+                <!-- Column Rename/Drop/Reorder -->
+                <h6 class="mb-2">📝 Column Management</h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Operation</label>
+                        <select class="form-select" id="colOpType">
+                            <option value="rename">Rename Column</option>
+                            <option value="drop">Drop Column</option>
+                            <option value="reorder">Reorder Columns</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Column</label>
+                        <select class="form-select" id="colOpColumn"></select>
+                    </div>
+                    <div class="col-md-3" id="colOpNewNameContainer">
+                        <label class="form-label">New Name</label>
+                        <input type="text" class="form-control" id="colOpNewName" placeholder="Enter new name">
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" onclick="applyColumnOp()">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Text Operations -->
+                <h6 class="mb-2 mt-4">🔤 Text/String Operations</h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Text Column</label>
+                        <select class="form-select" id="textOpColumn"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Operation</label>
+                        <select class="form-select" id="textOpType">
+                            <option value="strip">Strip Whitespace</option>
+                            <option value="lower">Lowercase</option>
+                            <option value="upper">Uppercase</option>
+                            <option value="regex_replace">Regex Replace</option>
+                            <option value="extract">Extract Pattern</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Pattern (optional)</label>
+                        <input type="text" class="form-control" id="textOpPattern" placeholder="e.g., \\s+">
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-info w-100" onclick="applyTextOp()">Apply Text Op</button>
+                    </div>
+                </div>
+
+                <!-- Binning/Discretization -->
+                <h6 class="mb-2 mt-4">📊 Binning / Discretization</h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Numeric Column</label>
+                        <select class="form-select" id="binColumn"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Method</label>
+                        <select class="form-select" id="binMethod">
+                            <option value="equal_width">Equal Width</option>
+                            <option value="quantile">Quantile</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Number of Bins</label>
+                        <input type="number" class="form-control" id="binCount" value="5" min="2" max="20">
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-warning w-100" onclick="applyBinning()">Apply Binning</button>
+                    </div>
+                </div>
+
+                <!-- Categorical Encoding -->
+                <h6 class="mb-2 mt-4">🔢 Categorical Encoding</h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Categorical Column</label>
+                        <select class="form-select" id="encodeColumn"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Encoding Method</label>
+                        <select class="form-select" id="encodeMethod">
+                            <option value="label">Label Encoding</option>
+                            <option value="onehot">One-Hot Encoding</option>
+                            <option value="ordinal">Ordinal Encoding</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-purple w-100" onclick="applyEncoding()">Apply Encoding</button>
                     </div>
                 </div>
             </div>
@@ -800,15 +920,240 @@ async function showMissingnessMatrix() {
         `;
         document.getElementById('cleaningDashboard').appendChild(div);
         
+        // Render heatmap using Plotly
         const fig = JSON.parse(data.chart);
         Plotly.newPlot('missingViz', fig.data, fig.layout, {responsive: true});
         
-        div.scrollIntoView({ behavior: 'smooth' });
-        showToast('Missing data matrix generated', 'success');
+        showToast('Missing data matrix displayed', 'success');
     } catch (e) {
-        showToast('Failed to generate missing data viz', 'error');
+        showToast('Failed to load missing data matrix', 'error');
     }
 }
+
+// Undo last operation
+async function undoLastOperation() {
+    try {
+        const res = await fetch('/cleaning/api/undo', {
+            method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Undo', `Restored: ${data.restored_version}`);
+        showToast(`✅ Operation undone! Restored to: ${data.restored_version}`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Undo failed', 'error');
+    }
+}
+
+// Export cleaning recipe as Python script
+async function exportRecipe() {
+    try {
+        window.location.href = '/cleaning/api/export_recipe';
+        showToast('📥 Downloading cleaning recipe...', 'success');
+    } catch (e) {
+        showToast('Export failed', 'error');
+    }
+}
+
+// Column Operations (rename, drop, reorder)
+async function applyColumnOp() {
+    const op = document.getElementById('colOpType').value;
+    const column = document.getElementById('colOpColumn').value;
+    const newName = document.getElementById('colOpNewName').value;
+    
+    try {
+        const res = await fetch('/cleaning/api/column_ops', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                op: op,
+                old_name: column,
+                new_name: newName || undefined
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Column Op', `${op}: ${column}`);
+        showToast(`✅ Column operation applied!`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Column operation failed', 'error');
+    }
+}
+
+// Text Operations
+async function applyTextOp() {
+    const column = document.getElementById('textOpColumn').value;
+    const op = document.getElementById('textOpType').value;
+    const pattern = document.getElementById('textOpPattern').value;
+    
+    try {
+        const res = await fetch('/cleaning/api/text_ops', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                column: column,
+                op: op,
+                pattern: pattern || null,
+                replacement: ''
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Text Op', `${column}: ${op}`);
+        showToast(`✅ Text operation applied!`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Text operation failed', 'error');
+    }
+}
+
+// Binning/Discretization
+async function applyBinning() {
+    const column = document.getElementById('binColumn').value;
+    const method = document.getElementById('binMethod').value;
+    const nBins = parseInt(document.getElementById('binCount').value);
+    
+    try {
+        const res = await fetch('/cleaning/api/bin_column', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                column: column,
+                method: method,
+                n_bins: nBins
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Binning', `${column}: ${method} (${nBins} bins)`);
+        showToast(`✅ Binning applied! Created ${data.new_column}`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Binning failed', 'error');
+    }
+}
+
+// Categorical Encoding
+async function applyEncoding() {
+    const column = document.getElementById('encodeColumn').value;
+    const method = document.getElementById('encodeMethod').value;
+    
+    try {
+        const res = await fetch('/cleaning/api/encode', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                column: column,
+                method: method
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        addToHistory('Encoding', `${column}: ${method}`);
+        showToast(`✅ Encoding applied! Method: ${method}`, 'success');
+        
+        setTimeout(() => {
+            loadDatasetInfo();
+            analyzeCleaning();
+        }, 500);
+        
+    } catch (e) {
+        showToast('Encoding failed', 'error');
+    }
+}
+
+// Populate column selectors for advanced operations
+function populateAdvancedOpColumns() {
+    const infoRes = fetch('/api/data/info').then(r => r.json());
+    const profileRes = fetch('/review/api/profile').then(r => r.json());
+    
+    Promise.all([infoRes, profileRes]).then(([infoData, profileData]) => {
+        if (!infoData.loaded) return;
+        
+        const dtypes = profileData.dtypes || {};
+        const numericCols = Object.entries(dtypes).filter(([_, dtype]) => 
+            dtype.includes('int') || dtype.includes('float')
+        ).map(([col]) => col);
+        
+        const categoricalCols = Object.entries(dtypes).filter(([_, dtype]) => 
+            dtype.includes('object') || dtype.includes('category')
+        ).map(([col]) => col);
+        
+        const allCols = Object.keys(dtypes);
+        
+        // Populate column operation selector
+        document.getElementById('colOpColumn').innerHTML = allCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        // Populate text operation selector
+        document.getElementById('textOpColumn').innerHTML = categoricalCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        // Populate binning selector
+        document.getElementById('binColumn').innerHTML = numericCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        // Populate encoding selector
+        document.getElementById('encodeColumn').innerHTML = categoricalCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+    }).catch(err => console.error('Failed to populate columns:', err));
+}
+
+// Call populateAdvancedOpColumns after analysis
+const originalAnalyzeCleaning = analyzeCleaning;
+analyzeCleaning = async function() {
+    await originalAnalyzeCleaning();
+    populateAdvancedOpColumns();
+};
 
 </script>
 {% endblock %}

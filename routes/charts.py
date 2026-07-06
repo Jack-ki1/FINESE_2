@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, jsonify, request, current_app
+from flask import Blueprint, render_template, session, jsonify, request, current_app, send_file
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -6,6 +6,7 @@ import plotly.utils
 import plotly.io as pio
 import json
 import numpy as np
+import io
 
 
 
@@ -203,6 +204,57 @@ def build_chart():
                 )
                 fig = go.Figure(data=edge_traces + [node_trace])
                 fig.update_layout(template='plotly_white', title=f'Correlation Network (|r| >= {threshold})', height=600, xaxis_visible=False, yaxis_visible=False)
+
+        # --- Additional advanced chart types from audit ---
+        elif chart_type == 'waterfall':
+            if x and y:
+                fig = go.Figure(go.Waterfall(
+                    name='Waterfall', orientation='v',
+                    x=df[x].tolist(), y=df[y].tolist(),
+                    connector={'line': {'color': 'rgb(63, 63, 63)'}}
+                ))
+                fig.update_layout(template='plotly_white', showlegend=False, title='Waterfall Chart')
+            else:
+                return jsonify({'error': 'X and Y required for waterfall'}), 400
+
+        elif chart_type == 'sankey':
+            # Requires source, target, value columns
+            source_col = cfg.get('source')
+            target_col = cfg.get('target')
+            value_col = cfg.get('value')
+            if source_col and target_col and value_col:
+                all_nodes = list(pd.concat([df[source_col], df[target_col]]).unique())
+                node_map = {n: i for i, n in enumerate(all_nodes)}
+                fig = go.Figure(go.Sankey(
+                    node=dict(label=all_nodes),
+                    link=dict(
+                        source=df[source_col].map(node_map).tolist(),
+                        target=df[target_col].map(node_map).tolist(),
+                        value=df[value_col].tolist()
+                    )
+                ))
+                fig.update_layout(template='plotly_white', title='Sankey Diagram')
+            else:
+                return jsonify({'error': 'source, target, value columns required'}), 400
+
+        elif chart_type == 'scatter_3d':
+            z = cfg.get('z')
+            if x and y and z:
+                fig = px.scatter_3d(df, x=x, y=y, z=z, color=color, template='plotly_white',
+                                  title='3D Scatter Plot')
+            else:
+                return jsonify({'error': 'X, Y, Z required for 3D scatter'}), 400
+
+        elif chart_type == 'timeline':
+            start_col = cfg.get('start')
+            end_col = cfg.get('end')
+            name_col = cfg.get('name_col', x)
+            if start_col and end_col and name_col:
+                fig = px.timeline(df, x_start=start_col, x_end=end_col,
+                                y=name_col, color=color, template='plotly_white',
+                                title='Timeline/Gantt Chart')
+            else:
+                return jsonify({'error': 'start, end, name_col required for timeline'}), 400
 
         else: 
             fig = px.bar(df, x=x, y=y, template='plotly_white')
@@ -590,3 +642,37 @@ def quick_summary():
             continue
     
     return jsonify({'plots': plots, 'count': len(plots)})
+
+@bp.route('/api/export_chart', methods=['POST'])
+def export_chart():
+    """Export chart as PNG, SVG, or HTML."""
+    cfg = request.json
+    chart_json = cfg.get('chart_json')
+    format_ = cfg.get('format', 'png')  # png | svg | html
+
+    if not chart_json:
+        return jsonify({'error': 'No chart JSON provided'}), 400
+
+    import plotly.io as pio
+    fig = pio.from_json(chart_json)
+
+    buf = io.BytesIO()
+    if format_ == 'png':
+        img_bytes = fig.to_image(format='png', width=1200, height=700, scale=2)
+        buf.write(img_bytes)
+        buf.seek(0)
+        return send_file(buf, mimetype='image/png',
+                         download_name='chart.png', as_attachment=True)
+    elif format_ == 'svg':
+        img_bytes = fig.to_image(format='svg')
+        buf.write(img_bytes)
+        buf.seek(0)
+        return send_file(buf, mimetype='image/svg+xml',
+                         download_name='chart.svg', as_attachment=True)
+    elif format_ == 'html':
+        html_str = fig.to_html(full_html=True, include_plotlyjs='cdn')
+        buf.write(html_str.encode('utf-8'))
+        buf.seek(0)
+        return send_file(buf, mimetype='text/html',
+                         download_name='chart.html', as_attachment=True)
+    return jsonify({'error': 'Unsupported format'}), 400

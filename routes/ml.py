@@ -27,6 +27,8 @@ bp = Blueprint('ml', __name__)
 jobs = {}
 
 # Model registry for storing trained models
+# fix this issue please: from core.model_registry import model_registry
+
 model_registry = {}
 
 def get_scaler(scaler_type='standard'):
