@@ -150,7 +150,7 @@ async function loadMLOpsData() {
             `).join('');
         }
         
-        // Display experiments
+        // Display experiments with enhanced comparison view
         if (experiments && experiments.length > 0) {
             document.getElementById('experimentsTable').innerHTML = experiments.map(e => `
                 <tr>
@@ -162,9 +162,142 @@ async function loadMLOpsData() {
                     <td><span class="badge badge-${e.status === 'completed' ? 'success' : 'warning'}">${e.status}</span></td>
                 </tr>
             `).join('');
+            
+            // Load session experiments for comparison dashboard
+            loadSessionExperiments();
         }
     } catch (e) {
         console.error('Failed to load MLOps data:', e);
+    }
+}
+
+async function loadSessionExperiments() {
+    try {
+        const res = await fetch('/mlops/api/experiments/session');
+        const data = await res.json();
+        
+        if (data.experiments && data.experiments.length > 0) {
+            renderExperimentDashboard(data.experiments);
+        }
+    } catch (e) {
+        console.error('Failed to load session experiments:', e);
+    }
+}
+
+function renderExperimentDashboard(experiments) {
+    // Create experiment comparison table
+    const metricCols = Object.keys(experiments[0].metrics || {});
+    
+    let tableHTML = `
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>🧪 Experiment Comparison Dashboard (${experiments.length} runs)</span>
+                <button class="btn btn-sm btn-danger" onclick="clearAllExperiments()">Clear All</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Run ID</th>
+                            <th>Model</th>
+                            <th>Type</th>
+                            <th>Features</th>
+                            ${metricCols.map(m => `<th>${m.toUpperCase()}</th>`).join('')}
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    // Find best values for highlighting
+    const bestValues = {};
+    metricCols.forEach(metric => {
+        const values = experiments.map(e => e.metrics[metric]).filter(v => v !== undefined && v !== null);
+        if (values.length > 0) {
+            bestValues[metric] = Math.max(...values);
+        }
+    });
+    
+    experiments.forEach(exp => {
+        tableHTML += `
+            <tr>
+                <td><code>${exp.run_id}</code></td>
+                <td><strong>${exp.model}</strong></td>
+                <td><span class="badge badge-info">${exp.problem_type}</span></td>
+                <td>${exp.n_features}</td>
+                ${metricCols.map(metric => {
+                    const value = exp.metrics[metric];
+                    const isBest = value === bestValues[metric];
+                    const style = isBest ? 'background-color: #d1fae5; font-weight: bold;' : '';
+                    return `<td style="${style}">${value !== undefined ? value.toFixed(4) : 'N/A'}</td>`;
+                }).join('')}
+                <td>${new Date(exp.timestamp).toLocaleTimeString()}</td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the deployment card
+    const deployCard = document.querySelector('.card:last-child');
+    deployCard.insertAdjacentHTML('beforebegin', tableHTML);
+    
+    // Add comparison chart if multiple experiments
+    if (experiments.length > 1 && metricCols.length > 0) {
+        renderComparisonChart(experiments, metricCols[0]);
+    }
+}
+
+function renderComparisonChart(experiments, selectedMetric) {
+    const chartData = experiments.map(exp => ({
+        run_id: exp.run_id,
+        model: exp.model,
+        value: exp.metrics[selectedMetric]
+    })).filter(d => d.value !== undefined);
+    
+    if (chartData.length === 0) return;
+    
+    fetch('/mlops/api/compare_experiments', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            experiment_ids: experiments.map(e => e.run_id),
+            metrics: [selectedMetric]
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.comparison_chart) {
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'card mb-4';
+            chartDiv.innerHTML = `
+                <div class="card-header">📊 Metric Comparison: ${selectedMetric.toUpperCase()}</div>
+                <div class="card-body">
+                    <div id="comparisonChart"></div>
+                </div>
+            `;
+            
+            const deployCard = document.querySelector('.card:last-child');
+            deployCard.insertAdjacentElement('beforebegin', chartDiv);
+            
+            Plotly.newPlot('comparisonChart', 
+                data.comparison_chart.data, 
+                data.comparison_chart.layout
+            );
+        }
+    })
+    .catch(err => console.error('Failed to render comparison chart:', err));
+}
+
+function clearAllExperiments() {
+    if (confirm('Are you sure you want to clear all experiments?')) {
+        fetch('/mlops/api/experiments/clear', {method: 'POST'})
+            .then(() => location.reload());
     }
 }
 

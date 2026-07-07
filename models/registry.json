@@ -1,0 +1,226 @@
+{
+  "fd033d95-872e-4a9b-9774-ae8381654a4f": {
+    "id": "fd033d95-872e-4a9b-9774-ae8381654a4f",
+    "name": "LogisticRegression_churn_20260707_120330",
+    "type": "LogisticRegression (classification)",
+    "metrics": {
+      "accuracy": 0.92,
+      "precision_weighted": 0.92,
+      "recall_weighted": 0.92,
+      "f1_weighted": 0.92,
+      "confusion_matrix": [
+        [
+          142,
+          8
+        ],
+        [
+          8,
+          42
+        ]
+      ]
+    },
+    "hyperparameters": {
+      "algorithm": "LogisticRegression",
+      "task": "classification",
+      "test_size": 0.2,
+      "enable_cv": true,
+      "cv_folds": 5,
+      "n_samples": 1000,
+      "n_features": 10,
+      "target_column": "churn"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T12:03:30.432329",
+    "status": "registered"
+  },
+  "4e96b6be-89df-412f-a72d-399a4a80fd4a": {
+    "id": "4e96b6be-89df-412f-a72d-399a4a80fd4a",
+    "name": "LogisticRegression_churn_20260707_120432",
+    "type": "LogisticRegression (classification)",
+    "metrics": {
+      "accuracy": 0.93,
+      "precision_weighted": 0.93,
+      "recall_weighted": 0.93,
+      "f1_weighted": 0.93,
+      "roc_auc": 0.5,
+      "confusion_matrix": [
+        [
+          143,
+          7
+        ],
+        [
+          7,
+          43
+        ]
+      ]
+    },
+    "hyperparameters": {
+      "algorithm": "LogisticRegression",
+      "task": "classification",
+      "test_size": 0.2,
+      "enable_cv": false,
+      "cv_folds": null,
+      "n_samples": 1000,
+      "n_features": 8,
+      "target_column": "churn"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T12:04:32.526815",
+    "status": "registered"
+  },
+  "4c05870c-84af-4dea-8715-7269576bf143": {
+    "id": "4c05870c-84af-4dea-8715-7269576bf143",
+    "name": "KNN_age_20260707_120544",
+    "type": "KNN (regression)",
+    "metrics": {
+      "mse": 601.845,
+      "rmse": 24.53252942523457,
+      "mae": 19.955,
+      "r2": -1.3332977950084808,
+      "mape": 0.4413056993324494
+    },
+    "hyperparameters": {
+      "algorithm": "KNN",
+      "task": "regression",
+      "test_size": 0.2,
+      "enable_cv": false,
+      "cv_folds": null,
+      "n_samples": 1000,
+      "n_features": 10,
+      "target_column": "age"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T12:05:44.482807",
+    "status": "registered"
+  },
+  "d2739436-ec04-47f7-afcc-bf8b454e8116": {
+    "id": "d2739436-ec04-47f7-afcc-bf8b454e8116",
+    "name": "KNN_age_20260707_120746",
+    "type": "KNN (regression)",
+    "metrics": {
+      "mse": 601.845,
+      "rmse": 24.53252942523457,
+      "mae": 19.955,
+      "r2": -1.3332977950084808,
+      "mape": 0.4413056993324494
+    },
+    "hyperparameters": {
+      "algorithm": "KNN",
+      "task": "regression",
+      "test_size": 0.2,
+      "enable_cv": false,
+      "cv_folds": null,
+      "n_samples": 1000,
+      "n_features": 10,
+      "target_column": "age"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T12:07:46.457276",
+    "status": "registered"
+  },
+  "c5c927b2-fd56-43be-9935-14dedc7c3aab": {
+    "id": "c5c927b2-fd56-43be-9935-14dedc7c3aab",
+    "name": "LogisticRegression_churn_20260707_122047",
+    "type": "LogisticRegression (classification)",
+    "metrics": {
+      "accuracy": 0.93,
+      "precision_weighted": 0.93,
+      "recall_weighted": 0.93,
+      "f1_weighted": 0.93,
+      "roc_auc": 0.5,
+      "confusion_matrix": [
+        [
+          143,
+          7
+        ],
+        [
+          7,
+          43
+        ]
+      ]
+    },
+    "hyperparameters": {
+      "algorithm": "LogisticRegression",
+      "task": "classification",
+      "test_size": 0.2,
+      "enable_cv": true,
+      "cv_folds": 5,
+      "n_samples": 1000,
+      "n_features": 8,
+      "target_column": "churn"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T12:20:47.375060",
+    "status": "registered"
+  },
+  "1bd5b8a4-bb13-4f60-8ed4-100256ade0f0": {
+    "id": "1bd5b8a4-bb13-4f60-8ed4-100256ade0f0",
+    "name": "LogisticRegression_churn_20260707_122542",
+    "type": "LogisticRegression (classification)",
+    "metrics": {
+      "accuracy": 0.93,
+      "precision_weighted": 0.93,
+      "recall_weighted": 0.93,
+      "f1_weighted": 0.93,
+      "roc_auc": 0.5,
+      "confusion_matrix": [
+        [
+          143,
+          7
+        ],
+        [
+          7,
+          43
+        ]
+      ]
+    },
+    "hyperparameters": {
+      "algorithm": "LogisticRegression",
+      "task": "classification",
+      "test_size": 0.2,
+      "enable_cv": false,
+      "cv_folds": null,
+      "n_samples": 1000,
+      "n_features": 8,
+      "target_column": "churn"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T12:25:42.867789",
+    "status": "registered"
+  },
+  "96171bda-b5b2-4cb3-98d4-378c01dd2a85": {
+    "id": "96171bda-b5b2-4cb3-98d4-378c01dd2a85",
+    "name": "LogisticRegression_churn_20260707_130622",
+    "type": "LogisticRegression (classification)",
+    "metrics": {
+      "accuracy": 0.93,
+      "precision_weighted": 0.93,
+      "recall_weighted": 0.93,
+      "f1_weighted": 0.93,
+      "roc_auc": 0.5,
+      "confusion_matrix": [
+        [
+          143,
+          7
+        ],
+        [
+          7,
+          43
+        ]
+      ]
+    },
+    "hyperparameters": {
+      "algorithm": "LogisticRegression",
+      "task": "classification",
+      "test_size": 0.2,
+      "enable_cv": false,
+      "cv_folds": null,
+      "n_samples": 1000,
+      "n_features": 8,
+      "target_column": "churn"
+    },
+    "version": "1.0",
+    "created_at": "2026-07-07T13:06:22.625977",
+    "status": "registered"
+  }
+}

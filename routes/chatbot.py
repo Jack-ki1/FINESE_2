@@ -140,10 +140,50 @@ def ask():
             
             reply += f"\n**Total outliers detected:** {total_outliers:,}"
             
+    elif 'unique' in msg or 'distinct' in msg:
+        reply = f"🔢 **Unique Values per Column:**\n\n"
+        unique_counts = df.nunique(dropna=False).sort_values(ascending=False)
+        
+        for col, count in unique_counts.head(10).items():
+            pct = (count / len(df)) * 100
+            reply += f"• `{col}`: {count:,} unique ({pct:.1f}%)\n"
+        
+        if len(unique_counts) > 10:
+            reply += f"\n... and {len(unique_counts) - 10} more columns"
+            
+    elif 'top' in msg or 'highest' in msg or 'largest' in msg:
+        # Try to identify numeric column and show top values
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            # Extract column name from message if specified
+            target_col = None
+            for col in numeric_cols:
+                if col.lower() in msg:
+                    target_col = col
+                    break
+            
+            if not target_col:
+                target_col = numeric_cols[0]
+            
+            top_n = 5
+            if 'top 10' in msg:
+                top_n = 10
+            elif 'top 3' in msg:
+                top_n = 3
+            
+            sorted_df = df.nlargest(top_n, target_col)
+            reply = f"🏆 **Top {top_n} by `{target_col}`:**\n\n"
+            
+            for idx, row in sorted_df.iterrows():
+                reply += f"{idx+1}. {row[target_col]:,.2f}\n"
+        else:
+            reply = "No numeric columns to find top values."
+            
     else:
         # Generic response or try to use AI if API key configured
         api_key = session.get('api_key')
         provider = session.get('ai_provider', 'openai')
+        model_name = session.get('llm_model', '')
         
         if api_key:
             # Try to use actual AI API
@@ -155,13 +195,15 @@ def ask():
                     context = f"Dataset '{name}' has {len(df)} rows and {len(df.columns)} columns.\n"
                     context += f"Columns: {', '.join(df.columns.tolist()[:10])}"
                     
+                    model_to_use = model_name if model_name else "gpt-3.5-turbo"
+                    
                     response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
+                        model=model_to_use,
                         messages=[
                             {"role": "system", "content": f"You are a data analyst assistant. Context: {context}"},
                             {"role": "user", "content": msg}
                         ],
-                        max_tokens=200
+                        max_tokens=300
                     )
                     reply = response.choices[0].message.content
                     
@@ -171,9 +213,11 @@ def ask():
                     
                     context = f"Dataset has {len(df)} rows, {len(df.columns)} columns"
                     
+                    model_to_use = model_name if model_name else "claude-3-haiku-20240307"
+                    
                     response = client.messages.create(
-                        model="claude-haiku-4-5-20251001",
-                        max_tokens=200,
+                        model=model_to_use,
+                        max_tokens=300,
                         system=f"Data analyst assistant. Context: {context}",
                         messages=[{"role": "user", "content": msg}]
                     )
@@ -183,7 +227,9 @@ def ask():
                     import google.generativeai as genai
                     genai.configure(api_key=api_key)
                     
-                    model = genai.GenerativeModel('gemini-2.0-flash')
+                    model_to_use = model_name if model_name else 'gemini-2.0-flash'
+                    model = genai.GenerativeModel(model_to_use)
+                    
                     context = f"Dataset: {len(df)} rows, {len(df.columns)} columns"
                     
                     response = model.generate_content(f"{context}\n\nQuestion: {msg}")
@@ -203,7 +249,9 @@ def ask():
             reply += "• Column data types\n"
             reply += "• Statistical summary\n"
             reply += "• Top correlations\n"
-            reply += "• Detect outliers"
+            reply += "• Detect outliers\n"
+            reply += "• Unique values per column\n"
+            reply += "• Top N highest values"
     
     # Save to chat history
     history = session.get('chat_history', [])
@@ -212,3 +260,44 @@ def ask():
     session['chat_history'] = history[-20:]  # Keep last 20 messages
     
     return jsonify({'reply': reply, 'history': history})
+
+
+@bp.route('/api/export_chat', methods=['GET'])
+def export_chat():
+    """Export chat history as markdown"""
+    history = session.get('chat_history', [])
+    
+    if not history:
+        return jsonify({'error': 'No chat history to export'}), 400
+    
+    md_content = f"# FINESE2 Chat History\n\n"
+    md_content += f"Generated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    md_content += "---\n\n"
+    
+    for i in range(0, len(history), 2):
+        if i + 1 < len(history):
+            user_msg = history[i]['content']
+            assistant_msg = history[i+1]['content']
+            
+            md_content += f"## Q{i//2 + 1}: {user_msg}\n\n"
+            md_content += f"**Answer:**\n\n{assistant_msg}\n\n"
+            md_content += "---\n\n"
+    
+    return jsonify({
+        'markdown': md_content,
+        'filename': f'finese2_chat_{pd.Timestamp.now().strftime("%Y%m%d_%H%M")}.md'
+    })
+
+
+@bp.route('/api/models', methods=['GET'])
+def get_available_models():
+    """Get available LLM models for selected provider"""
+    provider = session.get('ai_provider', 'openai')
+    
+    models = {
+        'openai': ['gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo', 'gpt-4-turbo'],
+        'anthropic': ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
+        'gemini': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro']
+    }
+    
+    return jsonify({'models': models.get(provider, [])})

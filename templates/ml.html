@@ -7,6 +7,9 @@
             <button onclick="checkAndPopulateColumns()" class="btn btn-sm btn-primary" style="margin-left: 10px;">
                 🔄 Refresh
             </button>
+            <button onclick="showDebugInfo()" class="btn btn-sm btn-warning" style="margin-left: 10px;">
+                🔍 Debug Info
+            </button>
         </div>
         <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
             Tip: Upload a dataset using the upload zone in the sidebar, then return to ML Studio.
@@ -14,37 +17,149 @@
     </div>
     
     <div id="mlDashboard" style="display:none;" class="animate-fade-in">
+        <!-- Learning Type Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Step 1: Learning Type Selection
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="learningType" id="supervisedRadio" value="Supervised" checked>
+                            <label class="form-check-label" for="supervisedRadio">
+                                <strong>🎯 Supervised Learning</strong><br>
+                                <small class="text-muted">Predict a target variable based on features</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="learningType" id="unsupervisedRadio" value="Unsupervised">
+                            <label class="form-check-label" for="unsupervisedRadio">
+                                <strong>🔍 Unsupervised Learning</strong><br>
+                                <small class="text-muted">Find patterns in data without a target variable</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Column Selection Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Step 2: Select Columns
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">🎯 Target Column (select ONE)</label>
+                    <div id="targetColumnGrid" class="row g-2">
+                        <!-- Target column checkboxes will be populated here -->
+                        <div class="col-12 text-muted">Loading columns...</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div>
+                    <label class="form-label fw-bold">✨ Feature Columns (select MULTIPLE)</label>
+                    <div class="mb-2">
+                        <button onclick="selectAllFeatures()" class="btn btn-sm btn-outline-primary me-2">Select All</button>
+                        <button onclick="deselectAllFeatures()" class="btn btn-sm btn-outline-secondary me-2">Deselect All</button>
+                        <button onclick="selectNumericOnly()" class="btn btn-sm btn-outline-info">Numeric Only</button>
+                        <button onclick="testApiConnection()" class="btn btn-sm btn-outline-success ms-2">🔌 Test API</button>
+                    </div>
+                    <div id="featureColumnGrid" class="row g-2">
+                        <!-- Feature column checkboxes will be populated here -->
+                        <div class="col-12 text-muted">Loading columns...</div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">💡 Tip: Click on boxes to select/deselect. Hold Ctrl/Cmd for multiple selection.</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Supervised Learning Setup -->
+        <div class="card mb-4" id="supervisedSetupCard">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                </svg>
+                Step 3: Supervised Learning Setup
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Problem Type</label>
+                            <select class="form-control" id="problemType">
+                                <option value="classification">📊 Classification</option>
+                                <option value="regression">📈 Regression</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Business Objective</label>
+                            <select class="form-control" id="businessGoal">
+                                <option value="balanced">Balanced (default)</option>
+                                <option value="accuracy">Maximize accuracy</option>
+                                <option value="recall">High recall (minimize false negatives)</option>
+                                <option value="precision">High precision (minimize false positives)</option>
+                                <option value="interpretability">Interpretability over performance</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Unsupervised Learning Setup -->
+        <div class="card mb-4" id="unsupervisedSetupCard" style="display:none;">
+            <div class="card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                </svg>
+                Step 3: Unsupervised Learning Setup
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Task Type</label>
+                            <select class="form-control" id="unsupervisedTask">
+                                <option value="clustering">🧩 Clustering</option>
+                                <option value="dimensionality_reduction">📉 Dimensionality Reduction</option>
+                                <option value="anomaly_detection">🚨 Anomaly Detection</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group" id="clusteringSettings">
+                            <label class="form-label">Number of Clusters</label>
+                            <input type="number" class="form-control" id="nClusters" value="3" min="2" max="20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Model Training Card -->
         <div class="card mb-4">
             <div class="card-header">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
                 </svg>
-                Model Configuration
+                Step 4: Configure Model
             </div>
             <div class="card-body">
                 <div class="row gap-3">
-                    <div class="col-4">
-                        <div class="form-group">
-                            <label class="form-label">Target Column</label>
-                            <select class="form-control" id="targetCol"></select>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="form-group">
-                            <label class="form-label">Task Type</label>
-                            <select class="form-control" id="taskType" onchange="updateAlgorithmOptions()">
-                                <option value="classification">📊 Supervised - Classification</option>
-                                <option value="regression">📈 Supervised - Regression</option>
-                                <option value="clustering">🎯 Unsupervised - Clustering</option>
-                                <option value="dimensionality">📉 Unsupervised - Dimensionality Reduction</option>
-                                <option value="anomaly">⚠️ Unsupervised - Anomaly Detection</option>
-                                <option value="association">🔗 Unsupervised - Association Rules</option>
-                                <option value="neural_classification">🧠 Deep Learning - Classification</option>
-                                <option value="neural_regression">🧠 Deep Learning - Regression</option>
-                            </select>
-                        </div>
-                    </div>
                     <div class="col-4">
                         <div class="form-group">
                             <label class="form-label">Model Algorithm</label>
@@ -53,48 +168,60 @@
                             </select>
                         </div>
                     </div>
-                </div>
-                
-                <div class="row gap-3 mt-3">
-                    <div class="col-3">
+                    <div class="col-4">
                         <div class="form-group">
                             <label class="form-label">Test Size (%)</label>
                             <input type="number" class="form-control" id="testSize" value="20" min="10" max="50">
                         </div>
                     </div>
-                    <div class="col-3">
-                        <div class="form-group">
-                            <label class="form-label">Random State</label>
-                            <input type="number" class="form-control" id="randomState" value="42">
-                        </div>
-                    </div>
-                    <div class="col-3">
+                    <div class="col-4">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="enableCV" checked>
                             <label class="form-check-label" for="enableCV">✅ Cross-Validation</label>
-                        </div>
-                    </div>
-                    <div class="col-3" id="cvFoldsDiv">
-                        <div class="form-group">
-                            <label class="form-label">CV Folds</label>
-                            <input type="number" class="form-control" id="cvFolds" value="5" min="2" max="10">
                         </div>
                     </div>
                 </div>
                 
                 <div class="row gap-3 mt-3">
                     <div class="col-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="enableAutoML">
-                            <label class="form-check-label" for="enableAutoML">🤖 Enable AutoML (Optuna)</label>
-                        </div>
-                    </div>
-                    <div class="col-3" id="nTrialsDiv" style="display:none;">
                         <div class="form-group">
-                            <label class="form-label">Number of Trials</label>
-                            <input type="number" class="form-control" id="nTrials" value="50" min="10" max="200">
+                            <label class="form-label">CV Folds</label>
+                            <input type="number" class="form-control" id="cvFolds" value="5" min="2" max="10">
                         </div>
                     </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Feature Scaling</label>
+                            <select class="form-control" id="scalingMethod">
+                                <option value="standard">Standard Scaler</option>
+                                <option value="minmax">Min-Max Scaler</option>
+                                <option value="robust">Robust Scaler</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Encoding Method</label>
+                            <select class="form-control" id="encodingMethod">
+                                <option value="onehot">One-Hot Encoding</option>
+                                <option value="ordinal">Ordinal Encoding</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-group">
+                            <label class="form-label">Handle Missing Values</label>
+                            <select class="form-control" id="handleMissing">
+                                <option value="median">Median Imputation</option>
+                                <option value="mean">Mean Imputation</option>
+                                <option value="mode">Mode Imputation</option>
+                                <option value="drop">Drop Rows</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row gap-3 mt-3">
                     <div class="col-3">
                         <button class="btn btn-primary btn-lg w-100" onclick="trainModel()" id="trainBtn">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -110,6 +237,24 @@
                                 <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
                             </svg>
                             Compare Models
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-info btn-lg w-100" onclick="advancedEDA()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            Advanced EDA
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-warning btn-lg w-100" onclick="featureEngineering()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                            </svg>
+                            Feature Engineering
                         </button>
                     </div>
                 </div>
@@ -148,9 +293,6 @@
         
         <!-- Results Dashboard -->
         <div id="resultsDashboard" style="display:none;">
-            <!-- AutoML Results -->
-            <div id="automlResults"></div>
-                
             <!-- Metrics Cards -->
             <div class="metric-grid mb-4" id="metricsCards"></div>
             
@@ -183,98 +325,27 @@
             </div>
         </div>
         
-        <!-- Data Quality Assessment -->
-        <div class="card mb-4" id="dataQualityCard" style="display:none;">
+        <!-- Export Model Pipeline -->
+        <div class="card mb-4" id="exportCard" style="display:none;">
             <div class="card-header">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                    <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                 </svg>
-                Data Quality (0-100)
+                Export Model Pipeline
             </div>
             <div class="card-body">
-                <div class="row gap-3 mb-3 align-items-center">
-                    <div class="col-4">
-                        <button class="btn btn-outline-primary w-100" onclick="runDataQuality()">
-                            ⚙️ Assess Data Quality
-                        </button>
-                    </div>
-                    <div class="col-8">
-                        <div class="alert alert-info mb-0" id="dataQualityStatus">
-                            Click “Assess Data Quality” to generate report.
-                        </div>
-                    </div>
-                </div>
-
-                <div id="dataQualitySummary" style="display:none;">
-                    <div class="alert alert-success mb-3" id="dataQualityScore">
-                        Quality score: -
-                    </div>
-
-                    <div class="row gap-3">
-                        <div class="col-6">
-                            <h6 class="mb-2">Missingness Summary</h6>
-                            <pre id="dqMissingSummary" style="background:#F1F5F9;padding:10px;border-radius:6px;max-height:220px;overflow:auto;">{}</pre>
-                        </div>
-                        <div class="col-6">
-                            <h6 class="mb-2">Top Outlier Flags</h6>
-                            <pre id="dqOutlierSummary" style="background:#F1F5F9;padding:10px;border-radius:6px;max-height:220px;overflow:auto;">{}</pre>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <h6 class="mb-2">Actionable Recommendations</h6>
-                        <div id="dqRecommendations" class="d-flex flex-column gap-2"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Model Explainability (SHAP) -->
-        <div class="card mb-4" id="explainabilityCard" style="display:none;">
-            <div class="card-header">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-                Model Explainability & Diagnostics
-            </div>
-            <div class="card-body">
-                <div class="row gap-3 mb-3">
-                    <div class="col-3">
-                        <button class="btn btn-primary w-100" onclick="generateSHAPSummary()">
-                            📊 SHAP Summary
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button class="btn btn-success w-100" onclick="generateSHAPDependence()">
-                            🔍 SHAP Dependence
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button class="btn btn-info w-100" onclick="generateSHAPWaterfall()">
-                            🌊 SHAP Waterfall
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button class="btn btn-warning w-100" onclick="generatePermutationImportance()">
-                            🎯 Permutation Importance
-                        </button>
-                    </div>
-                </div>
-                <div class="row gap-3 mb-3">
+                <div class="row gap-3">
                     <div class="col-6">
-                        <button class="btn btn-secondary w-100" onclick="generateLearningCurve()">
-                            📈 Learning Curve
+                        <button class="btn btn-success w-100" onclick="exportModelPipeline()">
+                            💾 Export Full Pipeline (Python)
                         </button>
                     </div>
                     <div class="col-6">
-                        <button class="btn btn-dark w-100" onclick="generateValidationCurve()">
-                            📉 Validation Curve
+                        <button class="btn btn-info w-100" onclick="exportModelAsJoblib()">
+                            📦 Export Model Only (joblib)
                         </button>
                     </div>
                 </div>
-                <div id="shapPlots"></div>
             </div>
         </div>
         
@@ -318,10 +389,139 @@
 
 {% block styles %}
 <style>
+/* Column selection grid styles */
+.column-checkbox-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.column-checkbox-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+.column-checkbox-card.selected-target {
+    border-color: #10b981;
+    background-color: #d1fae5;
+}
+
+.column-checkbox-card.selected-feature {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+}
+
+.column-checkbox-card input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.column-checkbox-card .column-info {
+    flex: 1;
+}
+
+.column-checkbox-card .column-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1f2937;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.column-checkbox-card .column-type {
+    font-size: 0.75rem;
+    color: #6b7280;
+    display: block;
+}
+
+.column-checkbox-card .check-icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+}
+
+.column-checkbox-card.selected-target .check-icon {
+    display: flex;
+    background-color: #10b981;
+}
+
+.column-checkbox-card.selected-feature .check-icon {
+    display: flex;
+    background-color: #3b82f6;
+}
+
 .metric-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
+}
+
+/* Column selection grid styles */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.target-col-item:hover {
+    border-color: #0d6efd !important;
+    background-color: #f8f9fa !important;
+}
+
+.feature-col-item:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
+
+.feature-col-item .feature-checkbox {
+    transition: all 0.2s ease;
+}
+
+.feature-col-item .feature-checkbox:hover {
+    border-color: #0d6efd;
+}
+
+.col-md-2 {
+    flex: 0 0 20%;
+    max-width: 20%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .col-md-2 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-md-2, .col-sm-3 {
+        flex: 0 0 33.333%;
+        max-width: 33.333%;
+    }
+}
+
+@media (max-width: 576px) {
+    .col-md-2, .col-sm-3, .col-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
 }
 
 .metric-card {
@@ -397,100 +597,38 @@
 
 // Update algorithm options based on selected task type
 function updateAlgorithmOptions() {
-    const taskType = document.getElementById('taskType').value;
+    const taskType = document.getElementById('problemType').value;
     const algoSelect = document.getElementById('algorithm');
     
     const algorithms = {
         'classification': [
-            {value: 'rf', label: '🌲 Random Forest Classifier'},
-            {value: 'et', label: '🌳 Extra Trees Classifier'},
-            {value: 'gb', label: '🚀 Gradient Boosting Classifier'},
-            {value: 'xgboost', label: '⚡ XGBoost (Extreme Gradient Boosting)'},
-            {value: 'lightgbm', label: '💡 LightGBM (Light Gradient Boosting Machine)'},
-            {value: 'catboost', label: '🐱 CatBoost (Categorical Boosting)'},
-            {value: 'lr', label: '📏 Logistic Regression'},
-            {value: 'svm', label: '⚡ Support Vector Machine'},
-            {value: 'knn', label: '🎯 K-Nearest Neighbors'},
-            {value: 'dt', label: '🌳 Decision Tree'},
-            {value: 'nb', label: '🔮 Naive Bayes'},
-            {value: 'ada', label: '📊 AdaBoost'},
-            {value: 'lda', label: '📐 Linear Discriminant Analysis'},
-            {value: 'qda', label: '📐 Quadratic Discriminant Analysis'},
-            {value: 'mlp_class', label: '🧠 Neural Network (MLP)'}
+            {value: 'RandomForest', label: '🌲 Random Forest Classifier'},
+            {value: 'ExtraTrees', label: '🌳 Extra Trees Classifier'},
+            {value: 'GradientBoosting', label: '🚀 Gradient Boosting Classifier'},
+            {value: 'XGBoost', label: '⚡ XGBoost (Extreme Gradient Boosting)'},
+            {value: 'LightGBM', label: '💡 LightGBM (Light Gradient Boosting Machine)'},
+            {value: 'CatBoost', label: '🐱 CatBoost (Categorical Boosting)'},
+            {value: 'LogisticRegression', label: '📏 Logistic Regression'},
+            {value: 'SVM', label: '⚡ Support Vector Machine'},
+            {value: 'KNN', label: '🎯 K-Nearest Neighbors'},
+            {value: 'DecisionTree', label: '🌳 Decision Tree'},
+            {value: 'NaiveBayes', label: '🔮 Naive Bayes'},
+            {value: 'AdaBoost', label: '📊 AdaBoost'}
         ],
         'regression': [
-            {value: 'rf_reg', label: '🌲 Random Forest Regressor'},
-            {value: 'et_reg', label: '🌳 Extra Trees Regressor'},
-            {value: 'gb_reg', label: '🚀 Gradient Boosting Regressor'},
-            {value: 'xgboost_reg', label: '⚡ XGBoost Regressor'},
-            {value: 'lightgbm_reg', label: '💡 LightGBM Regressor'},
-            {value: 'catboost_reg', label: '🐱 CatBoost Regressor'},
-            {value: 'lr_reg', label: '📏 Linear Regression'},
-            {value: 'ridge', label: '📐 Ridge Regression'},
-            {value: 'lasso', label: '📐 Lasso Regression'},
-            {value: 'elastic', label: '🔄 Elastic Net'},
-            {value: 'huber', label: '🛡️ Huber Regressor (Robust)'},
-            {value: 'svr', label: '🎯 SVR (Support Vector Regression)'},
-            {value: 'knn_reg', label: '🎯 KNN Regressor'},
-            {value: 'dt_reg', label: '🌳 Decision Tree Regressor'},
-            {value: 'mlp_reg', label: '🧠 Neural Network (MLP)'}
-        ],
-        'clustering': [
-            {value: 'kmeans', label: '🎯 K-Means Clustering'},
-            {value: 'dbscan', label: '🔍 DBSCAN'},
-            {value: 'hierarchical', label: '🌳 Hierarchical Clustering'},
-            {value: 'gaussian', label: '🔮 Gaussian Mixture Model'},
-            {value: 'spectral', label: '🕸️ Spectral Clustering'},
-            {value: 'agglomerative', label: '📊 Agglomerative Clustering'},
-            {value: 'birch', label: '🌿 BIRCH'},
-            {value: 'mean_shift', label: '🔄 Mean Shift'},
-            {value: 'optics', label: '🔬 OPTICS'},
-            {value: 'affinity', label: '🎨 Affinity Propagation'}
-        ],
-        'dimensionality': [
-            {value: 'pca', label: '📉 PCA (Principal Component Analysis)'},
-            {value: 'tsne', label: '🎨 t-SNE'},
-            {value: 'umap', label: '🗺️ UMAP'},
-            {value: 'lda_dim', label: '📐 Linear Discriminant Analysis'},
-            {value: 'kernel_pca', label: '🔑 Kernel PCA'},
-            {value: 'sparse_pca', label: '📄 Sparse PCA'},
-            {value: 'incremental_pca', label: '⚡ Incremental PCA'},
-            {value: 'factor_analysis', label: '🔍 Factor Analysis'},
-            {value: 'fast_ica', label: '⚡ Fast ICA'},
-            {value: 'nmf', label: '📊 Non-negative Matrix Factorization'}
-        ],
-        'anomaly': [
-            {value: 'isolation_forest', label: '🌲 Isolation Forest'},
-            {value: 'one_class_svm', label: '⚡ One-Class SVM'},
-            {value: 'local_outlier', label: '🔍 Local Outlier Factor'},
-            {value: 'elliptic_envelope', label: '🔮 Elliptic Envelope'},
-            {value: 'autoencoder', label: '🧠 Autoencoder'},
-            {value: 'hbos', label: '📊 HBOS'},
-            {value: 'feature_bagging', label: '🎒 Feature Bagging'},
-            {value: 'lof', label: '🎯 LOF'},
-            {value: 'copod', label: '📐 COPOD'},
-            {value: 'sos', label: '🆘 Stochastic Outlier Selection'}
-        ],
-        'association': [
-            {value: 'apriori', label: '🔗 Apriori Algorithm'},
-            {value: 'fpgrowth', label: '📊 FP-Growth'},
-            {value: 'eclat', label: '🎯 ECLAT'},
-            {value: 'prefixspan', label: '📝 PrefixSpan'},
-            {value: 'generalized_rules', label: '📋 Generalized Rules'}
-        ],
-        'neural_classification': [
-            {value: 'mlp_class', label: '🧠 MLP Classifier'},
-            {value: 'cnn', label: '🖼️ CNN (Convolutional NN)'},
-            {value: 'lstm_class', label: '🔄 LSTM Classifier'},
-            {value: 'deep_nn', label: '🏗️ Deep Neural Network'},
-            {value: 'resnet', label: '🏛️ ResNet'}
-        ],
-        'neural_regression': [
-            {value: 'mlp_reg', label: '🧠 MLP Regressor'},
-            {value: 'cnn_reg', label: '🖼️ CNN Regressor'},
-            {value: 'lstm_reg', label: '🔄 LSTM Regressor'},
-            {value: 'deep_nn_reg', label: '🏗️ Deep NN Regressor'},
-            {value: 'transformer', label: '⚡ Transformer Model'}
+            {value: 'RandomForestReg', label: '🌲 Random Forest Regressor'},
+            {value: 'ExtraTreesReg', label: '🌳 Extra Trees Regressor'},
+            {value: 'GradientBoostingReg', label: '🚀 Gradient Boosting Regressor'},
+            {value: 'XGBoostReg', label: '⚡ XGBoost Regressor'},
+            {value: 'LightGBMReg', label: '💡 LightGBM Regressor'},
+            {value: 'CatBoostReg', label: '🐱 CatBoost Regressor'},
+            {value: 'LinearRegression', label: '📏 Linear Regression'},
+            {value: 'Ridge', label: '📐 Ridge Regression'},
+            {value: 'Lasso', label: '📐 Lasso Regression'},
+            {value: 'SVR', label: '🎯 SVR (Support Vector Regression)'},
+            {value: 'KNNReg', label: '🎯 KNN Regressor'},
+            {value: 'DecisionTreeReg', label: '🌳 Decision Tree Regressor'},
+            {value: 'AdaBoostReg', label: '📊 AdaBoost Regressor'}
         ]
     };
     
@@ -499,6 +637,22 @@ function updateAlgorithmOptions() {
         `<option value="${algo.value}">${algo.label}</option>`
     ).join('');
 }
+
+// Global variables to store column information
+let columnInfo = {};
+
+// Handle learning type selection
+document.querySelectorAll('input[name="learningType"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'Supervised') {
+            document.getElementById('supervisedSetupCard').style.display = 'block';
+            document.getElementById('unsupervisedSetupCard').style.display = 'none';
+        } else {
+            document.getElementById('supervisedSetupCard').style.display = 'none';
+            document.getElementById('unsupervisedSetupCard').style.display = 'block';
+        }
+    });
+});
 
 async function checkAndPopulateColumns() {
     try {
@@ -527,9 +681,42 @@ async function checkAndPopulateColumns() {
             return false;
         }
         
-        const targetSelect = document.getElementById('targetCol');
-        targetSelect.innerHTML = '<option value="">Select target...</option>' + 
-            Object.keys(data.dtypes).map(col => `<option value="${col}">${col}</option>`).join('');
+        // Store column info globally
+        columnInfo = data;
+        
+        // Get all columns with their types
+        const columns = Object.keys(data.dtypes);
+        const dtypes = data.dtypes;
+        
+        // Populate target column grid (radio buttons - only one can be selected)
+        const targetGrid = document.getElementById('targetColumnGrid');
+        targetGrid.innerHTML = columns.map((col, idx) => `
+            <div class="col-md-2 col-sm-3 col-6">
+                <div class="column-checkbox-card" onclick="selectTargetColumn('${col}', this)" id="target-${col}">
+                    <input type="radio" name="targetCol" value="${col}" id="radio-${col}">
+                    <div class="column-info">
+                        <span class="column-name">${col}</span>
+                        <span class="column-type">${dtypes[col]}</span>
+                    </div>
+                    <div class="check-icon">✓</div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Populate feature column grid (checkboxes - multiple can be selected)
+        const featureGrid = document.getElementById('featureColumnGrid');
+        featureGrid.innerHTML = columns.map((col, idx) => `
+            <div class="col-md-2 col-sm-3 col-6">
+                <div class="column-checkbox-card" onclick="toggleFeatureColumn('${col}', this)" id="feature-${col}">
+                    <input type="checkbox" value="${col}" id="check-${col}">
+                    <div class="column-info">
+                        <span class="column-name">${col}</span>
+                        <span class="column-type">${dtypes[col]}</span>
+                    </div>
+                    <div class="check-icon">✓</div>
+                </div>
+            </div>
+        `).join('');
         
         // Initialize algorithm options
         updateAlgorithmOptions();
@@ -546,26 +733,462 @@ async function checkAndPopulateColumns() {
     }
 }
 
-
-async function trainModel() {
-    const target = document.getElementById('targetCol').value;
-    const taskType = document.getElementById('taskType').value;
-    const algorithm = document.getElementById('algorithm').value;
-    const testSize = parseInt(document.getElementById('testSize').value) / 100;
-    const randomState = parseInt(document.getElementById('randomState').value);
-    const enableAutoML = document.getElementById('enableAutoML').checked;
-    const nTrials = parseInt(document.getElementById('nTrials').value);
-    const enableCV = document.getElementById('enableCV').checked;
-    const cvFolds = parseInt(document.getElementById('cvFolds').value);
+// Select a target column (only one can be selected)
+function selectTargetColumn(col, element) {
+    // Remove selection from all target cards
+    document.querySelectorAll('#targetColumnGrid .column-checkbox-card').forEach(card => {
+        card.classList.remove('selected-target');
+        card.querySelector('input[type="radio"]').checked = false;
+    });
     
-    // New user options
-    const scalingMethod = document.getElementById('scalingMethod').value;
-    const encodingMethod = document.getElementById('encodingMethod').value;
-    const handleMissing = document.getElementById('handleMissing').value;
+    // Add selection to clicked card
+    element.classList.add('selected-target');
+    element.querySelector('input[type="radio"]').checked = true;
+    
+    console.log('Selected target:', col);
+}
+
+// Toggle feature column selection
+function toggleFeatureColumn(col, element) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    
+    if (checkbox.checked) {
+        element.classList.add('selected-feature');
+    } else {
+        element.classList.remove('selected-feature');
+    }
+    
+    console.log('Feature columns selected:', getSelectedFeatures());
+}
+
+// Get all selected feature columns
+function getSelectedFeatures() {
+    const checkboxes = document.querySelectorAll('#featureColumnGrid input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Get selected target column
+function getSelectedTarget() {
+    const radio = document.querySelector('#targetColumnGrid input[type="radio"]:checked');
+    return radio ? radio.value : null;
+}
+
+// Select all feature columns
+function selectAllFeatures() {
+    document.querySelectorAll('#featureColumnGrid input[type="checkbox"]').forEach(cb => {
+        cb.checked = true;
+        cb.parentElement.classList.add('selected-feature');
+    });
+    showToast('All columns selected as features', 'info');
+}
+
+// Deselect all feature columns
+function deselectAllFeatures() {
+    document.querySelectorAll('#featureColumnGrid input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+        cb.parentElement.classList.remove('selected-feature');
+    });
+    showToast('All feature columns deselected', 'info');
+}
+
+// Select only numeric columns
+function selectNumericOnly() {
+    deselectAllFeatures();
+    document.querySelectorAll('#featureColumnGrid .column-checkbox-card').forEach(card => {
+        const colType = card.querySelector('.column-type').textContent;
+        if (colType.includes('int') || colType.includes('float')) {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            checkbox.checked = true;
+            card.classList.add('selected-feature');
+        }
+    });
+    showToast('Numeric columns selected', 'info');
+}
+
+// Function to handle AutoML
+async function runAutoML() {
+    const target = getSelectedTarget();
+    const selectedFeatures = getSelectedFeatures();
     
     if (!target) {
         showToast('Please select a target column', 'warning');
         return;
+    }
+    
+    if (selectedFeatures.length === 0) {
+        showToast('Please select feature columns', 'warning');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/ml/api/automl', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target,
+                features: selectedFeatures,
+                n_trials: 50
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast('AutoML Error: ' + data.error, 'error');
+            return;
+        }
+        
+        // Show comparison results
+        showModelComparison(data.results);
+    } catch (e) {
+        console.error('AutoML failed:', e);
+        showToast('AutoML failed: ' + e.message, 'error');
+    }
+}
+
+// Show model comparison results
+function showModelComparison(results) {
+    const comparisonCard = document.getElementById('comparisonCard');
+    comparisonCard.style.display = 'block';
+    
+    if (!results) {
+        // If no results provided, run comparison
+        runModelComparison();
+        return;
+    }
+    
+    if (!results || results.length === 0) {
+        document.getElementById('comparisonResults').innerHTML = '<div class="alert alert-info">No results to compare</div>';
+        return;
+    }
+    
+    let html = '<div class="table-responsive"><table class="table table-striped"><thead><tr>';
+    html += '<th>Rank</th><th>Model</th><th>Algorithm</th><th>CV Score (Mean)</th><th>CV Score (Std)</th>';
+    html += '</tr></thead><tbody>';
+    
+    results.forEach((result, index) => {
+        html += '<tr>';
+        html += `<td><strong>#${index + 1}</strong></td>`;
+        html += `<td>${result.name || 'Model'}</td>`;
+        html += `<td>${result.algorithm || 'N/A'}</td>`;
+        html += `<td><strong>${result.mean_cv_score ? result.mean_cv_score.toFixed(4) : 'N/A'}</strong></td>`;
+        html += `<td>${result.std_cv_score ? result.std_cv_score.toFixed(4) : 'N/A'}</td>`;
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    
+    // Add summary info
+    html += '<div class="alert alert-success mt-3">';
+    html += `<strong>Best Model:</strong> ${results[0].name} (${results[0].mean_cv_score ? results[0].mean_cv_score.toFixed(4) : 'N/A'})`;
+    html += '</div>';
+    
+    document.getElementById('comparisonResults').innerHTML = html;
+}
+
+// Run model comparison
+async function runModelComparison() {
+    const target = getSelectedTarget();
+    const selectedFeatures = getSelectedFeatures();
+    
+    if (!target) {
+        showToast('Please select a target column', 'warning');
+        return;
+    }
+    
+    if (selectedFeatures.length === 0) {
+        showToast('Please select feature columns', 'warning');
+        return;
+    }
+    
+    try {
+        const taskType = document.getElementById('problemType').value;
+        const res = await fetch('/ml/api/automl', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target,
+                features: selectedFeatures,
+                task: taskType
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast('Model Comparison Error: ' + data.error, 'error');
+            return;
+        }
+        
+        showModelComparison(data.results);
+    } catch (e) {
+        console.error('Model comparison failed:', e);
+        showToast('Model comparison failed: ' + e.message, 'error');
+    }
+}
+
+// Show evaluation chart based on task type
+function showEvaluationChart(result) {
+    if (result.task && result.task.includes('classification')) {
+        // Show confusion matrix for classification
+        if (result.metrics && result.metrics.confusion_matrix) {
+            const cm = result.metrics.confusion_matrix;
+            const trace = {
+                z: cm,
+                x: Array.from({length: cm[0].length}, (_, i) => `Class ${i}`),
+                y: Array.from({length: cm.length}, (_, i) => `Class ${i}`),
+                type: 'heatmap',
+                colorscale: 'Blues',
+                showscale: true
+            };
+            
+            const layout = {
+                title: 'Confusion Matrix',
+                xaxis: {title: 'Predicted'},
+                yaxis: {title: 'Actual'},
+                height: 400
+            };
+            
+            Plotly.newPlot('evalChart', [trace], layout, {responsive: true});
+            document.getElementById('evalTitle').textContent = 'Confusion Matrix';
+        }
+    } else {
+        // Show residuals plot for regression
+        if (result.evaluation && result.evaluation.y_test && result.evaluation.y_pred) {
+            const trace_actual = {
+                x: Array.from({length: result.evaluation.y_test.length}, (_, i) => i),
+                y: result.evaluation.y_test,
+                mode: 'lines+markers',
+                name: 'Actual',
+                line: {color: '#1f77b4'}
+            };
+            
+            const trace_pred = {
+                x: Array.from({length: result.evaluation.y_pred.length}, (_, i) => i),
+                y: result.evaluation.y_pred,
+                mode: 'lines+markers',
+                name: 'Predicted',
+                line: {color: '#ff7f0e'}
+            };
+            
+            const layout = {
+                title: 'Actual vs Predicted Values',
+                xaxis: {title: 'Sample Index'},
+                yaxis: {title: 'Value'},
+                height: 400
+            };
+            
+            Plotly.newPlot('evalChart', [trace_actual, trace_pred], layout, {responsive: true});
+            document.getElementById('evalTitle').textContent = 'Actual vs Predicted';
+        }
+    }
+}
+
+// Placeholder functions for advanced features
+function advancedEDA() {
+    showToast('Advanced EDA features coming soon', 'info');
+}
+
+function featureEngineering() {
+    showToast('Feature engineering features coming soon', 'info');
+}
+
+// Export model pipeline function
+async function exportModelPipeline() {
+    try {
+        const target = getSelectedTarget();
+        const selectedFeatures = getSelectedFeatures();
+        const taskType = document.getElementById('problemType').value;
+        const algorithm = document.getElementById('algorithm').value;
+        const encoding = document.getElementById('encodingMethod').value;
+        const scaling = document.getElementById('scalingMethod').value;
+        
+        if (!target) {
+            showToast('Please select a target column', 'warning');
+            return;
+        }
+        
+        showToast('Generating model pipeline code...', 'info');
+        
+        const res = await fetch('/ml/api/export/code', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target_col: target,
+                problem_type: taskType,
+                model_name: algorithm,
+                features: selectedFeatures,
+                encoding: encoding,
+                scaling: scaling
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Create download link
+        const blob = new Blob([data.code], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.filename || `model_pipeline_${new Date().toISOString().slice(0,10)}.py`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('✅ Model pipeline exported successfully!', 'success');
+    } catch (e) {
+        console.error('Export failed:', e);
+        showToast('Export failed: ' + e.message, 'error');
+    }
+}
+
+// Export model as joblib function
+async function exportModelAsJoblib() {
+    try {
+        showToast('Exporting model...', 'info');
+        
+        // First get the latest trained model ID
+        const res = await fetch('/ml/api/models/list');
+        const modelList = await res.json();
+        
+        if (!modelList.models || modelList.models.length === 0) {
+            showToast('No trained models available for export', 'warning');
+            return;
+        }
+        
+        // Use the most recent model
+        const latestModel = modelList.models[0];
+        const modelId = latestModel.model_id;
+        
+        // Now export the specific model
+        const exportRes = await fetch(`/ml/api/export/model/${modelId}`, {
+            method: 'GET'
+        });
+        
+        if (!exportRes.ok) {
+            throw new Error(`HTTP error! status: ${exportRes.status}`);
+        }
+        
+        // Create download link for joblib file
+        const blob = await exportRes.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `trained_model_${new Date().toISOString().slice(0,10)}.joblib`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('✅ Model exported successfully!', 'success');
+    } catch (e) {
+        console.error('Model export failed:', e);
+        showToast('Model export failed: ' + e.message, 'error');
+    }
+}
+
+// Load model features for prediction
+async function loadModelFeatures() {
+    try {
+        const modelSelect = document.getElementById('predictModelSelect');
+        const selectedModelId = modelSelect.value;
+        
+        if (!selectedModelId) {
+            showToast('Please select a model', 'warning');
+            return;
+        }
+        
+        // Get model details to determine required features
+        const res = await fetch('/ml/api/models/list');
+        const modelList = await res.json();
+        
+        const modelDetails = modelList.models.find(m => m.model_id === selectedModelId);
+        
+        if (!modelDetails) {
+            showToast('Model not found', 'error');
+            return;
+        }
+        
+        // Load feature inputs
+        const featureInputs = document.getElementById('featureInputs');
+        
+        // Here we would typically load the actual features used during training
+        // For now, we'll just show a message
+        featureInputs.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info">
+                    Model "${modelDetails.algorithm}" for task "${modelDetails.task}" selected.
+                    <br><small>Feature inputs would appear here based on the training features.</small>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('predictionForm').style.display = 'block';
+    } catch (e) {
+        console.error('Load model features failed:', e);
+        showToast('Failed to load model features: ' + e.message, 'error');
+    }
+}
+
+// Make prediction
+async function makePrediction() {
+    try {
+        const modelSelect = document.getElementById('predictModelSelect');
+        const selectedModelId = modelSelect.value;
+        
+        if (!selectedModelId) {
+            showToast('Please select a model', 'warning');
+            return;
+        }
+        
+        // For now, we'll just show a placeholder
+        showToast('Prediction functionality would be implemented here', 'info');
+    } catch (e) {
+        console.error('Prediction failed:', e);
+        showToast('Prediction failed: ' + e.message, 'error');
+    }
+}
+
+async function trainModel() {
+    console.log('ML: Starting training process...');
+    
+    const target = getSelectedTarget();
+    const learningType = document.querySelector('input[name="learningType"]:checked').value;
+    const taskType = document.getElementById('problemType').value;
+    const algorithm = document.getElementById('algorithm').value;
+    const testSize = parseInt(document.getElementById('testSize').value) / 100;
+    const enableCV = document.getElementById('enableCV').checked;
+    const cvFolds = parseInt(document.getElementById('cvFolds').value);
+    
+    // Get selected feature columns
+    const selectedFeatures = getSelectedFeatures();
+    
+    console.log('ML: Configuration:', {
+        target,
+        features: selectedFeatures,
+        task: taskType,
+        algorithm,
+        testSize,
+        enableCV,
+        cvFolds
+    });
+    
+    if (!target) {
+        showToast('Please select a target column', 'warning');
+        return;
+    }
+    
+    if (selectedFeatures.length === 0) {
+        if (!confirm('No feature columns selected. Use ALL columns except target?')) {
+            return;
+        }
     }
     
     const trainBtn = document.getElementById('trainBtn');
@@ -573,36 +1196,61 @@ async function trainModel() {
     trainBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Training...';
     
     try {
+        console.log('ML: Sending training request to /ml/api/train...');
+        
+        const reqBody = {
+            target,
+            features: selectedFeatures,
+            task: taskType,
+            algorithm,
+            test_size: testSize,
+            cross_validation: enableCV,
+            cv_folds: cvFolds
+        };
+        
+        if (learningType === 'Unsupervised') {
+            reqBody.task = document.getElementById('unsupervisedTask').value;
+            reqBody.n_clusters = parseInt(document.getElementById('nClusters').value);
+        }
+        
         const res = await fetch('/ml/api/train', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                target,
-                task: taskType,
-                algorithm,
-                test_size: testSize,
-                random_state: randomState,
-                automl: enableAutoML,
-                n_trials: nTrials,
-                cross_validation: enableCV,
-                cv_folds: cvFolds,
-                scaling: scalingMethod,
-                encoding: encodingMethod,
-                handle_missing: handleMissing
-            })
+            body: JSON.stringify(reqBody)
         });
         
+        console.log('ML: Response status:', res.status);
+        
         const data = await res.json();
+        console.log('ML: Response data:', data);
+        
+        if (data.error) {
+            showToast('Error: ' + data.error, 'error');
+            trainBtn.disabled = false;
+            trainBtn.innerHTML = '🚀 Train Model';
+            return;
+        }
+        
+        if (!data.job_id) {
+            showToast('Error: No job ID returned', 'error');
+            trainBtn.disabled = false;
+            trainBtn.innerHTML = '🚀 Train Model';
+            return;
+        }
+        
         window.session_ml_job_id = data.job_id;
+        console.log('ML: Job ID received:', data.job_id);
         
         // Show progress card
         document.getElementById('progressCard').style.display = 'block';
         updateProgress(0, 'Initializing training...');
         
+        console.log('ML: Starting job polling...');
         pollJobStatus(data.job_id);
         
     } catch (e) {
-        showToast('Training failed to start', 'error');
+        console.error('ML: Training request failed:', e);
+        showToast('Training failed to start: ' + e.message, 'error');
         trainBtn.disabled = false;
         trainBtn.innerHTML = '🚀 Train Model';
         document.getElementById('progressCard').style.display = 'none';
@@ -618,814 +1266,306 @@ function updateProgress(percent, status) {
 }
 
 async function pollJobStatus(jobId) {
-    console.log('ML: Polling job status for', jobId);
+    console.log('ML: Starting to poll job:', jobId);
     
-    const pollInterval = setInterval(async () => {
+    const poll = async () => {
         try {
+            console.log('ML: Polling for job status...');
             const res = await fetch(`/ml/api/status/${jobId}`);
-            const jobData = await res.json();
             
-            console.log('ML: Job status:', jobData.status, 'Progress:', jobData.progress);
-            
-            if (jobData.progress !== undefined) {
-                updateProgress(jobData.progress, jobData.status || 'Processing...');
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
             }
             
-            if (jobData.status === 'completed') {
-                clearInterval(pollInterval);
-                console.log('ML: Training completed!', jobData.result);
-                
-                // Re-enable train button
-                const trainBtn = document.getElementById('trainBtn');
-                trainBtn.disabled = false;
-                trainBtn.innerHTML = '🚀 Train Model';
-                
-                // Display results
-                displayResults(jobData.result);
-                
-                showToast('Model training completed successfully!', 'success');
-                
-            } else if (jobData.status === 'failed') {
-                clearInterval(pollInterval);
-                console.error('ML: Training failed:', jobData.error);
-                
-                const trainBtn = document.getElementById('trainBtn');
-                trainBtn.disabled = false;
-                trainBtn.innerHTML = '🚀 Train Model';
-                
-                showToast(`Training failed: ${jobData.error}`, 'error');
+            const job = await res.json();
+            console.log('ML: Job status response:', job);
+            
+            if (job.error && job.status !== 'failed') {
+                console.warn('ML: Job has error field but status is not failed:', job.error);
             }
             
-        } catch (err) {
-            console.error('ML: Error polling status:', err);
+            if (job.status === 'completed') {
+                console.log('ML: Job completed successfully!');
+                updateProgress(100, 'Training Completed!');
+                
+                if (!job.result) {
+                    console.error('ML: Job completed but no result data!', job);
+                    showToast('Training completed but no results available', 'warning');
+                    return;
+                }
+                
+                displayResults(job.result);
+                document.getElementById('trainBtn').disabled = false;
+                document.getElementById('trainBtn').innerHTML = '🚀 Train Model';
+                showToast('Training completed successfully!', 'success');
+            } else if (job.status === 'failed') {
+                console.error('ML: Job failed:', job.error);
+                updateProgress(0, 'Training Failed');
+                
+                const errorMsg = job.error ? job.error.split('\n')[0].substring(0, 200) : 'Unknown error';
+                showToast('Training failed: ' + errorMsg, 'error');
+                
+                document.getElementById('trainBtn').disabled = false;
+                document.getElementById('trainBtn').innerHTML = '🚀 Train Model';
+            } else {
+                // Still running
+                const progress = job.progress || 0;
+                const status = job.status || 'running';
+                console.log(`ML: Job ${status} - Progress: ${progress}%`);
+                updateProgress(progress, `Training... (${progress}%)`);
+                setTimeout(poll, 2000);
+            }
+        } catch (e) {
+            console.error('ML: Polling error:', e);
+            showToast('Error checking training status', 'error');
+            // Don't retry on network errors
         }
-    }, 1000); // Poll every second
+    };
+    
+    // Start polling
+    poll();
 }
 
-function displayResults(data) {
+function displayResults(result) {
+    console.log('Displaying results:', result);
+    
+    if (!result || !result.metrics) {
+        showToast('No results to display', 'error');
+        return;
+    }
+    
+    // Show results dashboard
     document.getElementById('resultsDashboard').style.display = 'block';
     
-    // Show prediction card button
-    const predBtnHTML = `
-        <div class="mt-3">
-            <button class="btn btn-info btn-lg w-100" onclick="loadPredictionInterface()">
-                🔮 Open Prediction Interface
-            </button>
-        </div>
-    `;
-    
-    // Show AutoML info if used
-    const automlResultsDiv = document.getElementById('automlResults');
-    automlResultsDiv.innerHTML = ''; // Clear previous content
-    
-    if (data.automl_used && data.best_params) {
-        const automlHTML = `
-            <div class="alert alert-success mb-3 animate-fade-in">
-                <strong>🤖 AutoML Optimization Complete!</strong>
-                <p class="mb-1 mt-2"><strong>Best Parameters:</strong></p>
-                <pre style="background:#F1F5F9;padding:8px;border-radius:4px;font-size:12px;max-height:200px;overflow:auto;">${JSON.stringify(data.best_params, null, 2)}</pre>
-                <p class="mb-0 mt-2"><strong>Best Score:</strong> ${(data.best_score * 100).toFixed(2)}%</p>
-            </div>
-        `;
-        automlResultsDiv.innerHTML = automlHTML;
-    }
-    
-    // Display cross-validation scores if available
-    if (data.cv_scores) {
-        const cvHTML = `
-            <div class="alert alert-info mb-3">
-                <strong>✅ Cross-Validation Results:</strong>
-                <p class="mb-1 mt-2">Scores: ${data.cv_scores.map(s => s.toFixed(4)).join(', ')}</p>
-                <p class="mb-0">Mean: ${(data.cv_scores.reduce((a,b) => a+b, 0) / data.cv_scores.length).toFixed(4)} ± ${(Math.sqrt(data.cv_scores.reduce((sq, n) => sq + Math.pow(n - (data.cv_scores.reduce((a,b) => a+b, 0) / data.cv_scores.length), 2)) / data.cv_scores.length)).toFixed(4)}</p>
-            </div>
-        `;
-        automlResultsDiv.innerHTML += cvHTML;
-    }
+    // Show export card
+    document.getElementById('exportCard').style.display = 'block';
     
     // Display metrics cards
-    const metricsHTML = Object.entries(data.metrics).map(([key, value]) => {
-        // Skip non-numeric or complex objects
-        if (typeof value === 'object') return '';
-        
-        const metricName = key.replace('_', ' ').toUpperCase();
-        const icon = key.includes('accuracy') ? '🎯' : 
-                    key.includes('precision') ? '📍' :
-                    key.includes('recall') ? '🔍' :
-                    key.includes('f1') ? '⭐' :
-                    key.includes('r2') || key.includes('mse') || key.includes('mae') ? '📈' :
-                    key.includes('roc') ? '📊' : '📉';
-        
-        const displayValue = typeof value === 'number' ? 
-            (value > 1 || value < -1 ? value.toFixed(4) : (value * 100).toFixed(1) + '%') : 
-            value;
-        
-        return `
+    let metricsHtml = '';
+    
+    // Add accuracy metrics if present
+    if (result.metrics.accuracy !== undefined) {
+        metricsHtml += `
             <div class="metric-card metric-card-animated">
                 <div class="metric-icon">
-                    <span style="font-size: 24px;">${icon}</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
                 </div>
-                <div class="metric-label">${metricName}</div>
-                <div class="metric-value">${displayValue}</div>
+                <div class="metric-label">Accuracy</div>
+                <div class="metric-value">${(result.metrics.accuracy * 100).toFixed(2)}%</div>
             </div>
         `;
-    }).join('');
+    }
     
-    document.getElementById('metricsCards').innerHTML = metricsHTML + predBtnHTML;
+    if (result.metrics.precision_weighted !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="8 12 12 16 16 12"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Precision (Weighted)</div>
+                <div class="metric-value">${(result.metrics.precision_weighted * 100).toFixed(2)}%</div>
+            </div>
+        `;
+    }
     
-    // Display feature importance
-    if (data.feature_importance) {
-        const features = Object.keys(data.feature_importance);
-        const importances = Object.values(data.feature_importance);
+    if (result.metrics.recall_weighted !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                </div>
+                <div class="metric-label">Recall (Weighted)</div>
+                <div class="metric-value">${(result.metrics.recall_weighted * 100).toFixed(2)}%</div>
+            </div>
+        `;
+    }
+    
+    if (result.metrics.f1_weighted !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 12h8M12 8v8"/>
+                    </svg>
+                </div>
+                <div class="metric-label">F1 Score (Weighted)</div>
+                <div class="metric-value">${(result.metrics.f1_weighted * 100).toFixed(2)}%</div>
+            </div>
+        `;
+    }
+    
+    if (result.metrics.r2 !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="metric-label">R² Score</div>
+                <div class="metric-value">${(result.metrics.r2 * 100).toFixed(2)}%</div>
+            </div>
+        `;
+    }
+    
+    if (result.metrics.mse !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="metric-label">MSE</div>
+                <div class="metric-value">${result.metrics.mse.toFixed(4)}</div>
+            </div>
+        `;
+    }
+    
+    if (result.metrics.rmse !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                </div>
+                <div class="metric-label">RMSE</div>
+                <div class="metric-value">${result.metrics.rmse.toFixed(4)}</div>
+            </div>
+        `;
+    }
+    
+    if (result.metrics.mae !== undefined) {
+        metricsHtml += `
+            <div class="metric-card metric-card-animated">
+                <div class="metric-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                </div>
+                <div class="metric-label">MAE</div>
+                <div class="metric-value">${result.metrics.mae.toFixed(4)}</div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('metricsCards').innerHTML = metricsHtml;
+    
+    // Show feature importance if available
+    if (result.feature_importance && Object.keys(result.feature_importance).length > 0) {
+        const features = Object.keys(result.feature_importance);
+        const importances = Object.values(result.feature_importance);
         
         const trace = {
             x: importances,
             y: features,
             type: 'bar',
             orientation: 'h',
-            marker: {
-                color: 'rgb(99, 102, 241)',
-                opacity: 0.8
-            }
+            marker: {color: '#6366F1'}
         };
         
         const layout = {
-            title: 'Top 15 Important Features',
-            xaxis: { title: 'Importance' },
-            yaxis: { automargin: true },
-            margin: { l: 200, r: 40, t: 60, b: 40 },
-            template: 'plotly_white',
-            font: { family: 'Inter, sans-serif' }
+            title: 'Feature Importance',
+            xaxis: {title: 'Importance'},
+            yaxis: {automargin: true},
+            height: Math.max(300, features.length * 30),
+            margin: {t: 40, l: 150, r: 40, b: 40}
         };
         
-        Plotly.newPlot('featureImportanceChart', [trace], layout, {responsive: true, displayModeBar: false});
+        Plotly.newPlot('featureImportanceChart', [trace], layout, {responsive: true});
     }
     
-    // Display evaluation chart
-    if (data.confusion_matrix) {
-        document.getElementById('evalTitle').textContent = 'Confusion Matrix';
-        
-        const cm = data.confusion_matrix;
-        const labels = cm.labels || ['Class 0', 'Class 1'];
-        
-        const trace = {
-            z: cm.values,
-            x: labels,
-            y: labels,
-            type: 'heatmap',
-            colorscale: 'Blues',
-            showscale: true,
-            text: cm.values.map(row => row.map(val => val.toString())),
-            texttemplate: '%{text}',
-            textfont: { size: 16, color: 'white' }
-        };
-        
-        const layout = {
-            title: 'Confusion Matrix',
-            xaxis: { title: 'Predicted' },
-            yaxis: { title: 'Actual' },
-            margin: { l: 80, r: 40, t: 60, b: 80 },
-            template: 'plotly_white'
-        };
-        
-        Plotly.newPlot('evalChart', [trace], layout, {responsive: true, displayModeBar: false});
-    } else if (data.residuals) {
-        document.getElementById('evalTitle').textContent = 'Residual Plot';
-        
-        const trace = {
-            x: data.residuals.predicted,
-            y: data.residuals.actual,
-            mode: 'markers',
-            type: 'scatter',
-            marker: {
-                size: 8,
-                color: 'rgb(99, 102, 241)',
-                opacity: 0.6
-            }
-        };
-        
-        const layout = {
-            title: 'Predicted vs Actual',
-            xaxis: { title: 'Predicted Values' },
-            yaxis: { title: 'Actual Values' },
-            margin: { l: 60, r: 40, t: 60, b: 60 },
-            template: 'plotly_white',
-            shapes: [{
-                type: 'line',
-                xref: 'paper',
-                x0: 0,
-                x1: 1,
-                yref: 'paper',
-                y0: 0,
-                y1: 1,
-                line: { color: 'red', dash: 'dash' }
-            }]
-        };
-        
-        Plotly.newPlot('evalChart', [trace], layout, {responsive: true, displayModeBar: false});
+    // Show evaluation chart based on task type
+    if (result.task) {
+        showEvaluationChart(result);
     }
     
-    // Scroll to results
-    document.getElementById('resultsDashboard').scrollIntoView({ behavior: 'smooth' });
-    showToast('Model trained successfully! 🎉', 'success');
-}
-
-// Helper function for displaying toast notifications
-function showToast(message, type) {
-    // Create toast element if it doesn't exist
-    let toastEl = document.getElementById('mlToast');
-    if (!toastEl) {
-        toastEl = document.createElement('div');
-        toastEl.id = 'mlToast';
-        toastEl.style.position = 'fixed';
-        toastEl.style.top = '20px';
-        toastEl.style.right = '20px';
-        toastEl.style.zIndex = '10000';
-        toastEl.style.padding = '10px';
-        toastEl.style.borderRadius = '4px';
-        toastEl.style.color = 'white';
-        toastEl.style.fontWeight = '500';
-        toastEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-        toastEl.style.transition = 'opacity 0.3s ease';
-        document.body.appendChild(toastEl);
-    }
-    
-    // Set toast content and style based on type
-    toastEl.textContent = message;
-    toastEl.style.backgroundColor = type === 'error' ? '#ef4444' : 
-                                 type === 'warning' ? '#f59e0b' : 
-                                 type === 'success' ? '#10b981' : '#3b82f6';
-    
-    // Show toast
-    toastEl.style.opacity = '1';
-    
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-        toastEl.style.opacity = '0';
-    }, 3000);
-}
-
-async function generateSHAPSummary() {
-    const jobId = session_ml_job_id;
-    if (!jobId) {
-        showToast('Please train a model first', 'warning');
-        return;
-    }
-    
-    showToast('Generating SHAP summary plot...', 'info');
-    
-    try {
-        const res = await fetch(`/ml/api/shap/summary/${jobId}`);
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        document.getElementById('explainabilityCard').style.display = 'block';
-        const shapDiv = document.createElement('div');
-        shapDiv.innerHTML = `<h6 class="mb-3">SHAP Summary Plot</h6><div id="shapSummary" style="height: 500px;"></div>`;
-        document.getElementById('shapPlots').appendChild(shapDiv);
-        
-        const fig = JSON.parse(data.chart);
-        Plotly.newPlot('shapSummary', fig.data, fig.layout, {responsive: true});
-        
-        document.getElementById('explainabilityCard').scrollIntoView({ behavior: 'smooth' });
-        showToast('SHAP summary generated!', 'success');
-    } catch (e) {
-        showToast('Failed to generate SHAP plot', 'error');
-    }
-}
-
-async function generateSHAPDependence() {
-    const jobId = session_ml_job_id;
-    if (!jobId) {
-        showToast('Please train a model first', 'warning');
-        return;
-    }
-    
-    // Get feature importance to select top feature
-    const statusRes = await fetch(`/ml/api/status/${jobId}`);
-    const jobData = await statusRes.json();
-    
-    if (!jobData.result || !jobData.result.feature_importance) {
-        showToast('No feature importance available', 'warning');
-        return;
-    }
-    
-    const topFeature = Object.keys(jobData.result.feature_importance)[0];
-    
-    showToast(`Generating SHAP dependence for ${topFeature}...`, 'info');
-    
-    try {
-        const res = await fetch(`/ml/api/shap/dependence/${jobId}?feature=${topFeature}`);
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        const shapDiv = document.createElement('div');
-        shapDiv.innerHTML = `<h6 class="mb-3 mt-4">SHAP Dependence Plot (${topFeature})</h6><div id="shapDependence" style="height: 500px;"></div>`;
-        document.getElementById('shapPlots').appendChild(shapDiv);
-        
-        const fig = JSON.parse(data.chart);
-        Plotly.newPlot('shapDependence', fig.data, fig.layout, {responsive: true});
-        
-        showToast('SHAP dependence plot generated!', 'success');
-    } catch (e) {
-        showToast('Failed to generate SHAP plot', 'error');
-    }
-}
-
-// Toggle CV folds visibility
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('enableCV').addEventListener('change', function() {
-        document.getElementById('cvFoldsDiv').style.display = this.checked ? 'block' : 'none';
-    });
-});
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => { 
-    console.log('ML Studio: Page loaded, initializing...');
-    loadDatasetInfo(); 
-    
-    // Retry checking dataset a few times in case of timing issues
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    function attemptLoad() {
-        checkAndPopulateColumns().then((success) => {
-            if (!success && retryCount < maxRetries) {
-                retryCount++;
-                console.log(`ML Studio: Retrying dataset check (${retryCount}/${maxRetries})...`);
-                setTimeout(attemptLoad, 1000 * retryCount);
-            } else if (success) {
-                console.log('ML Studio: Dataset loaded successfully!');
-            }
-        });
-    }
-    
-    attemptLoad();
-    
-    // Initialize algorithm options on page load
-    const taskType = document.getElementById('taskType');
-    if (taskType && taskType.value) {
-        updateAlgorithmOptions();
-    }
-});
-
-// Model Comparison Function
-async function showModelComparison() {
-    try {
-        const res = await fetch('/ml/api/models/list');
-        const data = await res.json();
-        
-        if (!data.models || data.models.length === 0) {
-            showToast('No trained models available for comparison', 'warning');
-            return;
-        }
-        
-        // Create selection interface
-        const comparisonCard = document.getElementById('comparisonCard');
-        comparisonCard.style.display = 'block';
-        
-        const modelOptions = data.models.map(m => 
-            `<option value="${m.model_id}">${m.algorithm} (${m.task}) - ${new Date(m.trained_at).toLocaleString()}</option>`
-        ).join('');
-        
-        const html = `
-            <div class="row gap-3 mb-3">
-                <div class="col-8">
-                    <label class="form-label">Select Models to Compare (hold Ctrl/Cmd for multiple)</label>
-                    <select class="form-control" id="compareModelSelect" multiple size="5">
-                        ${modelOptions}
-                    </select>
-                </div>
-                <div class="col-4">
-                    <button class="btn btn-primary w-100" onclick="compareSelectedModels()">
-                        📊 Compare Selected Models
-                    </button>
-                </div>
-            </div>
-            <div id="comparisonResults"></div>
-        `;
-        
-        document.getElementById('comparisonResults').innerHTML = html;
-        comparisonCard.scrollIntoView({ behavior: 'smooth' });
-        
-    } catch (e) {
-        showToast('Failed to load models', 'error');
-    }
-}
-
-async function compareSelectedModels() {
-    const select = document.getElementById('compareModelSelect');
-    const selectedModels = Array.from(select.selectedOptions).map(opt => opt.value);
-    
-    if (selectedModels.length < 2) {
-        showToast('Please select at least 2 models to compare', 'warning');
-        return;
-    }
-    
-    showToast('Comparing models...', 'info');
-    
-    try {
-        const res = await fetch('/ml/api/models/compare', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ model_ids: selectedModels })
-        });
-        
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        displayComparisonResults(data);
-        
-    } catch (e) {
-        showToast('Comparison failed', 'error');
-    }
-}
-
-function displayComparisonResults(data) {
-    const { comparison, best_model, best_metric } = data;
-    
-    let html = `
-        <div class="alert alert-success">
-            <strong>🏆 Best Model:</strong> ${best_model} (by ${best_metric})
+    // Show model info
+    const modelInfoHtml = `
+        <div class="alert alert-info">
+            <strong>Model Details:</strong><br>
+            Algorithm: ${result.algorithm || 'N/A'}<br>
+            Task: ${result.task || 'N/A'}<br>
+            Target Column: ${result.target_column || 'N/A'}<br>
+            Features: ${result.feature_columns ? result.feature_columns.length : 0} columns<br>
+            Training Samples: ${result.n_samples_train || 'N/A'}<br>
+            Test Samples: ${result.n_samples_test || 'N/A'}<br>
+            Training Time: ${result.training_time_seconds ? result.training_time_seconds + ' seconds' : 'N/A'}<br>
+            Cross-Validation: ${result.cv_scores ? result.cv_scores.join(', ') : 'Not performed'}
         </div>
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Model ID</th>
-                        <th>Algorithm</th>
-                        <th>Task</th>
-                        <th>Training Time (s)</th>
-                        <th>AutoML</th>
     `;
     
-    // Add metric columns dynamically
-    if (comparison.length > 0) {
-        const metrics = Object.keys(comparison[0].metrics || {});
-        metrics.forEach(metric => {
-            html += `<th>${metric.replace('_', ' ').toUpperCase()}</th>`;
+    document.getElementById('resultsDashboard').insertAdjacentHTML('afterbegin', modelInfoHtml);
+}
+
+function showDebugInfo() {
+    fetch('/ml/api/debug')
+        .then(res => res.json())
+        .then(data => {
+            console.log('Debug Info:', data);
+            alert(JSON.stringify(data, null, 2));
+        })
+        .catch(error => {
+            console.error('Debug info error:', error);
+            alert('Error getting debug info: ' + error.message);
         });
-    }
-    
-    html += `</tr></thead><tbody>`;
-    
-    comparison.forEach(model => {
-        const isBest = model.model_id === best_model;
-        html += `
-            <tr style="${isBest ? 'background-color: #d4edda;' : ''}">
-                <td><code>${model.model_id.substring(0, 8)}...</code></td>
-                <td>${model.algorithm}</td>
-                <td>${model.task}</td>
-                <td>${model.training_time?.toFixed(2) || 'N/A'}</td>
-                <td>${model.automl_used ? '✅' : '❌'}</td>
-        `;
-        
-        Object.values(model.metrics || {}).forEach(value => {
-            html += `<td>${typeof value === 'number' ? value.toFixed(4) : value}</td>`;
-        });
-        
-        html += `</tr>`;
-    });
-    
-    html += `</tbody></table></div>`;
-    
-    document.getElementById('comparisonResults').innerHTML = html;
-    showToast('Model comparison complete!', 'success');
 }
 
-// Prediction Interface Functions
-async function loadPredictionInterface() {
+function showToast(message, type = 'info') {
+    // Remove any existing toasts
+    document.querySelectorAll('.toast-notification').forEach(el => el.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} toast-notification`;
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+async function testApiConnection() {
+    console.log('Testing API connection...');
+    
     try {
-        const res = await fetch('/ml/api/models/list');
+        // Test debug endpoint
+        const res = await fetch('/ml/api/debug');
         const data = await res.json();
         
-        if (!data.models || data.models.length === 0) {
-            showToast('No trained models available', 'warning');
-            return;
+        console.log('API Response:', data);
+        
+        if (data.dataset_loaded) {
+            showToast(`✅ API Working! Dataset: ${data.dataset_name || 'Unknown'} (${data.dataset_shape?.[0] || 0} rows)`, 'success');
+        } else {
+            showToast('⚠️ API working but no dataset loaded', 'warning');
         }
-        
-        const predictionCard = document.getElementById('predictionCard');
-        predictionCard.style.display = 'block';
-        
-        const modelOptions = data.models.map(m => 
-            `<option value="${m.model_id}">${m.algorithm} - ${new Date(m.trained_at).toLocaleDateString()}</option>`
-        ).join('');
-        
-        document.getElementById('predictModelSelect').innerHTML = modelOptions;
-        predictionCard.scrollIntoView({ behavior: 'smooth' });
-        
     } catch (e) {
-        showToast('Failed to load models', 'error');
+        console.error('API test failed:', e);
+        showToast('❌ API connection failed: ' + e.message, 'error');
     }
 }
 
-async function loadModelFeatures() {
-    const modelId = document.getElementById('predictModelSelect').value;
-    
-    if (!modelId) {
-        showToast('Please select a model first', 'warning');
-        return;
-    }
-    
-    try {
-        const res = await fetch(`/ml/api/status/${modelId}`);
-        const jobData = await res.json();
-        
-        if (!jobData.result) {
-            showToast('Model data not found', 'error');
-            return;
-        }
-        
-        const nFeatures = jobData.result.n_features || 0;
-        const featureNames = Object.keys(jobData.result.feature_importance || {});
-        
-        let html = '';
-        for (let i = 0; i < nFeatures; i++) {
-            const fname = featureNames[i] || `Feature ${i+1}`;
-            html += `
-                <div class="col-3 mb-2">
-                    <label class="form-label">${fname}</label>
-                    <input type="number" class="form-control predict-feature" data-feature="${fname}" step="any">
-                </div>
-            `;
-        }
-        
-        document.getElementById('featureInputs').innerHTML = html;
-        document.getElementById('predictionForm').style.display = 'block';
-        
-    } catch (e) {
-        showToast('Failed to load model features', 'error');
-    }
-}
-
-async function makePrediction() {
-    const modelId = document.getElementById('predictModelSelect').value;
-    const inputs = document.querySelectorAll('.predict_feature');
-    
-    const features = {};
-    inputs.forEach(input => {
-        features[input.dataset.feature] = parseFloat(input.value) || 0;
-    });
-    
-    try {
-        const res = await fetch('/ml/api/predict', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                model_id: modelId,
-                features: features
-            })
-        });
-        
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        let resultHTML = `
-            <div class="alert alert-success">
-                <h5>🔮 Prediction Result</h5>
-                <p><strong>Prediction:</strong> ${data.prediction}</p>
-        `;
-        
-        if (data.probabilities) {
-            resultHTML += `<p><strong>Probabilities:</strong></p><ul>`;
-            data.probabilities.forEach((prob, idx) => {
-                resultHTML += `<li>Class ${idx}: ${(prob * 100).toFixed(2)}%</li>`;
-            });
-            resultHTML += `</ul>`;
-        }
-        
-        resultHTML += `</div>`;
-        
-        document.getElementById('predictionResult').innerHTML = resultHTML;
-        showToast('Prediction successful!', 'success');
-        
-    } catch (e) {
-        showToast('Prediction failed', 'error');
-    }
-}
-
-// Advanced Visualization Functions
-async function generateSHAPWaterfall() {
-    const jobId = session_ml_job_id;
-    if (!jobId) {
-        showToast('Please train a model first', 'warning');
-        return;
-    }
-    
-    const sampleIdx = prompt('Enter sample index (0-99):', '0');
-    if (sampleIdx === null) return;
-    
-    showToast('Generating SHAP waterfall plot...', 'info');
-    
-    try {
-        const res = await fetch(`/ml/api/shap/waterfall/${jobId}?sample=${sampleIdx}`);
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        document.getElementById('explainabilityCard').style.display = 'block';
-        const shapDiv = document.createElement('div');
-        shapDiv.innerHTML = `<h6 class="mb-3 mt-4">SHAP Waterfall Plot (Sample ${sampleIdx})</h6><div id="shapWaterfall" style="height: 500px;"></div>`;
-        document.getElementById('shapPlots').appendChild(shapDiv);
-        
-        const fig = JSON.parse(data.chart);
-        Plotly.newPlot('shapWaterfall', fig.data, fig.layout, {responsive: true});
-        
-        showToast('SHAP waterfall generated!', 'success');
-    } catch (e) {
-        showToast('Failed to generate waterfall plot', 'error');
-    }
-}
-
-async function generatePermutationImportance() {
-    const jobId = session_ml_job_id;
-    if (!jobId) {
-        showToast('Please train a model first', 'warning');
-        return;
-    }
-    
-    showToast('Calculating permutation importance...', 'info');
-    
-    try {
-        const res = await fetch(`/ml/api/feature/importance/permutation/${jobId}`);
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        document.getElementById('explainabilityCard').style.display = 'block';
-        const permDiv = document.createElement('div');
-        permDiv.innerHTML = `<h6 class="mb-3 mt-4">Permutation Feature Importance</h6><div id="permImportance" style="height: 500px;"></div>`;
-        document.getElementById('shapPlots').appendChild(permDiv);
-        
-        const fig = JSON.parse(data.chart);
-        Plotly.newPlot('permImportance', fig.data, fig.layout, {responsive: true});
-        
-        showToast('Permutation importance calculated!', 'success');
-    } catch (e) {
-        showToast('Failed to calculate permutation importance', 'error');
-    }
-}
-
-async function generateLearningCurve() {
-    const jobId = session_ml_job_id;
-    if (!jobId) {
-        showToast('Please train a model first', 'warning');
-        return;
-    }
-    
-    showToast('Generating learning curve...', 'info');
-    
-    try {
-        const res = await fetch(`/ml/api/learning_curve/${jobId}`);
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        document.getElementById('explainabilityCard').style.display = 'block';
-        const lcDiv = document.createElement('div');
-        lcDiv.innerHTML = `<h6 class="mb-3 mt-4">Learning Curve (Bias-Variance Analysis)</h6><div id="learningCurve" style="height: 500px;"></div>`;
-        document.getElementById('shapPlots').appendChild(lcDiv);
-        
-        const fig = JSON.parse(data.chart);
-        Plotly.newPlot('learningCurve', fig.data, fig.layout, {responsive: true});
-        
-        showToast('Learning curve generated!', 'success');
-    } catch (e) {
-        showToast('Failed to generate learning curve', 'error');
-    }
-}
-
-async function generateValidationCurve() {
-    const jobId = session_ml_job_id;
-    if (!jobId) {
-        showToast('Please train a model first', 'warning');
-        return;
-    }
-    
-    const paramName = prompt('Enter parameter name (max_depth, n_estimators, etc.):', 'max_depth');
-    if (!paramName) return;
-    
-    showToast(`Generating validation curve for ${paramName}...`, 'info');
-    
-    try {
-        const res = await fetch(`/ml/api/validation_curve/${jobId}?param=${paramName}`);
-        const data = await res.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-            return;
-        }
-        
-        document.getElementById('explainabilityCard').style.display = 'block';
-        const vcDiv = document.createElement('div');
-        vcDiv.innerHTML = `<h6 class="mb-3 mt-4">Validation Curve (${paramName})</h6><div id="validationCurve" style="height: 500px;"></div>`;
-        document.getElementById('shapPlots').appendChild(vcDiv);
-        
-        const fig = JSON.parse(data.chart);
-        Plotly.newPlot('validationCurve', fig.data, fig.layout, {responsive: true});
-        
-        showToast('Validation curve generated!', 'success');
-    } catch (e) {
-        showToast('Failed to generate validation curve', 'error');
-    }
-}
-
-async function runDataQuality() {
-    try {
-        showToast('Assessing data quality...', 'info');
-
-        const res = await fetch('/ml/api/data-quality', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-        });
-
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            showToast(data.error || 'Data quality assessment failed', 'error');
-            return;
-        }
-
-        document.getElementById('dataQualityCard').style.display = 'block';
-        document.getElementById('dataQualitySummary').style.display = 'block';
-
-        document.getElementById('dataQualityScore').textContent = `Quality score: ${data.quality_score}/100`;
-
-        // Missingness summary
-        document.getElementById('dqMissingSummary').textContent = JSON.stringify(data.missingness_summary || {}, null, 2);
-
-        // Outlier summary (compact)
-        const outliers = data.outliers || {};
-        const flagged = outliers.flagged_columns || 0;
-        const cols = Object.keys(outliers.columns || {});
-        const topFlags = cols.slice(0, 10).map(c => {
-            const rate = outliers.columns[c]?.outlier_rate_pct;
-            return `${c}: ${rate ? rate.toFixed(2) : 0}%`;
-        });
-        document.getElementById('dqOutlierSummary').textContent = `Flagged columns: ${flagged}\n` + topFlags.join('\n');
-
-        // Recommendations
-        const dqRec = document.getElementById('dqRecommendations');
-        dqRec.innerHTML = '';
-
-
-        const recs = [];
-        const miss = data.missingness_summary?.mean_missing_pct || 0;
-        if (miss > 5) recs.push('High missingness detected. Consider median/mode imputation or targeted row dropping.');
-
-        if (flagged > 0) recs.push('Outlier-like anomalies detected. Consider clipping to percentile/IQR bounds or reviewing distributions.');
-
-        const exactDup = data.duplicates?.exact_duplicate_rows || 0;
-        if (exactDup > 0) recs.push(`Duplicates detected (${exactDup} exact rows). Consider de-duplication or entity resolution.`);
-
-        const typeFixes = (data.type_corrections || []).length;
-        if (typeFixes > 0) recs.push(`Type validation suggests fixes in ${typeFixes} columns (e.g., numeric/date coercion).`);
-
-        if ((data.redundancy?.redundant_columns || []).length > 0) recs.push('Correlation redundancy detected. Consider removing/reducing highly correlated features.');
-
-        if (recs.length === 0) recs.push('No major data quality issues detected. Model-ready dataset looks promising.');
-
-        recs.forEach(r => {
-            const el = document.createElement('div');
-            el.className = 'p-2 border rounded';
-            el.innerHTML = `<div style="font-size:13px; color:#111827;">${r}</div>`;
-            dqRec.appendChild(el);
-        });
-
-        showToast('Data quality report ready!', 'success');
-
-    } catch (e) {
-        showToast('Data quality assessment failed', 'error');
-    }
-}
-
-// NOTE: Data Quality JSON rendering removed due to previous JS parse errors.
-// Function kept to avoid breaking UI.
-
-
+document.addEventListener('DOMContentLoaded', checkAndPopulateColumns);
 </script>
 {% endblock %}

@@ -29,6 +29,24 @@
                 </div>
                 <h3 class="mb-2" id="healthStatus">Analyzing...</h3>
                 <p class="text-muted mb-0" id="healthSummary">Upload data to see quality assessment</p>
+                
+                <!-- Badge Display -->
+                <div id="badgeDisplay" class="mt-3" style="display:none;">
+                    <div class="badge-display-container p-3 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="badge-emoji" id="badgeEmoji" style="font-size: 2.5rem;"></div>
+                        <div class="badge-title" id="badgeTitle" style="font-size: 1.2rem; font-weight: bold; margin-top: 0.5rem;"></div>
+                    </div>
+                </div>
+                
+                <!-- YData Profiling Button -->
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm" onclick="generateYDataProfile()">
+                        🔬 Generate Full Data Profile (YData)
+                    </button>
+                    <button class="btn btn-outline-info btn-sm ms-2" onclick="analyzeMissingness()">
+                        🕵️ Missingness Analysis
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -184,6 +202,11 @@
                     <div class="col-4">
                         <button class="btn btn-success w-100" onclick="runCorrelationTest()">
                             🔗 Correlation Analysis
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-info w-100" onclick="analyzeMissingness()">
+                            🕵️ Missingness Analysis
                         </button>
                     </div>
                     <div class="col-4">
@@ -834,8 +857,256 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDatasetInfo(); 
     loadProfile().then(() => {
         loadHypothesisColumns();
+        loadHealthBadge(); // Load badge information
     });
 });
+
+// Load Health Badge Information
+async function loadHealthBadge() {
+    try {
+        const res = await fetch('/review/api/health/badge');
+        const data = await res.json();
+        
+        if (data.error) return;
+        
+        const badgeDisplay = document.getElementById('badgeDisplay');
+        const badgeEmoji = document.getElementById('badgeEmoji');
+        const badgeTitle = document.getElementById('badgeTitle');
+        
+        // Parse badge emoji and title
+        const parts = data.badge.split(' ');
+        badgeEmoji.textContent = parts[0];
+        badgeTitle.textContent = parts.slice(1).join(' ');
+        
+        badgeDisplay.style.display = 'block';
+        
+        // Also display recommendations in insights panel
+        if (data.recommendations && data.recommendations.length > 0) {
+            const insightsCard = document.getElementById('insightsCard');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            let recHTML = '<div class="mb-3"><h6 class="text-primary">🎯 Recommended Actions:</h6><ul class="list-unstyled">';
+            data.recommendations.forEach(rec => {
+                recHTML += `<li class="mb-2 p-2 rounded" style="background: #f8f9fa;">${rec}</li>`;
+            });
+            recHTML += '</ul></div>';
+            
+            insightsContent.innerHTML += recHTML;
+            insightsCard.style.display = 'block';
+        }
+    } catch (e) {
+        console.error('Failed to load health badge:', e);
+    }
+}
+
+// Generate YData Profile Report
+async function generateYDataProfile() {
+    try {
+        showToast('Generating comprehensive data profile... This may take 30-60 seconds.', 'info');
+        
+        const res = await fetch('/review/api/profile/full', {
+            method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        // Create modal or new section for profile
+        const modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.id = 'ydataModal';
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl" style="max-width: 95%;">
+                <div class="modal-content">
+                    <div class="modal-header bg-gradient-primary text-white">
+                        <h5 class="modal-title">🔬 Comprehensive Data Profile</h5>
+                        <button type="button" class="btn-close btn-close-white" onclick="closeYDataModal()"></button>
+                    </div>
+                    <div class="modal-body" style="height: 80vh; overflow-y: auto;">
+                        <div class="alert alert-info mb-3">
+                            <strong>Note:</strong> Showing profile for ${data.sample_size} of ${data.total_rows} rows (limited for performance)
+                        </div>
+                        <iframe id="ydataFrame" style="width: 100%; height: calc(80vh - 100px); border: none;"></iframe>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeYDataModal()">Close</button>
+                        <button class="btn btn-primary" onclick="downloadYDataProfile()">Download HTML Report</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Load profile HTML into iframe
+        const iframe = document.getElementById('ydataFrame');
+        const blob = new Blob([data.html], {type: 'text/html'});
+        iframe.src = URL.createObjectURL(blob);
+        
+        // Store HTML for download
+        window.ydataProfileHTML = data.html;
+        
+        showToast('Profile generated successfully!', 'success');
+    } catch (e) {
+        showToast('Failed to generate profile: ' + e.message, 'error');
+    }
+}
+
+function closeYDataModal() {
+    const modal = document.getElementById('ydataModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function downloadYDataProfile() {
+    if (window.ydataProfileHTML) {
+        const blob = new Blob([window.ydataProfileHTML], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `finese2_profile_${new Date().toISOString().slice(0,10)}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Profile downloaded!', 'success');
+    }
+}
+
+// Missingness Analysis
+async function analyzeMissingness() {
+    try {
+        showToast('Analyzing missing value patterns...', 'info');
+        
+        const res = await fetch('/review/api/missingness/analysis');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+            return;
+        }
+        
+        if (data.status === 'No missing values detected') {
+            showToast('No missing values found in dataset', 'info');
+            return;
+        }
+        
+        // Create modal for missingness analysis
+        const modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.id = 'missingnessModal';
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl" style="max-width: 95%;">
+                <div class="modal-content">
+                    <div class="modal-header bg-gradient-info text-white">
+                        <h5 class="modal-title">🕵️ Missing Value Pattern Analysis</h5>
+                        <button type="button" class="btn-close btn-close-white" onclick="closeMissingnessModal()"></button>
+                    </div>
+                    <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <strong>Total columns with missing values:</strong> ${data.total_missing_cols}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h6>Missingness Pattern Matrix</h6>
+                                <div id="missingnessMatrix" style="height: 400px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6>Detailed Column Analysis</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Column</th>
+                                                <th>Missing %</th>
+                                                <th>Pattern</th>
+                                                <th>Advice</th>
+                                                <th>Correlation</th>
+                                                <th>Related To</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${data.patterns.map(p => `
+                                                <tr class="${p.severity === 'high' ? 'table-danger' : p.severity === 'medium' ? 'table-warning' : 'table-success'}">
+                                                    <td><strong>${p.column}</strong></td>
+                                                    <td>${p.missing_pct}%</td>
+                                                    <td><span class="badge badge-${p.severity === 'high' ? 'danger' : p.severity === 'medium' ? 'warning' : 'success'}">${p.pattern}</span></td>
+                                                    <td>${p.advice}</td>
+                                                    <td>${p.max_correlation}</td>
+                                                    <td>${p.correlated_with || 'None'}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeMissingnessModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Create missingness correlation matrix visualization
+        setTimeout(() => {
+            if (data.correlation_matrix) {
+                // Convert correlation matrix to Plotly format
+                const cols = Object.keys(data.correlation_matrix);
+                const zValues = cols.map(row => cols.map(col => data.correlation_matrix[row][col]));
+                
+                const trace = {
+                    z: zValues,
+                    x: cols,
+                    y: cols,
+                    type: 'heatmap',
+                    colorscale: 'Viridis',
+                    reversescale: true
+                };
+                
+                const layout = {
+                    title: 'Missing Value Correlation Matrix',
+                    xaxis: {title: 'Columns'},
+                    yaxis: {title: 'Columns'},
+                    height: 400,
+                    margin: {t: 50, l: 100, r: 50, b: 100}
+                };
+                
+                Plotly.newPlot('missingnessMatrix', [trace], layout, {responsive: true});
+            }
+        }, 500);
+        
+        showToast('Missingness analysis complete!', 'success');
+    } catch (e) {
+        console.error('Missingness analysis failed:', e);
+        showToast('Failed to analyze missingness patterns', 'error');
+    }
+}
+
+function closeMissingnessModal() {
+    const modal = document.getElementById('missingnessModal');
+    if (modal) {
+        modal.remove();
+    }
+}
 
 </script>
 {% endblock %}

@@ -7,9 +7,12 @@ import plotly.io as pio
 import json
 import numpy as np
 import io
+import logging
+import datetime
+from zipfile import ZipFile
 
-
-
+# Create a logger instance for this module
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('charts', __name__)
 
@@ -676,3 +679,166 @@ def export_chart():
         return send_file(buf, mimetype='text/html',
                          download_name='chart.html', as_attachment=True)
     return jsonify({'error': 'Unsupported format'}), 400
+
+
+@bp.route('/api/export/bulk', methods=['POST'])
+def export_charts_bulk():
+    """Export multiple charts as ZIP file"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    df, _ = current_app.dataset_store.load(dataset_id)
+    charts_config = request.json.get('charts', [])
+    
+    try:
+        import zipfile
+        
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for i, cfg in enumerate(charts_config):
+                try:
+                    # Build each chart
+                    chart_type = cfg.get('chart_type', 'bar')
+                    x, y, color = cfg.get('x'), cfg.get('y'), cfg.get('color')
+                    
+                    fig = None
+                    if chart_type == 'bar':
+                        fig = px.bar(df, x=x, y=y, color=color)
+                    elif chart_type == 'line':
+                        fig = px.line(df, x=x, y=y, color=color)
+                    elif chart_type == 'scatter':
+                        fig = px.scatter(df, x=x, y=y, color=color)
+                    elif chart_type == 'histogram':
+                        fig = px.histogram(df, x=x, color=color)
+                    
+                    if fig:
+                        # Export as PNG
+                        img_bytes = fig.to_image(format='png', width=1200, height=700, scale=2)
+                        zip_file.writestr(f'chart_{i+1}_{chart_type}.png', img_bytes)
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to export chart {i+1}: {e}")
+        
+        zip_buffer.seek(0)
+        return send_file(zip_buffer, mimetype='application/zip',
+                       download_name=f'finese2_charts_{datetime.now().strftime("%Y%m%d")}.zip', 
+                       as_attachment=True)
+        
+    except ImportError:
+        return jsonify({'error': 'Kaleido not installed. Install with: pip install kaleido'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Bulk export failed: {str(e)}'}), 500
+
+@bp.route('/api/pivot', methods=['POST'])
+def create_pivot():
+    """Create pivot table from data"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    df, _ = current_app.dataset_store.load(dataset_id)
+    cfg = request.json
+    
+    index_cols = cfg.get('index', [])
+    column_cols = cfg.get('columns', [])
+    value_cols = cfg.get('values', [])
+    agg_func = cfg.get('agg_func', 'sum')
+    
+    if not index_cols or not value_cols:
+        return jsonify({'error': 'Index and values are required'}), 400
+    
+    try:
+        # Create pivot table
+        pivot_table = pd.pivot_table(
+            df,
+            index=index_cols if len(index_cols) > 1 else index_cols[0],
+            columns=column_cols if column_cols else None,
+            values=value_cols if len(value_cols) > 1 else value_cols[0],
+            aggfunc=agg_func,
+            fill_value=0
+        )
+        
+        # Convert to dict for JSON serialization
+        pivot_dict = pivot_table.to_dict()
+        
+        # Generate chart from pivot if requested
+        chart_json = None
+        if cfg.get('generate_chart', False):
+            try:
+                # Reset index for easier plotting
+                pivot_df = pivot_table.reset_index()
+                
+                # Determine chart type based on data
+                chart_type = cfg.get('chart_type', 'bar')
+                
+                if chart_type == 'bar':
+                    fig = px.bar(pivot_df, x=pivot_df.columns[0], y=pivot_df.columns[1] if len(pivot_df.columns) > 1 else pivot_df.columns[0])
+                elif chart_type == 'line':
+                    fig = px.line(pivot_df, x=pivot_df.columns[0], y=pivot_df.columns[1] if len(pivot_df.columns) > 1 else pivot_df.columns[0])
+                else:
+                    fig = px.bar(pivot_df, x=pivot_df.columns[0], y=pivot_df.columns[1] if len(pivot_df.columns) > 1 else pivot_df.columns[0])
+                
+                fig.update_layout(title='Pivot Table Visualization')
+                chart_json = json.loads(fig.to_json())
+            except Exception as e:
+                chart_json = None
+        
+        return jsonify({
+            'success': True,
+            'pivot': pivot_dict,
+            'columns': list(pivot_table.columns) if hasattr(pivot_table.columns, '__iter__') else [pivot_table.columns],
+            'index': list(pivot_table.index) if hasattr(pivot_table.index, '__iter__') else [pivot_table.index],
+            'chart': chart_json
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Pivot table creation failed: {str(e)}'}), 500
+
+
+@bp.route('/api/pivot/export', methods=['POST'])
+def export_pivot():
+    """Export pivot table as CSV or Excel"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    df, _ = current_app.dataset_store.load(dataset_id)
+    cfg = request.json
+    
+    index_cols = cfg.get('index', [])
+    column_cols = cfg.get('columns', [])
+    value_cols = cfg.get('values', [])
+    agg_func = cfg.get('agg_func', 'sum')
+    export_format = cfg.get('format', 'csv')
+    
+    try:
+        pivot_table = pd.pivot_table(
+            df,
+            index=index_cols if len(index_cols) > 1 else index_cols[0],
+            columns=column_cols if column_cols else None,
+            values=value_cols if len(value_cols) > 1 else value_cols[0],
+            aggfunc=agg_func,
+            fill_value=0
+        )
+        
+        buf = io.BytesIO()
+        
+        if export_format == 'csv':
+            csv_data = pivot_table.to_csv()
+            buf.write(csv_data.encode('utf-8'))
+            buf.seek(0)
+            return send_file(buf, mimetype='text/csv',
+                           download_name='pivot_table.csv', as_attachment=True)
+        elif export_format == 'excel':
+            with pd.ExcelWriter(buf, engine='xlsxwriter') as writer:
+                pivot_table.to_excel(writer, sheet_name='PivotTable')
+            buf.seek(0)
+            return send_file(buf, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                           download_name='pivot_table.xlsx', as_attachment=True)
+        
+        return jsonify({'error': 'Unsupported format'}), 400
+        
+    except Exception as e:
+        return jsonify({'error': f'Export failed: {str(e)}'}), 500

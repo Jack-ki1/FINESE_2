@@ -982,3 +982,33 @@ def undo_last_operation():
         'restored_version': latest_version['note'],
         'timestamp': latest_version['timestamp']
     })
+
+
+@bp.route('/api/diff', methods=['POST'])
+def get_data_diff():
+    """Get before/after comparison of cleaning operations"""
+    data = request.json
+    dataset_id = session.get('dataset_id')
+    
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    # Load current (after) dataset
+    df_after, _ = current_app.dataset_store.load(dataset_id)
+    
+    # Get previous version (before)
+    history = current_app.dataset_store.get_version_history(dataset_id)
+    if len(history) < 2:
+        return jsonify({'error': 'Need at least 2 versions to compare'}), 400
+    
+    # Get the version before the current one
+    prev_version = history[-2]
+    df_before, _ = current_app.dataset_store.restore_version(prev_version['version_id'], dataset_id, load_only=True)
+    
+    if df_before is None:
+        return jsonify({'error': 'Could not load previous version'}), 400
+    
+    from services.cleaning_service import calculate_data_diff
+    diff = calculate_data_diff(df_before, df_after)
+    
+    return jsonify(diff)

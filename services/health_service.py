@@ -113,6 +113,86 @@ def calculate_uniqueness_score(df: pd.DataFrame) -> float:
     return min(100.0, max(0.0, uniqueness))
 
 
+# Badge map for data quality gamification
+BADGE_MAP = {
+    95: "🏆 Perfect Dataset",
+    90: "🥇 Data Master",
+    80: "🥈 Clean Data Apprentice",
+    70: "🥉 Data Novice",
+    60: "⚠️ Needs Attention",
+    0: "📉 Critical Issues"
+}
+
+
+def get_badge_for_score(score: int) -> str:
+    """Get badge emoji and title for a given score."""
+    return next((v for k, v in BADGE_MAP.items() if score >= k), BADGE_MAP[0])
+
+
+def generate_recommendation_list(df: pd.DataFrame, scorecard: Dict[str, Any]) -> List[str]:
+    """
+    Generate actionable recommendations based on data health scorecard.
+    
+    Args:
+        df: Input DataFrame
+        scorecard: Health scorecard from calculate_data_health_score
+        
+    Returns:
+        List of recommendation strings
+    """
+    recommendations = []
+    
+    if df is None or df.empty:
+        return ["No data available for recommendations"]
+    
+    details = scorecard.get('details', {})
+    
+    # Completeness recommendations
+    if details.get('completeness', 100) < 90:
+        missing = df.isnull().sum()
+        high_miss = missing[missing > len(df) * 0.3]
+        if len(high_miss) > 0:
+            recommendations.append(f"🔧 Use **Clean → Fill Mode** on columns with >30% missing values: {', '.join(high_miss.index)}")
+        else:
+            recommendations.append("🔧 Consider imputing missing values using median/mode for better completeness")
+    
+    # Consistency recommendations
+    if details.get('consistency', 100) < 90:
+        recommendations.append("🔄 Use **Types → Convert** to fix inconsistent data types (e.g., currency, dates)")
+    
+    # Uniqueness recommendations
+    if details.get('uniqueness', 100) < 90:
+        dup_count = df.duplicated().sum()
+        if dup_count > 0:
+            recommendations.append(f"🗑️ Remove {dup_count:,} duplicate rows to improve data quality")
+    
+    # Check for specific issues
+    num_cols = [col for col in df.columns if is_numeric_column(df[col])]
+    for col in num_cols:
+        if (df[col] < 0).sum() > 0:
+            col_lower = col.lower()
+            if any(keyword in col_lower for keyword in ['price', 'cost', 'amount', 'fee', 'age']):
+                recommendations.append(f"⚠️ Review negative values in `{col}` - may indicate data entry errors")
+    
+    # Correlation check
+    if len(num_cols) >= 2:
+        corr_matrix = df[num_cols].corr()
+        high_corr = []
+        for i in range(len(corr_matrix.columns)):
+            for j in range(i+1, len(corr_matrix.columns)):
+                if abs(corr_matrix.iloc[i, j]) > 0.9:
+                    high_corr.append(f"`{corr_matrix.columns[i]}` & `{corr_matrix.columns[j]}`")
+        
+        if high_corr:
+            recommendations.append(f"📊 High correlation detected between: {', '.join(high_corr[:3])}. Consider removing redundant features")
+    
+    # If no issues found
+    if not recommendations:
+        recommendations.append("✅ Your data looks clean! No critical issues detected.")
+    
+    return recommendations[:10]  # Limit to top 10 recommendations
+
+
 def generate_health_insights(df: pd.DataFrame) -> List[str]:
     """
     Generate insights about the health of the dataset.

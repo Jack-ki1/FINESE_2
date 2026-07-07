@@ -186,3 +186,80 @@ def check_data_quality_issues(df: pd.DataFrame, threshold: float = 0.5) -> Dict[
     issues['duplicates'] = df.duplicated().sum()
     
     return issues
+
+
+def analyze_missingness_patterns(df: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Analyze missing value patterns (MCAR, MAR, MNAR detection).
+    
+    Args:
+        df: Input DataFrame
+        
+    Returns:
+        Dictionary containing missingness analysis results
+    """
+    if df is None or df.empty:
+        return {}
+    
+    from utils.data_utils import get_numeric_columns
+    
+    miss_cols = [c for c in df.columns if df[c].isnull().any()]
+    
+    if not miss_cols:
+        return {'status': 'No missing values detected'}
+    
+    # Missingness correlation matrix
+    miss_matrix = df[miss_cols].isnull().astype(int)
+    miss_corr = miss_matrix.corr()
+    
+    # Classify each column's missingness pattern
+    patterns = []
+    
+    for col in miss_cols:
+        miss_pct = float(df[col].isnull().mean() * 100)
+        
+        # Check if missingness correlates with any other variable (MAR indicator)
+        miss_indicator = df[col].isnull().astype(int)
+        max_corr = 0
+        correlated_with = None
+        
+        num_cols = get_numeric_columns(df)
+        for other in num_cols:
+            if other != col and df[other].notna().sum() > 10:
+                try:
+                    corr = abs(miss_indicator.corr(df[other]))
+                    if corr > max_corr:
+                        max_corr = float(corr)
+                        correlated_with = other
+                except Exception:
+                    pass
+        
+        # Classify pattern
+        if miss_pct > 60:
+            pattern = "MNAR likely"
+            advice = "Consider dropping or investigating data collection process"
+            severity = "high"
+        elif max_corr > 0.3:
+            pattern = f"MAR — related to `{correlated_with}`"
+            advice = "Use multiple imputation or model-based approaches"
+            severity = "medium"
+        else:
+            pattern = "MCAR likely"
+            advice = "Simple imputation (mean/median/mode) acceptable"
+            severity = "low"
+        
+        patterns.append({
+            'column': col,
+            'missing_pct': round(miss_pct, 2),
+            'pattern': pattern,
+            'advice': advice,
+            'severity': severity,
+            'max_correlation': round(max_corr, 3),
+            'correlated_with': correlated_with
+        })
+    
+    return {
+        'patterns': patterns,
+        'correlation_matrix': miss_corr.to_dict(),
+        'total_missing_cols': len(miss_cols)
+    }

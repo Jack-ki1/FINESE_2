@@ -233,3 +233,72 @@ def convert_column_type(df: pd.DataFrame, col: str, target_type: str) -> pd.Data
         raise
     
     return df_copy
+
+
+def calculate_data_diff(before: pd.DataFrame, after: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Calculate differences between before and after cleaning DataFrames.
+    
+    Args:
+        before: DataFrame before cleaning
+        after: DataFrame after cleaning
+        
+    Returns:
+        Dictionary containing diff information
+    """
+    if before is None or after is None:
+        return {}
+    
+    # Shape differences
+    delta_rows = len(after) - len(before)
+    delta_cols = len(after.columns) - len(before.columns)
+    
+    # Missing values comparison
+    before_miss = int(before.isnull().sum().sum())
+    after_miss = int(after.isnull().sum().sum())
+    delta_miss = after_miss - before_miss
+    
+    # Duplicates comparison
+    before_dup = int(before.duplicated().sum())
+    after_dup = int(after.duplicated().sum())
+    delta_dup = after_dup - before_dup
+    
+    # Column changes
+    added_cols = [c for c in after.columns if c not in before.columns]
+    removed_cols = [c for c in before.columns if c not in after.columns]
+    
+    # Dtype changes
+    changed_dtypes = {}
+    common_cols = [c for c in before.columns if c in after.columns]
+    for col in common_cols:
+        before_dtype = str(before[col].dtype)
+        after_dtype = str(after[col].dtype)
+        if before_dtype != after_dtype:
+            changed_dtypes[col] = {'before': before_dtype, 'after': after_dtype}
+    
+    # Missing values per column comparison (for chart)
+    missing_comparison = []
+    for col in common_cols:
+        before_pct = float((before[col].isnull().mean() * 100).round(2))
+        after_pct = float((after[col].isnull().mean() * 100).round(2))
+        if before_pct > 0 or after_pct > 0:
+            missing_comparison.append({
+                'column': col,
+                'before': before_pct,
+                'after': after_pct
+            })
+    
+    return {
+        'delta_rows': delta_rows,
+        'delta_cols': delta_cols,
+        'before_missing': before_miss,
+        'after_missing': after_miss,
+        'delta_missing': delta_miss,
+        'before_duplicates': before_dup,
+        'after_duplicates': after_dup,
+        'delta_duplicates': delta_dup,
+        'added_columns': added_cols,
+        'removed_columns': removed_cols,
+        'changed_dtypes': changed_dtypes,
+        'missing_comparison': missing_comparison
+    }

@@ -380,11 +380,59 @@ option {
                 </svg>
                 Send
             </button>
+            <button class="btn btn-success" onclick="exportConversation()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export
+            </button>
         </div>
     </div>
 </div>
 
 <script>
+function exportConversation() {
+    try {
+        // Get all messages from the chat history
+        const chatHistory = document.getElementById('chatHistory');
+        const messages = chatHistory.querySelectorAll('.chat-message');
+        
+        if (messages.length === 0) {
+            showToast('No messages to export', 'info');
+            return;
+        }
+        
+        let conversationText = '# Data Science Assistant Conversation\n\n';
+        conversationText += `Date: ${new Date().toLocaleString()}\n\n`;
+        
+        messages.forEach(msg => {
+            const role = msg.classList.contains('user') ? 'User' : 'Assistant';
+            const content = msg.querySelector('.message-content').innerHTML
+                .replace(/<[^>]*>/g, '') // Remove HTML tags
+                .trim();
+            
+            conversationText += `## ${role}:\n${content}\n\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([conversationText], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `conversation_${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('Conversation exported successfully!', 'success');
+    } catch (e) {
+        console.error('Export failed:', e);
+        showToast('Export failed: ' + e.message, 'error');
+    }
+}
 let apiKeySet = false;
 
 function saveApiKey() {
@@ -626,6 +674,48 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Chatbot: Keeping alert visible - no dataset loaded');
         });
 });
+
+// Export Conversation Function
+function exportConversation() {
+    try {
+        // Get all messages from the chat history
+        const chatHistory = document.getElementById('chatHistory');
+        const messages = chatHistory.querySelectorAll('.chat-message');
+        
+        if (messages.length === 0) {
+            showToast('No messages to export', 'info');
+            return;
+        }
+        
+        let conversationText = '# Data Science Assistant Conversation\n\n';
+        conversationText += `Date: ${new Date().toLocaleString()}\n\n`;
+        
+        messages.forEach(msg => {
+            const role = msg.classList.contains('user') ? 'User' : 'Assistant';
+            const content = msg.querySelector('.message-content').innerHTML
+                .replace(/<[^>]*>/g, '') // Remove HTML tags
+                .trim();
+            
+            conversationText += `## ${role}:\n${content}\n\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([conversationText], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `conversation_${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('Conversation exported successfully!', 'success');
+    } catch (e) {
+        console.error('Export failed:', e);
+        showToast('Export failed: ' + e.message, 'error');
+    }
+}
 
 </script>
 {% endblock %}

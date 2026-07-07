@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 from cachetools import TTLCache
 import hashlib
+import logging
 
 bp = Blueprint('review', __name__)
 
@@ -579,3 +580,78 @@ Sample rows (first 3):
     )
     
     return jsonify({'report': response.content[0].text})
+
+
+@bp.route('/api/profile/full', methods=['POST'])
+def generate_full_profile():
+    """Generate comprehensive YData profiling report"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    try:
+        from ydata_profiling import ProfileReport
+        df, name = current_app.dataset_store.load(dataset_id)
+        
+        # Limit rows for performance
+        sample_size = min(5000, len(df))
+        df_sample = df.head(sample_size)
+        
+        with current_app.app_context():
+            profile = ProfileReport(
+                df_sample,
+                title=f"FINESE2 - {name} Profile",
+                pool_size=0  # Disable multiprocessing
+            )
+            
+            profile_html = profile.to_html()
+            
+            return jsonify({
+                'success': True,
+                'html': profile_html,
+                'sample_size': sample_size,
+                'total_rows': len(df)
+            })
+    except ImportError:
+        return jsonify({
+            'error': 'ydata-profiling not installed. Run: pip install ydata-profiling'
+        }), 400
+    except Exception as e:
+        logger.error(f"Profile generation error: {e}")
+        return jsonify({'error': f'Profile generation failed: {str(e)}'}), 500
+
+
+@bp.route('/api/health/badge', methods=['GET'])
+def get_health_badge():
+    """Get health score with badge information"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    df, _ = current_app.dataset_store.load(dataset_id)
+    from services.health_service import calculate_data_health_score, get_badge_for_score, generate_recommendation_list
+    
+    scorecard = calculate_data_health_score(df)
+    badge = get_badge_for_score(scorecard['final_score'])
+    recommendations = generate_recommendation_list(df, scorecard)
+    
+    return jsonify({
+        'scorecard': scorecard,
+        'badge': badge,
+        'recommendations': recommendations
+    })
+
+
+@bp.route('/api/missingness/analysis', methods=['GET'])
+def missingness_analysis():
+    """Analyze missing value patterns"""
+    dataset_id = session.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'No dataset loaded'}), 400
+    
+    df, _ = current_app.dataset_store.load(dataset_id)
+    
+    from services.profiling_service import analyze_missingness_patterns
+    result = analyze_missingness_patterns(df)
+    
+    return jsonify(result)

@@ -172,6 +172,13 @@
                         </svg>
                         Preview Changes
                     </button>
+                    <button class="btn btn-info" onclick="showDataDiff()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="9" y1="3" x2="9" y2="21"/>
+                        </svg>
+                        Data Diff Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -1154,6 +1161,178 @@ analyzeCleaning = async function() {
     await originalAnalyzeCleaning();
     populateAdvancedOpColumns();
 };
+
+// Data Diff Functions
+async function showDataDiff() {
+    try {
+        const res = await fetch('/cleaning/api/diff');
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast('No data diff available - apply cleaning operations first', 'info');
+            return;
+        }
+        
+        // Show diff results in a modal or expandable section
+        const diffModal = document.createElement('div');
+        diffModal.className = 'modal fade';
+        diffModal.id = 'dataDiffModal';
+        diffModal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">📊 Data Difference Report</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-label">Rows</div>
+                                    <div class="metric-value">${data.delta_rows}</div>
+                                    <div class="metric-subtext">${data.delta_rows > 0 ? 'Added' : 'Removed'}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="3" y1="9" x2="21" y2="9"/>
+                                            <line x1="9" y1="21" x2="9" y2="9"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-label">Columns</div>
+                                    <div class="metric-value">${data.delta_cols}</div>
+                                    <div class="metric-subtext">${data.delta_cols > 0 ? 'Added' : 'Removed'}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-label">Missing Values</div>
+                                    <div class="metric-value">${data.delta_missing}</div>
+                                    <div class="metric-subtext">${data.delta_missing > 0 ? 'Increased' : 'Reduced'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Missing Values Per Column</div>
+                            <div class="card-body">
+                                <div id="missingDiffChart" style="height: 400px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Column Changes</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Added Columns (${data.added_columns.length})</h6>
+                                        <ul class="list-group">
+                                            ${data.added_columns.map(col => `<li class="list-group-item">${col}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Removed Columns (${data.removed_columns.length})</h6>
+                                        <ul class="list-group">
+                                            ${data.removed_columns.map(col => `<li class="list-group-item">${col}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">Data Type Changes</div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Column</th>
+                                            <th>Before</th>
+                                            <th>After</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${Object.entries(data.changed_dtypes).map(([col, change]) => `
+                                            <tr>
+                                                <td>${col}</td>
+                                                <td>${change.before}</td>
+                                                <td>${change.after}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(diffModal);
+        
+        // Show the modal
+        const bsModal = new bootstrap.Modal(diffModal);
+        bsModal.show();
+        
+        // Create missing values diff chart if data is available
+        if (data.missing_per_column_before && data.missing_per_column_after) {
+            const columns = Object.keys(data.missing_per_column_before);
+            const beforeValues = columns.map(col => data.missing_per_column_before[col]);
+            const afterValues = columns.map(col => data.missing_per_column_after[col]);
+            
+            const trace1 = {
+                x: columns,
+                y: beforeValues,
+                type: 'bar',
+                name: 'Before Cleaning',
+                marker: {color: '#EF4444'}
+            };
+            
+            const trace2 = {
+                x: columns,
+                y: afterValues,
+                type: 'bar',
+                name: 'After Cleaning',
+                marker: {color: '#10B981'}
+            };
+            
+            const layout = {
+                title: 'Missing Values Comparison (Before vs After)',
+                barmode: 'group',
+                xaxis: {title: 'Columns'},
+                yaxis: {title: 'Number of Missing Values'},
+                height: 400
+            };
+            
+            Plotly.newPlot('missingDiffChart', [trace1, trace2], layout);
+        }
+        
+        // Remove modal when closed
+        diffModal.addEventListener('hidden.bs.modal', function () {
+            diffModal.remove();
+        });
+        
+    } catch (e) {
+        console.error('Failed to show data diff:', e);
+        showToast('Failed to load data diff report', 'error');
+    }
+}
 
 </script>
 {% endblock %}

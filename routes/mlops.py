@@ -288,6 +288,145 @@ def pipeline_dag():
     return jsonify({'nodes': nodes, 'edges': edges})
 
 
+@bp.route('/api/experiment-compare', methods=['POST'])
+def experiment_compare():
+    """Compare multiple experiments with visualization.
+    
+    Body:
+      - experiment_ids: list of experiment IDs to compare
+      - metrics: optional list of specific metrics to compare (if not provided, uses common metrics)
+      
+    Returns comparison data and Plotly chart JSON.
+    """
+    data = request.json or {}
+    exp_ids = data.get('experiment_ids', [])
+    
+    if len(exp_ids) < 2:
+        return jsonify({'error': 'At least two experiment IDs required for comparison'}), 400
+    
+    # Get all experiments
+    all_experiments = list_exp_from_db()
+    selected_experiments = [exp for exp in all_experiments if exp['id'] in exp_ids]
+    
+    if len(selected_experiments) != len(exp_ids):
+        found_ids = [exp['id'] for exp in selected_experiments]
+        missing = set(exp_ids) - set(found_ids)
+        return jsonify({'error': f'Missing experiments: {missing}'}), 400
+    
+    # Parse metrics from experiments
+    experiments_with_metrics = []
+    for exp in selected_experiments:
+        metrics = json.loads(exp['metrics']) if isinstance(exp['metrics'], str) else exp['metrics']
+        params = json.loads(exp['params']) if isinstance(exp['params'], str) else exp['params']
+        experiments_with_metrics.append({
+            'id': exp['id'],
+            'name': exp['name'],
+            'metrics': metrics,
+            'params': params,
+            'timestamp': exp['timestamp']
+        })
+    
+    # Find common metrics across all experiments
+    common_metrics = set()
+    for i, exp in enumerate(experiments_with_metrics):
+        metric_keys = set(exp['metrics'].keys())
+        if i == 0:
+            common_metrics = metric_keys
+        else:
+            common_metrics &= metric_keys
+    
+    if not common_metrics:
+        return jsonify({'error': 'No common metrics found across selected experiments'}), 400
+    
+    # Use user-specified metrics if provided, otherwise use common metrics
+    target_metrics = data.get('metrics') or sorted(list(common_metrics))
+    
+    # Prepare data for comparison chart
+    chart_data = []
+    for exp in experiments_with_metrics:
+        for metric in target_metrics:
+            if metric in exp['metrics']:
+                try:
+                    value = float(exp['metrics'][metric])
+                    if not math.isnan(value):
+                        chart_data.append({
+                            'Experiment': f"{exp['name']} ({exp['id'][:8]})",
+                            'Metric': metric,
+                            'Value': value
+                        })
+                except (TypeError, ValueError):
+                    continue
+    
+    if not chart_data:
+        return jsonify({'error': 'No valid numeric metrics to display'}), 400
+    
+    # Create comparison bar chart using Plotly
+    df_chart = pd.DataFrame(chart_data)
+    fig = px.bar(
+        df_chart, 
+        x='Experiment', 
+        y='Value', 
+        color='Metric',
+        title='Experiment Metrics Comparison',
+        barmode='group',
+        text='Value'
+    )
+    fig.update_traces(texttemplate='%{text:.3g}', textposition='outside')
+    fig.update_layout(
+        uniformtext_minsize=8, 
+        uniformtext_mode='hide',
+        xaxis_tickangle=-45,
+        height=500
+    )
+    
+    # Convert chart to JSON for frontend rendering
+    chart_json = json.loads(fig.to_json())
+    
+    # Calculate performance differences
+    comparisons = []
+    baseline_exp = experiments_with_metrics[0]
+    for target_exp in experiments_with_metrics[1:]:
+        for metric in target_metrics:
+            if metric in baseline_exp['metrics'] and metric in target_exp['metrics']:
+                try:
+                    base_val = float(baseline_exp['metrics'][metric])
+                    target_val = float(target_exp['metrics'][metric])
+                    if base_val != 0:
+                        change_pct = ((target_val - base_val) / abs(base_val)) * 100
+                    else:
+                        change_pct = float('inf') if target_val > 0 else float('-inf')
+                    
+                    direction = 'improvement' if change_pct > 0 else 'regression'
+                    comparisons.append({
+                        'baseline_experiment': {
+                            'id': baseline_exp['id'],
+                            'name': baseline_exp['name']
+                        },
+                        'comparison_experiment': {
+                            'id': target_exp['id'],
+                            'name': target_exp['name']
+                        },
+                        'metric': metric,
+                        'baseline_value': base_val,
+                        'comparison_value': target_val,
+                        'change_percent': round(change_pct, 2),
+                        'direction': direction
+                    })
+                except (TypeError, ValueError):
+                    continue
+    
+    return jsonify({
+        'experiments': experiments_with_metrics,
+        'common_metrics': sorted(list(common_metrics)),
+        'comparison_chart': chart_json,
+        'detailed_comparisons': comparisons,
+        'summary': {
+            'total_experiments': len(experiments_with_metrics),
+            'compared_metrics': len(target_metrics),
+            'generated_at': datetime.now().isoformat()
+        }
+    })
+
 @bp.route('/api/ab_test', methods=['POST'])
 def ab_test():
     """Statistical comparison of two registered models."""
@@ -326,10 +465,12 @@ def generate_api():
     data = request.json
     model_id = data.get('model_id')
     
-    if not model_id or model_id not in model_registry:
-        return jsonify({'error': 'Model not found'}), 404
+    # Get model info using the get_model function from model_registry
+    from core.model_registry import get_model
+    model = get_model(model_id)
     
-    model = model_registry[model_id]
+    if not model:
+        return jsonify({'error': 'Model not found'}), 404
     
     api_code = f"""
 from flask import Flask, request, jsonify
@@ -351,3 +492,50 @@ if __name__ == '__main__':
 """
     
     return jsonify({'api_code': api_code, 'model_name': model['name']})
+
+
+@bp.route('/api/experiments/session', methods=['GET'])
+def get_session_experiments():
+    """Get experiments from current session for quick comparison"""
+    # Get experiments from database
+    experiments = list_exp_from_db(limit=50)
+    
+    # Parse metrics and params
+    parsed_experiments = []
+    for exp in experiments:
+        try:
+            metrics = json.loads(exp['metrics']) if isinstance(exp['metrics'], str) else exp['metrics']
+            params = json.loads(exp['params']) if isinstance(exp['params'], str) else exp['params']
+            
+            # Extract key metrics for display
+            key_metrics = {}
+            for k in ['accuracy', 'f1', 'r2', 'rmse', 'precision', 'recall']:
+                if k in metrics:
+                    try:
+                        key_metrics[k] = round(float(metrics[k]), 4)
+                    except (TypeError, ValueError):
+                        pass
+            
+            parsed_experiments.append({
+                'run_id': exp['id'][:8].upper(),
+                'timestamp': exp['timestamp'],
+                'name': exp['name'],
+                'problem_type': params.get('problem_type', 'Unknown'),
+                'model': params.get('model', 'Unknown'),
+                'n_features': params.get('n_features', 0),
+                'metrics': key_metrics,
+                'all_metrics': metrics
+            })
+        except Exception as e:
+            continue
+    
+    return jsonify({'experiments': parsed_experiments})
+
+
+@bp.route('/api/experiments/clear', methods=['POST'])
+def clear_experiments():
+    """Clear all experiments from database"""
+    from core.experiment_tracker import clear_experiments
+    clear_experiments()
+    experiment_logs.clear()
+    return jsonify({'success': True, 'message': 'All experiments cleared'})
