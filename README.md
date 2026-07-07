@@ -354,6 +354,60 @@ If you encounter issues:
 - **Hugging Face** for hosting the original Streamlit version
 - The open-source community for invaluable packages
 
+## 🧠 MLOps Integration
+
+FINESE 2 now includes comprehensive MLOps capabilities to manage your machine learning lifecycle:
+
+### 📊 Model Registry
+- Centralized model storage with metadata tracking
+- Version control for all trained models  
+- Performance metrics and hyperparameter logging
+- Easy model retrieval and deployment
+
+### 🧪 Experiment Tracking
+- Complete experiment logging with parameters and metrics
+- SQLite-based persistent storage
+- Optional integration with MLflow and Weights & Biases
+- Side-by-side experiment comparison
+
+### 🔄 Automated Registration
+- Models trained in ML Studio are automatically registered
+- AutoML best models are captured and stored
+- Unsupervised learning models included in registry
+- Seamless integration with the training pipeline
+
+## 🤗 Hugging Face Deployment
+
+Deploy FINESE 2 directly to Hugging Face Spaces with MLOps capabilities:
+
+### Quick Setup
+1. Fork this repository to your Hugging Face account
+2. Create a new Space with Docker SDK
+3. Use the provided `space.yaml` configuration
+4. Add your API keys as Space Secrets
+
+### Environment Variables (Space Secrets)
+```
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key  
+GOOGLE_API_KEY=your_google_key
+HF_TOKEN=your_huggingface_token
+MLFLOW_TRACKING_URI=your_mlflow_url  # Optional
+WANDB_PROJECT=your_wandb_project      # Optional
+```
+
+### Docker Configuration
+The included `Dockerfile` is optimized for Hugging Face Spaces:
+- Multi-stage build for faster deployments
+- Slim Python 3.11 base image
+- Optimized for CPU-based inference
+- Includes all ML dependencies
+
+### Persistent Storage
+- Model registry persists across deployments
+- Experiment logs maintained in SQLite
+- Uploaded datasets preserved (configure in space.yaml)
+
 ## 📈 Roadmap
 
 Future enhancements planned:
@@ -377,20 +431,3 @@ Future enhancements planned:
 [Report Bug](https://github.com/your-username/finese2/issues) · [Request Feature](https://github.com/your-username/finese2/issues)
 
 </div>
-
-
-DELETE THESE:
-├── tabs/                          (entire directory)
-├── access_layer.py
-├── data_store.py
-├── state.py
-├── theme.py
-├── test_architecture.py
-├── test_imports.py
-├── utils/ui_utils.py
-└── utils/health_utils.py
-
-OPTIONAL (review first):
-├── models/                        (empty directory)
-├── flask_session/                 (runtime sessions)
-└── static/uploads/*.pkl          (cached datasets)

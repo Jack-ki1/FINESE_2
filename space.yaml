@@ -13,12 +13,15 @@ sdk: docker
 app_port: 5000
 
 # Hardware configuration (optional - upgrade if needed)
-# hardware: cpu-basic  # Options: cpu-basic, cpu-upgrade, t4-small, t4-medium, a10g-small, a10g-large
+hardware: cpu-upgrade  # Options: cpu-basic, cpu-upgrade, t4-small, t4-medium, a10g-small, a10g-large
 
 # Tags for discoverability
 tags:
   - data-science
   - machine-learning
+  - mlops
+  - model-registry
+  - experiment-tracking
   - flask
   - data-analysis
   - visualization
@@ -27,6 +30,8 @@ tags:
   - scikit-learn
   - plotly
   - dashboard
+  - transformers
+  - huggingface
 
 # Custom domain (optional)
 # custom_domain: finesse2.example.com
@@ -37,10 +42,15 @@ tags:
 #     value: null  # Set via HF Space Secrets
 #   - name: GOOGLE_API_KEY
 #     value: null  # Set via HF Space Secrets
+#   - name: HF_TOKEN
+#     value: null  # Set via HF Space Secrets
 
 # Persistent storage (if needed for uploads/models)
-# storage:
-#   - path: /app/static/uploads
-#     size: 1GB
-#   - path: /app/models
-#     size: 500MB
+storage:
+  - path: /app/static/uploads
+    size: 2GB
+  - path: /app/models
+    size: 1GB
+
+# Specify the Dockerfile to use
+dockerfile: Dockerfile

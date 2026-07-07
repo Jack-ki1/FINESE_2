@@ -1,6 +1,6 @@
 # =============================================================================
 # FINESE 2 - AI-Powered Data Intelligence Platform (Flask)
-# Multi-stage optimized Docker build for production deployment
+# Multi-stage optimized Docker build for production deployment with Hugging Face support
 # =============================================================================
 
 # Stage 1: Build dependencies
@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libjpeg62-turbo \
     libpng16-16 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-xlib-2.0-0 \
     fonts-dejavu-core \
     fontconfig \
     && rm -rf /var/lib/apt/lists/* \
