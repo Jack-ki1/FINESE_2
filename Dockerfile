@@ -27,8 +27,7 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     FLASK_APP=app.py \
-    FLASK_ENV=production \
-    GUNICORN_CMD_ARGS="--bind 0.0.0.0:5000 --workers 2 --threads 2 --timeout 120"
+    FLASK_ENV=production
 
 WORKDIR /app
 
@@ -69,9 +68,9 @@ USER appuser
 # Expose Flask port
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check with longer timeout and intervals for Hugging Face Spaces
+HEALTHCHECK --interval=30s --timeout=20s --start-period=120s --retries=5 \
     CMD curl -f http://localhost:5000/ || exit 1
 
-# Run with Gunicorn (production WSGI server)
-CMD ["gunicorn", "app:app"]
+# Set Waitress as the WSGI server for Hugging Face Spaces (more lightweight than Gunicorn)
+CMD ["python", "-c", "from waitress import serve; from app import app; serve(app, host='0.0.0.0', port=5000, threads=2, connection_limit=100, channel_timeout=300)"]
